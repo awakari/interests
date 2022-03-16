@@ -4,45 +4,47 @@ import (
 	"synapse/util"
 )
 
-// SubscriptionId is the unique Subscription identifier
-type SubscriptionId int
+type (
 
-// SubscriptionData contains the subscription details
-type SubscriptionData struct {
+	// Subscription connects source topic(s) with the destination message handler(s).
+	Subscription struct {
 
-	// Description of the Subscription
-	Description string
+		// Id is the unique Subscription identifier
+		Id SubscriptionId
 
-	// TopicIds are Subscription source topics
-	TopicIds []TopicId
+		SubscriptionData
+	}
 
-	// Handler is a generic and persistent message processing function
-	HandlerName string
+	// SubscriptionId is the unique Subscription identifier
+	SubscriptionId string
 
-	// Config is the specific Handler configuration (e.g. specific e-mail address, phone number, queue name)
-	Config map[string]interface{}
-}
+	// SubscriptionData contains the subscription details
+	SubscriptionData struct {
 
-// Subscription connects source topic(s) with the destination message handler(s).
-// When created
-type Subscription struct {
+		// Description of the Subscription
+		Description string
 
-	// Id is the unique Subscription identifier
-	Id SubscriptionId
+		// TopicIds are Subscription source topics
+		TopicIds []TopicId
 
-	SubscriptionData
-}
+		// HandlerFactoryName is the initialization function unique name
+		HandlerFactoryName string
 
-type SubscriptionsPageCursor int
+		// HandlerConfig is the specific Handler configuration (e.g. specific e-mail address, phone number, queue name)
+		HandlerConfig HandlerConfig
+	}
 
-type SubscriptionsPage struct {
-	util.ResultsPage[Subscription, SubscriptionsPageCursor]
-}
+	SubscriptionsPageCursor SubscriptionId
 
-type SubscriptionRuntime struct {
-	Subscription
+	SubscriptionsPage struct {
+		util.Page[Subscription, SubscriptionsPageCursor]
+	}
 
-	HandleFunc util.HandleFunc[Message]
+	SubscriptionsQuery struct {
 
-	HandleBatchFunc util.HandleBatchFunc[Message]
-}
+		// TopicIdRef is the optional topic id to match
+		TopicIdRef *TopicId
+
+		util.PageQuery[SubscriptionsPageCursor]
+	}
+)

@@ -1,21 +1,31 @@
 package topic
 
-import "synapse"
+import (
+	"errors"
+	"synapse"
+)
 
-type Service interface {
+var (
+	ErrConflict = errors.New("topic already exists")
 
-	// Create a new synapse.Topic
-	Create(data synapse.TopicData) error
+	ErrNotFound = errors.New("topic was not found")
+)
 
-	// Read the synapse.TopicData by the synapse.TopicName
-	Read(name synapse.TopicName) (synapse.TopicData, error)
+type (
 
-	// Update the synapse.TopicData
-	Update(data synapse.TopicData) error
+	// Service is the synapse.Topic service
+	Service interface {
 
-	// Delete a topic by its synapse.TopicName
-	Delete(name synapse.TopicName) error
+		// Create a new synapse.Topic
+		Create(data synapse.TopicData) (synapse.TopicId, error)
 
-	// List all known topics with the pagination support
-	List(cursor synapse.TopicsPageCursor) (synapse.TopicsPage, error)
-}
+		// Read the synapse.Topic by its unique name
+		Read(name string) (*synapse.Topic, error)
+
+		// Delete a topic by its unique name. Also deletes all synapse.Subscription to this synapse.Topic.
+		Delete(name string) error
+
+		// List all known topics with the pagination support
+		List(query synapse.TopicsQuery) (synapse.TopicsPage, error)
+	}
+)

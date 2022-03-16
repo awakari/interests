@@ -18,5 +18,5 @@ var (
 
 func main() {
 	log := logrus.WithFields(logrus.Fields{})
-
+	log.Info(fmt.Sprintf("%s %s", Name, Version))
 }

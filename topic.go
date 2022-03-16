@@ -2,22 +2,36 @@ package synapse
 
 import "synapse/util"
 
-type TopicId int
+type (
 
-type TopicName string
+	// Topic is the Message channel. Any Message consumer can subscribe for one or many topics to receive the Message.
+	Topic struct {
+		Id TopicId
 
-type TopicData struct {
-	Name        TopicName
-	Description string
-}
+		TopicData
+	}
 
-type Topic struct {
-	Id TopicId
-	TopicData
-}
+	TopicId string
 
-type TopicsPageCursor int
+	TopicData struct {
 
-type TopicsPage struct {
-	util.ResultsPage[TopicData, TopicsPageCursor]
-}
+		// Name is the unique topic name
+		Name string
+
+		// Description is the free form Topic description
+		Description string
+	}
+
+	TopicName string
+
+	TopicsPageCursor TopicId
+
+	TopicsPage struct {
+		util.Page[Topic, TopicsPageCursor]
+	}
+
+	TopicsQuery struct {
+		NamePrefix string
+		util.PageQuery[TopicsPageCursor]
+	}
+)

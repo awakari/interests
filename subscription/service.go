@@ -1,22 +1,31 @@
 package subscription
 
-import "synapse"
+import (
+	"errors"
+	"synapse"
+)
 
-// Service is a subscription service
-type Service interface {
+var (
+	ErrConflict = errors.New("subscription already exists")
 
-	// Create a subscription means Subscribing
-	Create(data synapse.SubscriptionData) (synapse.SubscriptionId, error)
+	ErrNotFound = errors.New("subscription was not found")
+)
 
-	// Read the specified subscription details
-	Read(id synapse.SubscriptionId) (synapse.SubscriptionData, error)
+type (
 
-	// Delete a subscription means Unsubscribing
-	Delete(id synapse.SubscriptionId) error
+	// Service is a subscription service
+	Service interface {
 
-	// ListAll returns all known Subscriptions with the pagination support
-	ListAll(cursor synapse.SubscriptionsPageCursor) (synapse.SubscriptionsPage, error)
+		// Create a subscription means Subscribing
+		Create(data synapse.SubscriptionData) (synapse.SubscriptionId, error)
 
-	// ListByTopicIds returns all known Subscriptions whose connected to any of the specified Topics
-	ListByTopicIds([]synapse.TopicId, synapse.SubscriptionsPageCursor) (synapse.SubscriptionsPage, error)
-}
+		// Read the specified subscription details
+		Read(id synapse.SubscriptionId) (*synapse.Subscription, error)
+
+		// Delete a subscription means Unsubscribing
+		Delete(id synapse.SubscriptionId) error
+
+		// List returns all known Subscriptions with the pagination support that match the specified query
+		List(query synapse.SubscriptionsQuery) (synapse.SubscriptionsPage, error)
+	}
+)
