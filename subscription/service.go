@@ -2,7 +2,6 @@ package subscription
 
 import (
 	"errors"
-	"synapse"
 )
 
 var (
@@ -17,15 +16,15 @@ type (
 	Service interface {
 
 		// Create a subscription means Subscribing
-		Create(data synapse.SubscriptionData) (synapse.SubscriptionId, error)
+		Create(data Data) (Id, error)
 
 		// Read the specified subscription details
-		Read(id synapse.SubscriptionId) (*synapse.Subscription, error)
+		Read(id Id) (*Subscription, error)
 
 		// Delete a subscription means Unsubscribing
-		Delete(id synapse.SubscriptionId) error
+		Delete(id Id) error
 
 		// List returns all known Subscriptions with the pagination support that match the specified query
-		List(query synapse.SubscriptionsQuery) (synapse.SubscriptionsPage, error)
+		List(query SubscriptionsQuery) (SubscriptionsPage, error)
 	}
 )

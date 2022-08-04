@@ -1,16 +1,11 @@
 package factory
 
-import (
-	"errors"
-)
-
-var (
-	ErrConflict = errors.New("handler factory with same name already exists")
-
-	ErrNotFound = errors.New("handler factory was not found")
-)
+import "fmt"
 
 type (
+	ErrConflict error
+
+	ErrNotFound error
 
 	// Service is the handler.Factory service
 	Service interface {
@@ -36,7 +31,7 @@ func NewService(registry map[string]Factory) Service {
 func (svc service) Register(name string, factory Factory) error {
 	_, exists := svc.registry[name]
 	if exists {
-		return ErrConflict
+		return fmt.Errorf("failed to register handler factory \"%s\": already exists", name).(ErrConflict)
 	}
 	svc.registry[name] = factory
 	return nil
@@ -45,7 +40,7 @@ func (svc service) Register(name string, factory Factory) error {
 func (svc service) Get(name string) (Factory, error) {
 	f, exists := svc.registry[name]
 	if !exists {
-		return nil, ErrNotFound
+		return nil, fmt.Errorf("handler factory \"%s\" not found", name).(ErrNotFound)
 	}
 	return f, nil
 }

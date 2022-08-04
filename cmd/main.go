@@ -11,9 +11,9 @@ const (
 )
 
 var (
-	homePath    = fmt.Sprintf("~/.%s/%s", Name, Version)
-	extPath     = fmt.Sprintf("%s/ext", homePath)
-	handlerPath = fmt.Sprintf("%s/handler", extPath)
+	homePath           = fmt.Sprintf("~/.%s/%s", Name, Version)
+	extPath            = fmt.Sprintf("%s/ext", homePath)
+	handlerFactoryPath = fmt.Sprintf("%s/handler/factory", extPath)
 )
 
 func main() {

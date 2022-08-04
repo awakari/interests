@@ -1,11 +1,14 @@
 package factory
 
-import "synapse"
+import (
+	"synapse/handler"
+	"synapse/subscription"
+)
 
 type (
 
-	// Factory is the synapse.Handler factory creating the handlers based on the provided synapse.Subscription details
+	// Factory is the handler.Handler factory creating the handlers based on the provided synapse.Subscription details
 	Factory interface {
-		NewHandler(subscription synapse.Subscription) (synapse.Handler, error)
+		NewHandler(subscription subscription.Subscription) (handler.Handler, error)
 	}
 )

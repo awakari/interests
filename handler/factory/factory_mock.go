@@ -1,21 +1,22 @@
 package factory
 
 import (
-	"synapse"
+	"synapse/handler"
+	"synapse/subscription"
 )
 
 type (
 	factoryMock struct {
-		handler synapse.Handler
+		handler handler.Handler
 	}
 )
 
-func NewFactoryMock(handler synapse.Handler) Factory {
+func NewFactoryMock(handler handler.Handler) Factory {
 	return factoryMock{
 		handler: handler,
 	}
 }
 
-func (f factoryMock) NewHandler(s synapse.Subscription) (synapse.Handler, error) {
+func (f factoryMock) NewHandler(s subscription.Subscription) (handler.Handler, error) {
 	return f.handler, nil
 }

@@ -1,19 +1,19 @@
 package handler
 
 import (
-	"synapse"
 	"synapse/handler/factory"
+	"synapse/subscription"
 )
 
 type (
 	serviceMock struct {
-		loadFunc func(s synapse.Subscription) (synapse.Handler, error)
-		storage  map[synapse.SubscriptionId]synapse.Handler
+		loadFunc func(s subscription.Subscription) (Handler, error)
+		storage  map[subscription.Id]Handler
 	}
 )
 
-func NewServiceMock(factorySvc factory.Service, storage map[synapse.SubscriptionId]synapse.Handler) Service {
-	loadFunc := func(s synapse.Subscription) (synapse.Handler, error) {
+func NewServiceMock(factorySvc factory.Service, storage map[subscription.Id]Handler) Service {
+	loadFunc := func(s subscription.Subscription) (Handler, error) {
 		f, err := factorySvc.Get(s.HandlerFactoryName)
 		if err != nil {
 			return nil, err
@@ -26,8 +26,8 @@ func NewServiceMock(factorySvc factory.Service, storage map[synapse.Subscription
 	}
 }
 
-func (svc serviceMock) Resolve(ss []synapse.Subscription) ([]synapse.Handler, error) {
-	hs := make([]synapse.Handler, 0, len(ss))
+func (svc serviceMock) Resolve(ss []subscription.Subscription) ([]Handler, error) {
+	hs := make([]Handler, 0, len(ss))
 	for _, s := range ss {
 		h, present := svc.storage[s.Id]
 		if !present {

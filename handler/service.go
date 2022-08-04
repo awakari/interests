@@ -2,8 +2,8 @@ package handler
 
 import (
 	"github.com/goburrow/cache"
-	"synapse"
 	"synapse/handler/factory"
+	"synapse/subscription"
 	"time"
 )
 
@@ -20,7 +20,7 @@ type (
 	Service interface {
 
 		// Resolve returns all handlers by the subscriptions
-		Resolve(ss []synapse.Subscription) ([]synapse.Handler, error)
+		Resolve(ss []subscription.Subscription) ([]Handler, error)
 	}
 
 	service struct {
@@ -30,7 +30,7 @@ type (
 
 func NewService(factorySvc factory.Service) Service {
 	loadFunc := func(key cache.Key) (cache.Value, error) {
-		return load(factorySvc, key.(synapse.Subscription))
+		return load(factorySvc, key.(subscription.Subscription))
 	}
 	registry := cache.NewLoadingCache(
 		loadFunc,
@@ -44,19 +44,19 @@ func NewService(factorySvc factory.Service) Service {
 	}
 }
 
-func (svc service) Resolve(ss []synapse.Subscription) ([]synapse.Handler, error) {
-	hs := make([]synapse.Handler, 0, len(ss))
+func (svc service) Resolve(ss []subscription.Subscription) ([]Handler, error) {
+	hs := make([]Handler, 0, len(ss))
 	for _, s := range ss {
 		h, err := svc.registry.Get(s)
 		if err != nil {
-			return []synapse.Handler{}, err
+			return []Handler{}, err
 		}
-		hs = append(hs, h.(synapse.Handler))
+		hs = append(hs, h.(Handler))
 	}
 	return hs, nil
 }
 
-func load(factorySvc factory.Service, s synapse.Subscription) (synapse.Handler, error) {
+func load(factorySvc factory.Service, s subscription.Subscription) (Handler, error) {
 	f, err := factorySvc.Get(s.HandlerFactoryName)
 	if err != nil {
 		return nil, err
