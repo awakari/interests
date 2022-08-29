@@ -2,44 +2,22 @@ package subscriptions
 
 type (
 
-	// Subscription connects source metadata filters with the destination message handler(s).
+	// Subscription represents the storage-level subscription entry.
 	Subscription struct {
 
-		// Version is the subscription version used for optimistic update lock purpose.
-		Version uint64
-
-		Data
-	}
-
-	// Data contains the subscription details
-	Data struct {
-
-		// Name is the unique name of the Subscription.
+		// Name represents a unique subscription name.
 		Name string
 
-		// Description of the Subscription
+		// Version represents a Subscription entry version for the optimistic lock purpose.
+		Version uint64
+
+		// Description represents an optional human readable Subscription description.
 		Description string
 
-		// Matches contains the MetadataConstraint that should match the whole input string.
-		Matches MetadataConstraint
+		// Includes represents a MatcherGroup to include the Subscription to query results.
+		Includes MatcherGroup
 
-		// ContainsMatches contains the MetadataConstraint that should match a part of the input string.
-		ContainsMatches MetadataConstraint
+		// Excludes represents a MatcherGroup to exclude the Subscription from the query results.
+		Excludes MatcherGroup
 	}
-
-	// MetadataConstraint is the subscription filter for the incoming message metadata.
-	MetadataConstraint struct {
-
-		// Necessary contains the patterns those all should be present in the message metadata.
-		Necessary MetadataPatterns
-
-		// Sufficient contains the patterns those any should be present in the message metadata.
-		Sufficient MetadataPatterns
-
-		// Not contains the patterns those should not be present in the message metadata.
-		Not MetadataPatterns
-	}
-
-	// MetadataPatterns is the map of patterns by the key, e.g. "subject": ["foo*", "?bar"].
-	MetadataPatterns map[string][]string
 )

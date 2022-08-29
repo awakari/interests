@@ -38,9 +38,14 @@ func (svc serviceMock) Delete(ctx context.Context, code Code) (err error) {
 	return
 }
 
-func (svc serviceMock) SearchMatches(ctx context.Context, input string, limit uint32, cursor Code) (codes []Code, err error) {
-	if svc.storage[input] {
-		codes = append(codes, Code(input))
+func (svc serviceMock) SearchMatchesBulk(ctx context.Context, md Metadata, limit uint32, cursor *BulkCursor) (page map[string][]Code, err error) {
+	page = make(map[string][]Code, len(md))
+	for k, v := range md {
+		var codes []Code
+		if svc.storage[v] {
+			codes = append(codes, Code(v))
+		}
+		page[k] = codes
 	}
 	return
 }

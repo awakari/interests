@@ -174,11 +174,11 @@ Example data:
 
 #### 5.2.1.3. Matcher
 
-| Attribute    | Type          | Description                                                                                                  |
-|--------------|---------------|--------------------------------------------------------------------------------------------------------------|
-| key          | String        | Metadata key                                                                                                 |
-| pattern_code | Array of byte | Metadata value matching pattern external id                                                                  |
-| partial      | Boolean       | If `true`, then allowed match any lexeme in a tokenized metadata value. Otherwise entire value should match. |
+| Attribute    | Type          | Description                                                                                                   |
+|--------------|---------------|---------------------------------------------------------------------------------------------------------------|
+| key          | String        | Metadata key                                                                                                  |
+| pattern_code | Array of byte | Metadata value matching pattern external id                                                                   |
+| partial      | Boolean       | If `true`, then allowed match any lexeme in a tokenized metadata value. Otherwise, entire value should match. |
 
 ### 5.2.2. Resolution Algorithm
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"subscriptions/patterns"
 	"subscriptions/storage"
+	"subscriptions/util"
 )
 
 const (
@@ -22,7 +23,7 @@ var (
 
 type (
 
-	// Metadata is the incoming message metadata to match the subscriptions.
+	// Metadata is the incoming message metadata to match a Subscription.
 	Metadata map[string]string
 
 	// MetadataPatternCodes is the map of the matched patterns by Metadata keys
@@ -44,31 +45,31 @@ type (
 		PatternId patterns.Code
 	}
 
-	// Service is a subscriptions service.
+	// Service is a Subscription CRUDL service.
 	Service interface {
 
-		// Create a subscription means subscribing.
-		// Returns ErrConflict if a subscriptions with the same name already present in the underlying storage.
-		Create(ctx context.Context, data Data) error
+		// Create a Subscription means subscribing.
+		// Returns ErrConflict if a Subscription with the same name already present in the underlying storage.
+		Create(ctx context.Context, sub Subscription) (err error)
 
-		// Read the specified subscription details.
-		// Returns ErrNotFound if subscription is missing in the underlying storage.
-		Read(ctx context.Context, name string) (*Data, error)
+		// Read the specified Subscription.
+		// Returns ErrNotFound if Subscription is missing in the underlying storage.
+		Read(ctx context.Context, name string) (sub Subscription, err error)
 
-		// Update creates or updates the existing subscription with the specified subscription Data.
-		// Returns ErrNotFound if subscription is missing with the same name and version in the underlying storage.
+		// Update replaces the existing Subscription.
+		// Returns ErrNotFound if missing with the same Subscription.Name and Subscription.Version in the underlying storage.
 		// In case of ErrNotFound it may be worth to Read the latest version again before Update retry.
-		Update(ctx context.Context, version uint64, data Data) error
+		Update(ctx context.Context, sub Subscription) (err error)
 
-		// Delete a subscription means unsubscribing.
-		// Returns ErrNotFound if subscription is missing in the underlying storage.
-		Delete(ctx context.Context, name string) error
+		// Delete a Subscription means unsubscribing.
+		// Returns ErrNotFound if Subscription with the specified Subscription.Name is missing in the underlying storage.
+		Delete(ctx context.Context, name string) (err error)
 
-		// List returns all known Subscription names with the pagination support.
-		List(ctx context.Context, limit uint32, cursor NameCursor) ([]string, error)
+		// ListNames returns all known Subscription names with the pagination support.
+		ListNames(ctx context.Context, limit uint32, cursor NameCursor) (page []string, err error)
 
-		// Resolve returns all known Subscription names those matching the given message metadata.
-		Resolve(ctx context.Context, limit uint32, cursor ResolveCursor, md Metadata) ([]string, error)
+		// ResolveNames returns all known Subscription names those matching the given message Metadata.
+		ResolveNames(ctx context.Context, limit uint32, cursor ResolveCursor, md Metadata) (page []string, err error)
 	}
 
 	service struct {
@@ -86,29 +87,31 @@ func NewService(patternsSvc patterns.Service, patternsPageLimit uint32, s storag
 	}
 }
 
-func (svc service) Create(ctx context.Context, data Data) (err error) {
-	return svc.Update(ctx, initialVersion, data)
+func (svc service) Create(ctx context.Context, sub Subscription) (err error) {
+	return nil
 }
 
-func (svc service) Read(ctx context.Context, name string) (*Data, error) {
-	return nil, nil // TODO)
+func (svc service) Read(ctx context.Context, name string) (sub Subscription, err error) {
+	return Subscription{}, nil
 }
 
-func (svc service) Update(ctx context.Context, version uint64, data Data) error {
-	//TODO implement me
-	panic("implement me")
+func (svc service) Update(ctx context.Context, sub Subscription) (err error) {
+	return nil
 }
 
-func (svc service) Delete(ctx context.Context, name string) error {
-	//TODO implement me
-	panic("implement me")
+func (svc service) Delete(ctx context.Context, name string) (err error) {
+	return nil
 }
 
-func (svc service) List(ctx context.Context, limit uint32, cursor NameCursor) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
+func (svc service) ListNames(ctx context.Context, limit uint32, cursor NameCursor) (page []string, err error) {
+	return nil, nil
 }
 
-func (svc service) Resolve(ctx context.Context, limit uint32, cursor ResolveCursor, md Metadata) (names []string, err error) {
-
+func (svc service) ResolveNames(ctx context.Context, limit uint32, cursor ResolveCursor, md Metadata) (page []string, err error) {
+	sortedKeys := util.SortedKeys(md)
+	for _, k := range sortedKeys {
+		if cursor.MetadataKey == nil || *cursor.MetadataKey <= k {
+			svc.s.FindCandidates(ctx, limit-uint32(len(page)), cursor.Name, k, patternCode)
+		}
+	}
 }

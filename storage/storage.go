@@ -2,7 +2,9 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"io"
+	"subscriptions/patterns"
 )
 
 type (
@@ -12,21 +14,32 @@ type (
 		io.Closer
 
 		// Create a subscription means subscribing.
-		Create(ctx context.Context, s Subscription) (string, error)
+		Create(ctx context.Context, sub Subscription) (err error)
 
 		// Read the specified subscription details.
-		Read(ctx context.Context, id string) (Subscription, error)
+		Read(ctx context.Context, name string) (sub Subscription, err error)
 
 		// Update the specified subscription with new details.
-		Update(ctx context.Context, id string, s Subscription) error
+		Update(ctx context.Context, sub Subscription) (err error)
 
 		// Delete a subscription means unsubscribing.
-		Delete(ctx context.Context, id string) error
+		Delete(ctx context.Context, name string) (err error)
 
-		// List returns all known Subscription ids with the pagination support that match the specified query.
-		List(ctx context.Context, limit uint32, cursor *string) ([]string, error)
+		// List returns all known Subscription.Name with the pagination support that match the specified query.
+		List(ctx context.Context, limit uint32, cursor *string) (page []string, err error)
 
-		// Resolve returns all known Subscription ids where the specified patterns are mentioned under the specified key.
-		Resolve(ctx context.Context, limit uint32, cursor *string, key string, patternCodes []PatternCode) ([]string, error)
+		// FindCandidates returns candidate subscriptions page where:<br/>
+		// * Subscription.Name is greater than the cursor:<br/>
+		// * and that have any Matcher in the Subscription.Includes MatcherGroup where:<br/>
+		//		* Matcher.Key equals to the specified one:<br/>
+		// 		* and that Matcher.PatternCode equals to the specified one.<br/>
+		FindCandidates(ctx context.Context, limit uint32, cursor *string, key string, patternCode patterns.Code) (page []Subscription, err error)
 	}
+
+	// Metadata is the incoming message metadata to match the subscriptions.
+	Metadata map[string]string
+)
+
+var (
+	ErrNotFound = errors.New("subscription was not found")
 )

@@ -1,21 +1,23 @@
 package storage
 
 type (
+
+	// Subscription represents the storage-level subscription entry.
 	Subscription struct {
-		Name            string
-		Version         uint64
-		Description     string
-		Matches         MetadataConstraint
-		ContainsMatches MetadataConstraint
+
+		// Name represents a unique subscription name.
+		Name string
+
+		// Version represents a Subscription entry version for the optimistic lock purpose.
+		Version uint64
+
+		// Description represents an optional human readable Subscription description.
+		Description string
+
+		// Includes represents a MatcherGroup to include the Subscription to query results.
+		Includes MatcherGroup
+
+		// Excludes represents a MatcherGroup to exclude the Subscription from the query results.
+		Excludes MatcherGroup
 	}
-
-	MetadataConstraint struct {
-		Required   MetadataPatterns
-		Sufficient MetadataPatterns
-		Excluding  MetadataPatterns
-	}
-
-	MetadataPatterns map[string][]PatternCode
-
-	PatternCode []byte
 )
