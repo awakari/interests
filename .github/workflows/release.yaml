@@ -2,9 +2,8 @@ name: Go
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
 
 jobs:
 
@@ -23,10 +22,17 @@ jobs:
         with:
           version: '3.x'
 
-      - name: Build
-        run: make build
-
       - name: Test
         run: make test
         env:
           DB_URI_TEST_MONGO: ${{ secrets.DB_URI_TEST_MONGO }}
+
+      - name: Registry login
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
+
+      - name: Release
+        run: make release

@@ -4,6 +4,8 @@
 *.dll
 *.so
 *.dylib
+subscriptions
+cover.tmp
 
 # Test binary, built with `go test -c`
 *.test
@@ -12,4 +14,10 @@
 *.out
 
 # Dependency directories (remove the comment below to include it)
-# vendor/
+vendor/
+**/*.pb.go
+**/*.krproj
+
+env.txt
+ghcr_io_pat.txt
+version.txt

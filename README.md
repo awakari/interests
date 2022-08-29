@@ -1,3 +1,164 @@
-# Synapse
-Synapse is a general purpose and cloud provider-agnostic message bus
+# Contents
 
+1. [Overview](#1-overview)<br/>
+   1.1. [Purpose](#11-purpose)<br/>
+   1.2. [Definitions](#12-definitions)<br/>
+2. [Configuration](#2-configuration)<br/>
+3. [Deployment](#3-deployment)<br/>
+   3.1. [Prerequisites](#31-prerequisites)<br/>
+   3.2. [Bare](#32-bare)<br/>
+   3.3. [Docker](#33-docker)<br/>
+   3.4. [K8s](#34-k8s)<br/>
+   &nbsp;&nbsp;&nbsp;3.4.1. [Helm](#341-helm) <br/>
+4. [Usage](#4-usage)<br/>
+5. [Design](#5-design)<br/>
+   5.1. [Requirements](#51-requirements)<br/>
+   5.2. [Approach](#52-approach)<br/>
+   5.3. [Limitations](#53-limitations)<br/>
+6. [Contributing](#6-contributing)<br/>
+   6.1. [Versioning](#61-versioning)<br/>
+   6.2. [Issue Reporting](#62-issue-reporting)<br/>
+   6.3. [Building](#63-building)<br/>
+   6.4. [Testing](#64-testing)<br/>
+   &nbsp;&nbsp;&nbsp;6.4.1. [Functional](#641-functional)<br/>
+   &nbsp;&nbsp;&nbsp;6.4.2. [Performance](#642-performance)<br/>
+   6.5. [Releasing](#65-releasing)<br/>
+
+# 1. Overview
+
+## 1.1. Purpose
+
+TODO
+
+## 1.2. Definitions
+
+TODO
+
+# 2. Configuration
+
+The service is configurable using the environment variables:
+
+| Variable     | Example value                                          | Description                                                                    |
+|--------------|--------------------------------------------------------|--------------------------------------------------------------------------------|
+| API_PORT     | `8081`                                                 | gRPC API port                                                                  |
+| DB_URI       | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                              |
+| DB_NAME      | `subscriptions`                                        | DB name to store the data                                                      |
+| DB_TBL_NAME  | `subscriptions`                                        | DB table name to store the tree data                                           |
+| PATTERNS_URI | `http://localhost:8080`                                | [Patterns](https://github.com/cloud-messaging/patterns) dependency service URI |
+
+# 3. Deployment
+
+## 3.1. Prerequisites
+
+A general note is that there should be a MongoDB cluster deployed to be used for storing the pattern data.
+It's possible to obtain a free cluster for testing purposes using [Atlas](https://www.mongodb.com/atlas/database).
+
+## 3.2. Bare
+
+Preconditions:
+1. Build patterns executive using ```make build```
+2. Run the [patterns](https://github.com/cloud-messaging/patterns) dependency service
+
+Then run the command:
+```shell
+API_PORT=8081 \
+DB_URI=mongodb+srv://localhost/?retryWrites=true&w=majority \
+DB_NAME=patterns \
+DB_TBL_NAME=tree \
+PATTERNS_URI=http://localhost:8081 \
+./subscriptions
+```
+
+## 3.3. Docker
+
+TODO: run the patterns and subscriptions in the same network
+
+alternatively, it's possible to build and run the new docker image in place using the command:
+(note that the command below requires all env vars to be set in the file `env.txt`)
+
+```shell
+make run
+```
+
+## 3.4. K8s
+
+TODO
+
+### 3.4.1. Helm
+
+TODO
+
+# 4. Usage
+
+The service provides basic gRPC interface to perform the operations on patterns.
+There's a [Kreya](https://kreya.app/) gRPC client application that can be used for the testing purpose.
+
+TODO: screenshot
+
+The service provides few basic operations on subscriptions.
+
+TODO: operations subsections
+
+# 5. Design
+
+## 5.1. Requirements
+
+5.1.1. Resolve subscriptions by the message metadata (basic `match(pattern)` feature)
+5.1.2. Split input message metadata values to lexemes and match against each lexeme (`contains_match(pattern)`)
+5.1.3. Support subscription logics (`and`, `or`, `not`)
+5.1.4. Results pagination for the subscriptions query by message results
+
+## 5.2. Approach
+
+TODO
+
+#### 5.2.2.2. Results Pagination
+
+The limit and cursor search parameters are used to support the results' pagination.
+
+TODO
+
+## 5.3. Limitations
+
+TODO
+
+# 6. Contributing
+
+## 6.1. Versioning
+
+The service uses the [semantic versioning](http://semver.org/).
+The single source of the version info is constant `version` declared in the [cmd/main.go](cmd/main.go) file.
+The script [scripts/version.sh](scripts/version.sh) is used to extract that version.
+
+## 6.2. Issue Reporting
+
+TODO
+
+## 6.3. Building
+
+```shell
+make build
+```
+Generates the sources from proto files, compiles and creates the `patterns` executable.
+
+## 6.4. Testing
+
+### 6.4.1. Functional
+
+```shell
+make test
+```
+
+### 6.4.2. Performance
+
+TODO
+
+## 6.5. Releasing
+
+To release a new version (e.g. `1.2.3`) it's enough to put a git tag:
+```shell
+git tag -v1.2.3
+git push --tags
+```
+
+The corresponding CI job is started to build a docker image and push it with the specified tag (+latest).

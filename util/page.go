@@ -24,6 +24,6 @@ type (
 		CursorRef *C
 
 		// Limit query result count
-		Limit uint
+		Limit uint32
 	}
 )

@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "./patterns/api/grpc";
+
+service Service {
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Read(ReadRequest) returns (ReadResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc SearchMatches(SearchMatchesRequest) returns (SearchMatchesResponse);
+}
+
+message CreateRequest {
+  string src = 1;
+}
+
+message CreateResponse {
+  string err = 1;
+  bytes path = 2;
+}
+
+message ReadRequest {
+  bytes path =1;
+}
+
+message ReadResponse {
+  string err = 1;
+  string src = 2;
+}
+
+message DeleteRequest {
+  bytes path = 1;
+}
+
+message DeleteResponse {
+  string err = 1;
+}
+
+message SearchMatchesRequest {
+  string input = 1;
+  uint32 limit = 2;
+  bytes cursor = 3;
+}
+
+message SearchMatchesResponse {
+  string err = 1;
+  repeated bytes results = 2;
+}
