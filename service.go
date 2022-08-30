@@ -12,8 +12,11 @@ const (
 )
 
 var (
+
+	// ErrConflict indicates the subscription exists in the underlying storage and can not be created.
 	ErrConflict = errors.New("subscription already exists")
 
+	// ErrNotFound indicates the subscription is missing in the storage and can not be read/updated/deleted.
 	ErrNotFound = errors.New("subscription was not found")
 )
 
@@ -26,10 +29,20 @@ type (
 	// MetadataPatternIds is the map of the matched patterns by SortedMetadata keys
 	MetadataPatternIds map[string][]patterns.Id
 
-	Cursor struct {
+	// NameCursor represents the Subscription name cursor.
+	NameCursor *string
+
+	// ResolveCursor represents the Subscription resolution cursors.
+	ResolveCursor struct {
+
+		// Name represents the last Subscription name.
+		Name NameCursor
+
+		// MetadataKey represents the last input metadata key used to resolve.
 		MetadataKey *string
-		PatternId   patterns.Id
-		Name        *string
+
+		// PatternId represents the last patterns.Id used to resolve.
+		PatternId patterns.Id
 	}
 
 	// Service is a subscriptions service.
@@ -53,10 +66,10 @@ type (
 		Delete(ctx context.Context, name string) error
 
 		// List returns all known Subscription names with the pagination support.
-		List(ctx context.Context, limit uint32, cursor *string) ([]string, error)
+		List(ctx context.Context, limit uint32, cursor NameCursor) ([]string, error)
 
 		// Resolve returns all known Subscription names those matching the given message metadata.
-		Resolve(ctx context.Context, limit uint32, cursor Cursor, md SortedMetadata) ([]string, error)
+		Resolve(ctx context.Context, limit uint32, cursor ResolveCursor, md SortedMetadata) ([]string, error)
 	}
 
 	service struct {
@@ -92,37 +105,75 @@ func (svc service) Delete(ctx context.Context, name string) error {
 	panic("implement me")
 }
 
-func (svc service) List(ctx context.Context, limit uint32, cursor *string) ([]string, error) {
+func (svc service) List(ctx context.Context, limit uint32, cursor NameCursor) ([]string, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (svc service) Resolve(ctx context.Context, limit uint32, cursor Cursor, md SortedMetadata) (names []string, err error) {
+func (svc service) Resolve(ctx context.Context, limit uint32, cursor ResolveCursor, md SortedMetadata) (names []string, err error) {
 	keyCursor := cursor.MetadataKey
 	patternCursor := cursor.PatternId
 	nameCursor := cursor.Name
-	var namesPage []string
+	var patternIds []patterns.Id
+	var nextNames []string
 	for k, v := range md {
 		if keyCursor != nil && *keyCursor < k {
-			var patternIds []patterns.Id
-			for {
-				patternIds, err = svc.patternsSvc.SearchMatches(ctx, v, svc.patternsPageLimit, patternCursor)
-				if err == nil {
-					if len(patternIds) > 0 {
-						patternCursor = patternIds[len(patternIds)-1]
-						for {
-							namesPage, err = svc.s.Resolve(limit-uint32(len(names)), nameCursor, patternIds)
-							if err == nil {
-								if len(names) > 0 {
-									nameCursor = &namesPage[len(namesPage)-1]
-								}
-							}
-						}
-					} else {
-						break
-					}
+			patternIds, nextNames, err = svc.resolvePatterns(ctx, limit, k, v, patternCursor, nameCursor)
+			if err == nil {
+				if len(nextNames) > 0 {
+					nameCursor = &nextNames[len(nextNames)-1]
+					names = append(names, nextNames...)
 				}
+				if len(patternIds) > 0 {
+					patternCursor = patternIds[len(patternIds)-1]
+				}
+			} else {
+				break
 			}
+		}
+	}
+	return
+}
+
+func (svc service) resolvePatterns(ctx context.Context, limit uint32, mdKey string, mdVal string, patternCursor patterns.Id, nameCursor NameCursor) (patternIds []patterns.Id, names []string, err error) {
+	var nextNames []string
+	for {
+		patternIds, err = svc.patternsSvc.SearchMatches(ctx, mdVal, svc.patternsPageLimit, patternCursor)
+		if err == nil {
+			if len(patternIds) > 0 {
+				patternCursor = patternIds[len(patternIds)-1]
+				nextNames, err = svc.resolveNames(ctx, limit-uint32(len(names)), mdKey, patternIds, nameCursor)
+				if err == nil {
+					if len(nextNames) > 0 {
+						nameCursor = &nextNames[len(nextNames)-1]
+						names = append(names, nextNames...)
+					}
+				} else {
+					break
+				}
+			} else {
+				break
+			}
+		} else {
+			break
+		}
+	}
+	return
+}
+
+func (svc service) resolveNames(ctx context.Context, limit uint32, mdKey string, patternIds []patterns.Id, cursor NameCursor) (names []string, err error) {
+	var page []string
+	for {
+		page, err = svc.s.Resolve(ctx, limit-uint32(len(names)), cursor, mdKey, patternIds)
+		if err == nil {
+			if len(names) > 0 {
+				cursor = &page[len(page)-1]
+				names = append(names, page...)
+			} else {
+				break
+			}
+		} else {
+			break
 		}
 	}
 	return

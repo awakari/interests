@@ -17,11 +17,11 @@ message CreateRequest {
 
 message CreateResponse {
   string err = 1;
-  bytes path = 2;
+  bytes code = 2;
 }
 
 message ReadRequest {
-  bytes path =1;
+  bytes code =1;
 }
 
 message ReadResponse {
