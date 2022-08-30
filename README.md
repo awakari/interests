@@ -14,6 +14,10 @@
 5. [Design](#5-design)<br/>
    5.1. [Requirements](#51-requirements)<br/>
    5.2. [Approach](#52-approach)<br/>
+   &nbsp;&nbsp;&nbsp;5.2.1. [Data Schema](#521-data-schema)<br/>
+   &nbsp;&nbsp;&nbsp;5.2.2. [Logic Actions](#522-logic-actions)<br/>
+   &nbsp;&nbsp;&nbsp;5.2.3. [Resolution Algorithm](#523-resolution-algorithm)<br/>
+   &nbsp;&nbsp;&nbsp;5.2.4 [Results Pagination](#524-results-pagination)<br/>
    5.3. [Limitations](#53-limitations)<br/>
 6. [Contributing](#6-contributing)<br/>
    6.1. [Versioning](#61-versioning)<br/>
@@ -90,7 +94,7 @@ TODO
 
 # 4. Usage
 
-The service provides basic gRPC interface to perform the operations on patterns.
+The service provides basic gRPC interface to perform the operation on subscriptions.
 There's a [Kreya](https://kreya.app/) gRPC client application that can be used for the testing purpose.
 
 TODO: screenshot
@@ -103,16 +107,76 @@ TODO: operations subsections
 
 ## 5.1. Requirements
 
-5.1.1. Resolve subscriptions by the message metadata (basic `match(pattern)` feature)
-5.1.2. Split input message metadata values to lexemes and match against each lexeme (`contains_match(pattern)`)
-5.1.3. Support subscription logics (`and`, `or`, `not`)
-5.1.4. Results pagination for the subscriptions query by message results
+| #     | Summary          | Description                                                                         |
+|-------|------------------|-------------------------------------------------------------------------------------|
+| REQ-1 | Basic matching   | Resolve subscriptions matching the input value                                      |
+| REQ-2 | Logic            | Support subscription logics for the multiple key-value matches (*and*, *or*, *not*) |
+| REQ-3 | Partial matching | Split input metadata values to lexemes and match against each lexeme                |
+| REQ-4 | Pagination       | Support query results pagination                                                    |
 
 ## 5.2. Approach
 
-TODO
+### 5.2.1. Data Schema
 
-#### 5.2.2.2. Results Pagination
+A subscription is being stored as a set of one or multiple subscription-to-key matcher records.
+
+| Attribute   | Type                         | Description                                                                            | 
+|-------------|------------------------------|----------------------------------------------------------------------------------------|
+| Id          | Id                           | External entry identifier                                                              |
+| Name        | String                       | A subscription name, unique per subscription                                           |
+| Key         | String                       | Metadata key, unique inside a subscription                                             |
+| PatternCode | Byte Array                   | External pattern identifier to match a metadata value                                  |
+| Partial     | Boolean                      | If true, allowed match any lexeme in a tokenized metadata value                        |
+| Action      | [Action](#522-logic-actions) | Determines whether the pattern matching logic for the given key-value pair (see below) |
+
+Example data:
+
+| Id  | Name            | Key        | PatternCode | Partial | Action    |
+|-----|-----------------|------------|-------------|---------|-----------|
+| 0   | "subscription0" | "subject"  | "orders"    | `true`  | `exclude` | 
+| 1   | "subscription1" | "location" | "Helsinki"  | `false` | `require` | 
+| 2   | "subscription1" | "reply-to" | "me"        | `true`  | `match`   | 
+
+### 5.2.2. Logic Actions
+
+| Action    | Logic | Meaning                                                                                                          |
+|-----------|-------|------------------------------------------------------------------------------------------------------------------|
+| `match`   | `OR`  | Any match is ***sufficient*** to include the corresponding subscription to results                               |
+| `exclude` | `NOT` | Any match will exclude the corresponding subscription from the results                                           |
+| `require` | `AND` | All subscription's entries having `require` action are necessary to match to include the subscription in results |
+
+
+### 5.2.3. Resolution Algorithm
+
+Pseudocode:
+```text
+- for each metadata ($key, $value) pair in the sorted $metadata map:
+    - for each $patternCode resolved by $value in the external service:
+        - for each ($id, $name) subscriptions entry where 
+            Key=$key 
+                and 
+            PatternCode=$patternCode
+                and (
+                    Action == require 
+                        or 
+                    Action == match
+                )
+            - query all ($excludeKey, $excludePatternCode) pairs at once where 
+                Name == $name 
+                    and 
+                Action == exclude
+            - check there's no matches in the $metadata map for any ($excludeKey, $excludePatternCode) pair
+            - if not excluded in the previous step:
+                - query all ($requireKey, $requirePatternCode) pairs at once where 
+                    Id != $id
+                        and
+                    Name == $name 
+                        and 
+                    Action == require
+                - check all are matching the $metadata map and include to results if it so
+```
+
+### 5.2.4. Results Pagination
 
 The limit and cursor search parameters are used to support the results' pagination.
 
@@ -120,7 +184,10 @@ TODO
 
 ## 5.3. Limitations
 
-TODO
+| #     | Summary                        | Description                                                                                                                                   |
+|-------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| LIM-1 | Excluding only is not allowed  | A subscription should have at least 1 key entry with non `exclude` Action. Otherwise the subscription never matches anything in practice.     |
+| LIM-2 | Multiple required key matchers | A subscription should have at least 2 key entries with `require` Action. If single only, then `require` type should be replaced with `match`. |
 
 # 6. Contributing
 
