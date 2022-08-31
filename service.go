@@ -22,12 +22,11 @@ var (
 
 type (
 
-	// SortedMetadata is the incoming message metadata to match the subscriptions.
-	// Note that keys should be sorted.
-	SortedMetadata map[string]string
+	// Metadata is the incoming message metadata to match the subscriptions.
+	Metadata map[string]string
 
-	// MetadataPatternIds is the map of the matched patterns by SortedMetadata keys
-	MetadataPatternIds map[string][]patterns.Code
+	// MetadataPatternCodes is the map of the matched patterns by Metadata keys
+	MetadataPatternCodes map[string][]patterns.Code
 
 	// NameCursor represents the Subscription name cursor.
 	NameCursor *string
@@ -69,7 +68,7 @@ type (
 		List(ctx context.Context, limit uint32, cursor NameCursor) ([]string, error)
 
 		// Resolve returns all known Subscription names those matching the given message metadata.
-		Resolve(ctx context.Context, limit uint32, cursor ResolveCursor, md SortedMetadata) ([]string, error)
+		Resolve(ctx context.Context, limit uint32, cursor ResolveCursor, md Metadata) ([]string, error)
 	}
 
 	service struct {
@@ -110,7 +109,7 @@ func (svc service) List(ctx context.Context, limit uint32, cursor NameCursor) ([
 	panic("implement me")
 }
 
-func (svc service) Resolve(ctx context.Context, limit uint32, cursor ResolveCursor, md SortedMetadata) (names []string, err error) {
+func (svc service) Resolve(ctx context.Context, limit uint32, cursor ResolveCursor, md Metadata) (names []string, err error) {
 	keyCursor := cursor.MetadataKey
 	patternCursor := cursor.PatternId
 	nameCursor := cursor.Name

@@ -4,13 +4,25 @@ import (
 	"context"
 	"errors"
 	"google.golang.org/grpc"
-	grpcApi "subscriptions/patterns/api/grpc"
+	grpcApi "subscriptions/api/grpc/patterns"
 )
 
 type (
 
 	// Code is a pattern identifier. Generally, not equal to the source pattern string.
 	Code []byte
+
+	Metadata map[string]string
+
+	// BulkCursor represents the bulk search matches cursor.
+	BulkCursor struct {
+
+		// Key is the last metadata key cursor.
+		Key string
+
+		// PatternCode is the last pattern Code.
+		PatternCode Code
+	}
 
 	// Service is CRUDL operations interface for the patterns.
 	Service interface {
@@ -27,12 +39,11 @@ type (
 		// May also return ErrInternal when fails.
 		Delete(ctx context.Context, code Code) error
 
-		// SearchMatches finds all patterns Code matching the specified input.
-		// Returns the page of results with count not more than the limit specified in the Query.
-		// To search the next page use the last returned result from the previous page and set it to Query.Cursor.
-		// Returns the empty results page ff search is complete (no more results).
-		// May return ErrInternal when fails.
-		SearchMatches(ctx context.Context, input string, limit uint32, cursor Code) ([]Code, error)
+		// SearchMatchesBulk finds all patterns Code matching any of the specified metadata values.
+		// This is the convenience bulk function returning the codes grouped by the input metadata keys.
+		// A client should use the greatest key and last pattern Code from the previous results page to provide a next cursor.
+		// Returns the page of results with count not more than the limit specified in the query.
+		SearchMatchesBulk(ctx context.Context, md Metadata, limit uint32, cursor *BulkCursor) (page map[string][]Code, err error)
 	}
 
 	service struct {
@@ -92,18 +103,30 @@ func (svc service) Delete(ctx context.Context, code Code) (err error) {
 	return
 }
 
-func (svc service) SearchMatches(ctx context.Context, input string, limit uint32, cursor Code) (codes []Code, err error) {
-	req := &grpcApi.SearchMatchesRequest{
-		Input:  input,
-		Limit:  limit,
-		Cursor: cursor,
+func (svc service) SearchMatchesBulk(ctx context.Context, md Metadata, limit uint32, cursor *BulkCursor) (page map[string][]Code, err error) {
+	var reqCursor *grpcApi.BulkCursor = nil
+	if cursor != nil {
+		reqCursor = &grpcApi.BulkCursor{
+			Key:         cursor.Key,
+			PatternCode: cursor.PatternCode,
+		}
 	}
-	var resp *grpcApi.SearchMatchesResponse
-	resp, err = svc.client.SearchMatches(ctx, req)
+	req := &grpcApi.SearchMatchesBulkRequest{
+		Md:     md,
+		Limit:  limit,
+		Cursor: reqCursor,
+	}
+	var resp *grpcApi.SearchMatchesBulkResponse
+	resp, err = svc.client.SearchMatchesBulk(ctx, req)
 	if err == nil {
-		results := resp.GetResults()
-		for _, r := range results {
-			codes = append(codes, r)
+		results := resp.Results
+		page = make(map[string][]Code, len(results))
+		for k, respCodes := range results {
+			var codes []Code
+			for _, c := range respCodes.Value {
+				codes = append(codes, c)
+			}
+			page[k] = codes
 		}
 	}
 	return

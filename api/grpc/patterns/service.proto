@@ -2,13 +2,13 @@ syntax = "proto3";
 
 package grpc;
 
-option go_package = "./patterns/api/grpc";
+option go_package = "./api/grpc/patterns";
 
 service Service {
   rpc Create(CreateRequest) returns (CreateResponse);
   rpc Read(ReadRequest) returns (ReadResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
-  rpc SearchMatches(SearchMatchesRequest) returns (SearchMatchesResponse);
+  rpc SearchMatchesBulk(SearchMatchesBulkRequest) returns (SearchMatchesBulkResponse);
 }
 
 message CreateRequest {
@@ -37,13 +37,22 @@ message DeleteResponse {
   string err = 1;
 }
 
-message SearchMatchesRequest {
-  string input = 1;
+message SearchMatchesBulkRequest {
+  map<string, string> md = 1;
   uint32 limit = 2;
-  bytes cursor = 3;
+  optional BulkCursor cursor = 3;
 }
 
-message SearchMatchesResponse {
+message SearchMatchesBulkResponse {
   string err = 1;
-  repeated bytes results = 2;
+  map<string, Codes> results = 2;
+}
+
+message BulkCursor {
+  string key = 1;
+  bytes patternCode = 2;
+}
+
+message Codes {
+  repeated bytes value = 1;
 }
