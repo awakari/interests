@@ -120,14 +120,20 @@ TODO: operations subsections
 
 A subscription is being stored as a set of one or multiple subscription-to-key matcher records.
 
+| Attribute   | Type    | Description                                                                                                  |
+|-------------|---------|--------------------------------------------------------------------------------------------------------------|
+| Key         | String  | Metadata key                                                                                                 |
+| PatternCode | Bytes   | External pattern identifier to match a metadata value                                                        |
+| Partial     | Boolean | If `true`, then allowed match any lexeme in a tokenized metadata value. Otherwise entire value should match. |
+| Exclude     | Boolean | If `true`, then matching excludes the corresponding subscription, otherwise includes.                        |
+
 | Attribute   | Type                         | Description                                                                            | 
 |-------------|------------------------------|----------------------------------------------------------------------------------------|
 | Id          | Id                           | External entry identifier                                                              |
 | Name        | String                       | A subscription name, unique per subscription                                           |
 | Key         | String                       | Metadata key, unique inside a subscription                                             |
-| PatternCode | Byte Array                   | External pattern identifier to match a metadata value                                  |
-| Partial     | Boolean                      | If true, allowed match any lexeme in a tokenized metadata value                        |
-| Action      | [Action](#522-logic-actions) | Determines whether the pattern matching logic for the given key-value pair (see below) |
+| Includes |
+| Excludes |
 
 Example data:
 
