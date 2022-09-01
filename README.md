@@ -118,30 +118,66 @@ TODO: operations subsections
 
 ### 5.2.1. Data Schema
 
-A subscription is being stored as a set of one or multiple subscription-to-key matcher records.
-
-| Attribute   | Type    | Description                                                                                                  |
-|-------------|---------|--------------------------------------------------------------------------------------------------------------|
-| Key         | String  | Metadata key                                                                                                 |
-| PatternCode | Bytes   | External pattern identifier to match a metadata value                                                        |
-| Partial     | Boolean | If `true`, then allowed match any lexeme in a tokenized metadata value. Otherwise entire value should match. |
-| Exclude     | Boolean | If `true`, then matching excludes the corresponding subscription, otherwise includes.                        |
-
-| Attribute   | Type                         | Description                                                                            | 
-|-------------|------------------------------|----------------------------------------------------------------------------------------|
-| Id          | Id                           | External entry identifier                                                              |
-| Name        | String                       | A subscription name, unique per subscription                                           |
-| Key         | String                       | Metadata key, unique inside a subscription                                             |
-| Includes |
-| Excludes |
-
 Example data:
 
-| Id  | Name            | Key        | PatternCode | Partial | Action    |
-|-----|-----------------|------------|-------------|---------|-----------|
-| 0   | "subscription0" | "subject"  | "orders"    | `true`  | `exclude` | 
-| 1   | "subscription1" | "location" | "Helsinki"  | `false` | `require` | 
-| 2   | "subscription1" | "reply-to" | "me"        | `true`  | `match`   | 
+```yaml
+- name: subscription0
+  version: 42
+  description: Orders that are not in Helsinki
+  includes:
+    all: false
+    matchers:
+     - key: subject
+       pattern_code: orders
+       partial: true
+  excludes:
+    all: false
+    matchers:
+    - key: location
+      pattern_code: Helsinki
+      partial: false
+```
+
+```yaml
+- name: subscription1
+  version: 0
+  description: Messages that have foo=bar and reply to address of John Doe
+  includes:
+    all: true
+    matchers:
+    - key: reply-to
+      pattern_code: john.doe@email.com
+      partial: false
+    - key: foo
+      pattern_code: bar
+      partial: false
+  excludes: {}
+```
+
+#### 5.2.1.1. Subscription
+
+| Attribute   | Type                                 | Description                                                 |
+|-------------|--------------------------------------|-------------------------------------------------------------|
+| Name        | String                               | Unique subscription name                                    |
+| Version     | Unsigned Integer                     | Subscription entry version for the optimistic lock purpose  |
+| Description | String                               | Human readable subscription description                     |
+| Includes    | [Matcher Group](#5212-matcher-group) | Matchers to include the subscription to query results       |
+| Excludes    | [Matcher Group](#5212-matcher-group) | Matchers to exclude the subscription from the query results |
+
+#### 5.2.1.2. Matcher Group
+
+| Attribute | Type                              | Description                                                                         |
+|-----------|-----------------------------------|-------------------------------------------------------------------------------------|
+| All       | Boolean                           | Defines whether **all** matchers in the group should match or **any** is sufficient |
+| Matchers  | Array of [Matcher](#5213-matcher) | Set of matchers in the group                                                        |
+
+#### 5.2.1.3. Matcher
+
+| Attribute    | Type          | Description                                                                                                  |
+|--------------|---------------|--------------------------------------------------------------------------------------------------------------|
+| Key          | String        | Metadata key                                                                                                 |
+| Pattern Code | Array of byte | Metadata value matching pattern external id                                                                  |
+| Partial      | Boolean       | If `true`, then allowed match any lexeme in a tokenized metadata value. Otherwise entire value should match. |
 
 ### 5.2.2. Logic Actions
 
@@ -156,30 +192,7 @@ Example data:
 
 Pseudocode:
 ```text
-- for each metadata ($key, $value) pair in the sorted $metadata map:
-    - for each $patternCode resolved by $value in the external service:
-        - for each ($id, $name) subscriptions entry where 
-            Key=$key 
-                and 
-            PatternCode=$patternCode
-                and (
-                    Action == require 
-                        or 
-                    Action == match
-                )
-            - query all ($excludeKey, $excludePatternCode) pairs at once where 
-                Name == $name 
-                    and 
-                Action == exclude
-            - check there's no matches in the $metadata map for any ($excludeKey, $excludePatternCode) pair
-            - if not excluded in the previous step:
-                - query all ($requireKey, $requirePatternCode) pairs at once where 
-                    Id != $id
-                        and
-                    Name == $name 
-                        and 
-                    Action == require
-                - check all are matching the $metadata map and include to results if it so
+TODO
 ```
 
 ### 5.2.4. Results Pagination
