@@ -15,7 +15,7 @@ type (
 		Excluding  MetadataPatterns
 	}
 
-	MetadataPatterns map[string][]PatternId
+	MetadataPatterns map[string][]PatternCode
 
-	PatternId []byte
+	PatternCode []byte
 )

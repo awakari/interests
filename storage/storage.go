@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"io"
-	"subscriptions/patterns"
 )
 
 type (
@@ -28,6 +27,6 @@ type (
 		List(ctx context.Context, limit uint32, cursor *string) ([]string, error)
 
 		// Resolve returns all known Subscription ids where the specified patterns are mentioned under the specified key.
-		Resolve(ctx context.Context, limit uint32, cursor *string, key string, patternIds []patterns.Id) ([]string, error)
+		Resolve(ctx context.Context, limit uint32, cursor *string, key string, patternCodes []PatternCode) ([]string, error)
 	}
 )

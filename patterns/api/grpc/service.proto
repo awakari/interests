@@ -30,7 +30,7 @@ message ReadResponse {
 }
 
 message DeleteRequest {
-  bytes path = 1;
+  bytes code = 1;
 }
 
 message DeleteResponse {
