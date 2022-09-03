@@ -3,8 +3,8 @@ package storage
 import (
 	"context"
 	"errors"
+	"github.com/meandros-messaging/subscriptions/service/patterns"
 	"io"
-	"subscriptions/patterns"
 )
 
 type (
@@ -33,11 +33,8 @@ type (
 		// * and that have any Matcher in the Subscription.Includes MatcherGroup where:<br/>
 		//		* Matcher.Key equals to the specified one:<br/>
 		// 		* and that Matcher.PatternCode equals to the specified one.<br/>
-		FindCandidates(ctx context.Context, limit uint32, cursor *string, key string, patternCode patterns.Code) (page []Subscription, err error)
+		FindCandidates(ctx context.Context, limit uint32, cursor *string, key string, patternCode patterns.PatternCode) (page []Subscription, err error)
 	}
-
-	// Metadata is the incoming message metadata to match the subscriptions.
-	Metadata map[string]string
 )
 
 var (

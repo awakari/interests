@@ -1,6 +1,7 @@
 package storage
 
 type (
+
 	// MatcherGroup represent a set of Matcher linked together with some option.
 	MatcherGroup struct {
 

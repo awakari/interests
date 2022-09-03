@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package grpc;
+package patterns;
 
 option go_package = "./api/grpc/patterns";
 
@@ -21,12 +21,12 @@ message CreateResponse {
 }
 
 message ReadRequest {
-  bytes code =1;
+  bytes code = 1;
 }
 
 message ReadResponse {
   string err = 1;
-  string src = 2;
+  Pattern pattern = 2;
 }
 
 message DeleteRequest {
@@ -45,14 +45,20 @@ message SearchMatchesBulkRequest {
 
 message SearchMatchesBulkResponse {
   string err = 1;
-  map<string, Codes> results = 2;
+  map<string, Patterns> results = 2;
+}
+
+message Patterns {
+  repeated Pattern values = 1;
+}
+
+message Pattern {
+  bytes code = 1;
+  string regex = 2;
+  string src = 3;
 }
 
 message BulkCursor {
   string key = 1;
   bytes patternCode = 2;
-}
-
-message Codes {
-  repeated bytes value = 1;
 }

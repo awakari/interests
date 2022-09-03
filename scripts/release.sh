@@ -1,8 +1,8 @@
 #!/bin/bash
 
-export SLUG=ghcr.io/cloud-messaging/subscriptions
+export SLUG=ghcr.io/meandros-messaging/subscriptions
 export VERSION=$(./scripts/version.sh)
-docker tag cloud-messaging/patterns "${SLUG}":"${VERSION}"
-docker tag cloud-messaging/patterns "${SLUG}":latest
+docker tag meandros-messaging/subscriptions "${SLUG}":"${VERSION}"
+docker tag meandros-messaging/subscriptions "${SLUG}":latest
 docker push "${SLUG}":"${VERSION}"
 docker push "${SLUG}":latest

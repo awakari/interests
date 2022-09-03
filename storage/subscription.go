@@ -1,5 +1,10 @@
 package storage
 
+import (
+	"bytes"
+	"github.com/meandros-messaging/subscriptions/service/patterns"
+)
+
 type (
 
 	// Subscription represents the storage-level subscription entry.
@@ -21,3 +26,16 @@ type (
 		Excludes MatcherGroup
 	}
 )
+
+func (sub Subscription) Matches(md Metadata, key string, patternCode patterns.PatternCode) (matches bool) {
+	includes := sub.Includes
+	if includes.All {
+		for _, m := range includes.Matchers {
+			// skip the matched before (key, patternCode) pair
+			if key != m.Key || !bytes.Equal(patternCode, m.PatternCode) && !m.Matches(md) {
+				matches = false
+				break
+			}
+		}
+	}
+}

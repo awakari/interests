@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/meandros-messaging/subscriptions/service/patterns"
+	"github.com/meandros-messaging/subscriptions/util"
 	"strings"
-	"subscriptions/patterns"
-	"subscriptions/util"
 )
 
 type (
@@ -76,7 +76,7 @@ func (s storageMock) List(ctx context.Context, limit uint32, cursor *string) (pa
 	return
 }
 
-func (s storageMock) FindCandidates(ctx context.Context, limit uint32, cursor *string, key string, patternCode patterns.Code) (page []Subscription, err error) {
+func (s storageMock) FindCandidates(ctx context.Context, limit uint32, cursor *string, key string, patternCode patterns.PatternCode) (page []Subscription, err error) {
 	sortedNames := util.SortedKeys(s.storage)
 	for _, name := range sortedNames {
 		if uint32(len(page)) >= limit {
@@ -94,6 +94,6 @@ func (s storageMock) FindCandidates(ctx context.Context, limit uint32, cursor *s
 	return
 }
 
-func matches(matcher Matcher, key string, patternCode patterns.Code) bool {
+func matches(matcher Matcher, key string, patternCode patterns.PatternCode) bool {
 	return key == matcher.Key && bytes.Equal(patternCode, matcher.PatternCode)
 }

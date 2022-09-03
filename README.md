@@ -47,7 +47,7 @@ The service is configurable using the environment variables:
 | DB_URI       | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                              |
 | DB_NAME      | `subscriptions`                                        | DB name to store the data                                                      |
 | DB_TBL_NAME  | `subscriptions`                                        | DB table name to store the tree data                                           |
-| PATTERNS_URI | `http://localhost:8080`                                | [Patterns](https://github.com/cloud-messaging/patterns) dependency service URI |
+| PATTERNS_URI | `http://localhost:8080`                                | [Patterns](https://github.com/meandros-messaging/patterns) dependency service URI |
 
 # 3. Deployment
 
@@ -60,14 +60,14 @@ It's possible to obtain a free cluster for testing purposes using [Atlas](https:
 
 Preconditions:
 1. Build patterns executive using ```make build```
-2. Run the [patterns](https://github.com/cloud-messaging/patterns) dependency service
+2. Run the [patterns](https://github.com/meandros-messaging/patterns) dependency service
 
 Then run the command:
 ```shell
 API_PORT=8081 \
 DB_URI=mongodb+srv://localhost/?retryWrites=true&w=majority \
-DB_NAME=patterns \
-DB_TBL_NAME=tree \
+DB_NAME=subscriptions \
+DB_TBL_NAME=subscriptions \
 PATTERNS_URI=http://localhost:8081 \
 ./subscriptions
 ```

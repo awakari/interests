@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	name           = "patterns"
+	name           = "subscriptions"
 	version        = "1.0.0"
 	envApiPort     = "API_PORT"
 	envDbUri       = "DB_URI"

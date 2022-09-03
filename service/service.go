@@ -1,11 +1,11 @@
-package subscriptions
+package service
 
 import (
 	"context"
 	"errors"
-	"subscriptions/patterns"
-	"subscriptions/storage"
-	"subscriptions/util"
+	"github.com/meandros-messaging/subscriptions/service/patterns"
+	"github.com/meandros-messaging/subscriptions/storage"
+	"github.com/meandros-messaging/subscriptions/util"
 )
 
 const (
@@ -23,12 +23,6 @@ var (
 
 type (
 
-	// Metadata is the incoming message metadata to match a Subscription.
-	Metadata map[string]string
-
-	// MetadataPatternCodes is the map of the matched patterns by Metadata keys
-	MetadataPatternCodes map[string][]patterns.Code
-
 	// NameCursor represents the Subscription name cursor.
 	NameCursor *string
 
@@ -42,7 +36,7 @@ type (
 		MetadataKey *string
 
 		// PatternId represents the last patterns.Code used to resolve.
-		PatternId patterns.Code
+		PatternId patterns.PatternCode
 	}
 
 	// Service is a Subscription CRUDL service.
@@ -50,16 +44,16 @@ type (
 
 		// Create a Subscription means subscribing.
 		// Returns ErrConflict if a Subscription with the same name already present in the underlying storage.
-		Create(ctx context.Context, sub Subscription) (err error)
+		Create(ctx context.Context, sub storage.Subscription) (err error)
 
 		// Read the specified Subscription.
 		// Returns ErrNotFound if Subscription is missing in the underlying storage.
-		Read(ctx context.Context, name string) (sub Subscription, err error)
+		Read(ctx context.Context, name string) (sub storage.Subscription, err error)
 
 		// Update replaces the existing Subscription.
 		// Returns ErrNotFound if missing with the same Subscription.Name and Subscription.Version in the underlying storage.
 		// In case of ErrNotFound it may be worth to Read the latest version again before Update retry.
-		Update(ctx context.Context, sub Subscription) (err error)
+		Update(ctx context.Context, sub storage.Subscription) (err error)
 
 		// Delete a Subscription means unsubscribing.
 		// Returns ErrNotFound if Subscription with the specified Subscription.Name is missing in the underlying storage.
@@ -69,7 +63,7 @@ type (
 		ListNames(ctx context.Context, limit uint32, cursor NameCursor) (page []string, err error)
 
 		// ResolveNames returns all known Subscription names those matching the given message Metadata.
-		ResolveNames(ctx context.Context, limit uint32, cursor ResolveCursor, md Metadata) (page []string, err error)
+		ResolveNames(ctx context.Context, limit uint32, cursor ResolveCursor, md storage.Metadata) (page []string, err error)
 	}
 
 	service struct {
@@ -87,15 +81,15 @@ func NewService(patternsSvc patterns.Service, patternsPageLimit uint32, s storag
 	}
 }
 
-func (svc service) Create(ctx context.Context, sub Subscription) (err error) {
+func (svc service) Create(ctx context.Context, sub storage.Subscription) (err error) {
 	return nil
 }
 
-func (svc service) Read(ctx context.Context, name string) (sub Subscription, err error) {
-	return Subscription{}, nil
+func (svc service) Read(ctx context.Context, name string) (sub storage.Subscription, err error) {
+	return storage.Subscription{}, nil
 }
 
-func (svc service) Update(ctx context.Context, sub Subscription) (err error) {
+func (svc service) Update(ctx context.Context, sub storage.Subscription) (err error) {
 	return nil
 }
 
@@ -107,7 +101,7 @@ func (svc service) ListNames(ctx context.Context, limit uint32, cursor NameCurso
 	return nil, nil
 }
 
-func (svc service) ResolveNames(ctx context.Context, limit uint32, cursor ResolveCursor, md Metadata) (page []string, err error) {
+func (svc service) ResolveNames(ctx context.Context, limit uint32, cursor ResolveCursor, md storage.Metadata) (page []string, err error) {
 	sortedKeys := util.SortedKeys(md)
 	for _, k := range sortedKeys {
 		if cursor.MetadataKey == nil || *cursor.MetadataKey <= k {

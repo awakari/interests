@@ -23,12 +23,12 @@ test: vet
 	rm -f ${COVERAGE_TMP_FILE_NAME}
 
 build: proto
-	CGO_ENABLED=0 GOOS=linux GOARCH= GOARM= go build -o ${BINARY_FILE_NAME} cmd/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH= GOARM= go build -o ${BINARY_FILE_NAME} main.go
 	chmod ugo+x ${BINARY_FILE_NAME}
 
 docker: build
 	./scripts/version.sh > ${VERSION_FILE_NAME}
-	docker build -t cloud-messaging/subscriptions .
+	docker build -t meandros-messaging/subscriptions .
 	rm -f ${VERSION_FILE_NAME}
 
 run: docker
@@ -38,7 +38,7 @@ run: docker
 		-p 8080:8080 \
 		--expose 8080 \
 		--env-file env.txt \
-		cloud-messaging/subscriptions
+		meandros-messaging/subscriptions
 
 release: docker
 	./scripts/release.sh

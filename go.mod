@@ -1,4 +1,4 @@
-module subscriptions
+module github.com/meandros-messaging/subscriptions
 
 go 1.19
 
