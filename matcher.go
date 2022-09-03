@@ -3,6 +3,7 @@ package subscriptions
 import "subscriptions/patterns"
 
 type (
+
 	// Matcher represents a key-pattern matching data.
 	Matcher struct {
 
@@ -16,3 +17,12 @@ type (
 		Partial bool
 	}
 )
+
+func (m Matcher) Matches(md Metadata) (matches bool) {
+	var input string
+	input, matches = md[m.Key]
+	if matches {
+
+	}
+	return
+}
