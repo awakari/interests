@@ -16,11 +16,11 @@ type (
 	}
 )
 
-func (m Matcher) Matches(md Metadata) (matches bool) {
+func (m Matcher) Matches(md Metadata) (matches bool, err error) {
 	var input string
 	input, matches = md[m.Key]
 	if matches {
-
+		matches, err = m.Pattern.Matches(input, m.Partial)
 	}
 	return
 }
