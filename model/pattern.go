@@ -1,4 +1,4 @@
-package patterns
+package model
 
 type (
 
@@ -6,7 +6,7 @@ type (
 	PatternCode []byte
 
 	Pattern struct {
-		Code  []byte
+		Code  PatternCode
 		Regex string
 		Src   string
 	}

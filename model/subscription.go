@@ -1,8 +1,7 @@
-package storage
+package model
 
 import (
 	"bytes"
-	"github.com/meandros-messaging/subscriptions/service/patterns"
 )
 
 type (
@@ -27,12 +26,12 @@ type (
 	}
 )
 
-func (sub Subscription) Matches(md Metadata, key string, patternCode patterns.PatternCode) (matches bool) {
+func (sub Subscription) Matches(md Metadata, key string, patternCode PatternCode) (matches bool) {
 	includes := sub.Includes
 	if includes.All {
 		for _, m := range includes.Matchers {
 			// skip the matched before (key, patternCode) pair
-			if key != m.Key || !bytes.Equal(patternCode, m.PatternCode) && !m.Matches(md) {
+			if key != m.Key || !bytes.Equal(patternCode, m.Pattern.Code) && !m.Matches(md) {
 				matches = false
 				break
 			}

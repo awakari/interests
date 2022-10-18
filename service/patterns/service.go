@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	apiGrpc "github.com/meandros-messaging/subscriptions/api/grpc/patterns"
-	"github.com/meandros-messaging/subscriptions/storage"
+	"github.com/meandros-messaging/subscriptions/model"
 	"google.golang.org/grpc"
 )
 
@@ -18,7 +18,7 @@ type (
 		Key string
 
 		// PatternCode is the last pattern Code.
-		PatternCode PatternCode
+		PatternCode model.PatternCode
 	}
 
 	// Service is CRUDL operations interface for the patterns.
@@ -26,21 +26,21 @@ type (
 
 		// Create adds the specified Pattern if not present yet. Returns the created pattern Code, error otherwise.
 		// May return ErrConcurrentUpdate, ErrInvalidPattern or ErrInternal when fails.
-		Create(ctx context.Context, src string) (PatternCode, error)
+		Create(ctx context.Context, src string) (model.Pattern, error)
 
 		// Read returns the Pattern by the specified Code if it exists. Otherwise, returns ErrNotFound.
 		// May also return ErrInternal when fails.
-		Read(ctx context.Context, code PatternCode) (Pattern, error)
+		Read(ctx context.Context, code model.PatternCode) (model.Pattern, error)
 
 		// Delete removes the pattern if present by the specified Code. Otherwise, returns ErrNotFound.
 		// May also return ErrInternal when fails.
-		Delete(ctx context.Context, code PatternCode) error
+		Delete(ctx context.Context, code model.PatternCode) error
 
 		// SearchMatchesBulk finds all patterns Code matching any of the specified metadata values.
 		// This is the convenience bulk function returning the codes grouped by the input metadata keys.
 		// A client should use the greatest key and last pattern Code from the previous results page to provide a next cursor.
 		// Returns the page of results with count not more than the limit specified in the query.
-		SearchMatchesBulk(ctx context.Context, md storage.Metadata, limit uint32, cursor *BulkCursor) (page map[string][]Pattern, err error)
+		SearchMatchesBulk(ctx context.Context, md model.Metadata, limit uint32, cursor *BulkCursor) (page map[string][]model.PatternCode, err error)
 	}
 
 	service struct {
@@ -68,19 +68,24 @@ func NewService(conn grpc.ClientConnInterface) Service {
 	return service{client: client}
 }
 
-func (svc service) Create(ctx context.Context, src string) (id PatternCode, err error) {
+func (svc service) Create(ctx context.Context, src string) (p model.Pattern, err error) {
 	req := &apiGrpc.CreateRequest{
 		Src: src,
 	}
 	var resp *apiGrpc.CreateResponse
 	resp, err = svc.client.Create(ctx, req)
 	if err == nil {
-		id = resp.GetCode()
+		respPattern := resp.Pattern
+		p = model.Pattern{
+			Code:  respPattern.Code,
+			Regex: respPattern.Regex,
+			Src:   respPattern.Src,
+		}
 	}
 	return
 }
 
-func (svc service) Read(ctx context.Context, code PatternCode) (p Pattern, err error) {
+func (svc service) Read(ctx context.Context, code model.PatternCode) (p model.Pattern, err error) {
 	req := &apiGrpc.ReadRequest{
 		Code: code,
 	}
@@ -91,7 +96,7 @@ func (svc service) Read(ctx context.Context, code PatternCode) (p Pattern, err e
 		if respPattern == nil {
 			err = fmt.Errorf("%w by code: %s", ErrNotFound, code)
 		} else {
-			p = Pattern{
+			p = model.Pattern{
 				Code:  respPattern.Code,
 				Regex: respPattern.Regex,
 				Src:   respPattern.Src,
@@ -101,7 +106,7 @@ func (svc service) Read(ctx context.Context, code PatternCode) (p Pattern, err e
 	return
 }
 
-func (svc service) Delete(ctx context.Context, code PatternCode) (err error) {
+func (svc service) Delete(ctx context.Context, code model.PatternCode) (err error) {
 	req := &apiGrpc.DeleteRequest{
 		Code: code,
 	}
@@ -109,7 +114,7 @@ func (svc service) Delete(ctx context.Context, code PatternCode) (err error) {
 	return
 }
 
-func (svc service) SearchMatchesBulk(ctx context.Context, md storage.Metadata, limit uint32, cursor *BulkCursor) (page map[string][]Pattern, err error) {
+func (svc service) SearchMatchesBulk(ctx context.Context, md model.Metadata, limit uint32, cursor *BulkCursor) (page map[string][]model.PatternCode, err error) {
 	var reqCursor *apiGrpc.BulkCursor = nil
 	if cursor != nil {
 		reqCursor = &apiGrpc.BulkCursor{
@@ -125,19 +130,14 @@ func (svc service) SearchMatchesBulk(ctx context.Context, md storage.Metadata, l
 	var resp *apiGrpc.SearchMatchesBulkResponse
 	resp, err = svc.client.SearchMatchesBulk(ctx, req)
 	if err == nil {
-		results := resp.Results
-		page = make(map[string][]Pattern, len(results))
-		for k, respPatterns := range results {
-			var ps []Pattern
-			for _, respPattern := range respPatterns.Values {
-				p := Pattern{
-					Code:  respPattern.Code,
-					Regex: respPattern.Regex,
-					Src:   respPattern.Src,
-				}
-				ps = append(ps, p)
+		respPage := resp.Page
+		page = make(map[string][]model.PatternCode, len(respPage))
+		for k, respCodes := range respPage {
+			var codes []model.PatternCode
+			for _, respCode := range respCodes.Values {
+				codes = append(codes, respCode)
 			}
-			page[k] = ps
+			page[k] = codes
 		}
 	}
 	return

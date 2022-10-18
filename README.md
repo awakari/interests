@@ -129,13 +129,17 @@ Example data:
     all: false
     matchers:
      - key: subject
-       pattern_code: orders
+       pattern:
+         code: orders
+         regex: orders
        partial: true
   excludes:
     all: false
     matchers:
     - key: location
-      pattern_code: Helsinki
+      pattern:
+        code: Helsinki
+        regex: Helsinki 
       partial: false
 ```
 
@@ -147,10 +151,14 @@ Example data:
     all: true
     matchers:
     - key: reply-to
-      pattern_code: john.doe@email.com
+      pattern: 
+        code: john.doe@email.com
+        regex: john.doe@email.com
       partial: false
     - key: foo
-      pattern_code: bar
+      pattern: 
+        code: bar
+        regex: bar
       partial: false
   excludes: {}
 ```
@@ -174,11 +182,18 @@ Example data:
 
 #### 5.2.1.3. Matcher
 
-| Attribute    | Type          | Description                                                                                                   |
-|--------------|---------------|---------------------------------------------------------------------------------------------------------------|
-| key          | String        | Metadata key                                                                                                  |
-| pattern_code | Array of byte | Metadata value matching pattern external id                                                                   |
-| partial      | Boolean       | If `true`, then allowed match any lexeme in a tokenized metadata value. Otherwise, entire value should match. |
+| Attribute | Type                     | Description                                                                                                   |
+|-----------|--------------------------|---------------------------------------------------------------------------------------------------------------|
+| key       | String                   | Metadata key                                                                                                  |
+| pattern   | [Pattern](#5214-pattern) | Metadata value matching pattern                                                                               |
+| partial   | Boolean                  | If `true`, then allowed match any lexeme in a tokenized metadata value. Otherwise, entire value should match. |
+
+#### 5.2.1.4. Pattern
+
+| Attribute | Type          | Description                                                                                            |
+|-----------|---------------|--------------------------------------------------------------------------------------------------------|
+| code      | Array of byte | Unique pattern path in the [patterns tree](https://github.com/meandros-messaging/patterns#52-approach) |
+| regex     | String        | A regular expression to finally filter the resolved subscription candidates                            |
 
 ### 5.2.2. Resolution Algorithm
 

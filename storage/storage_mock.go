@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/service/patterns"
+	"github.com/meandros-messaging/subscriptions/model"
 	"github.com/meandros-messaging/subscriptions/util"
 	"strings"
 )
 
 type (
 	storageMock struct {
-		storage map[string]Subscription
+		storage map[string]model.Subscription
 	}
 )
 
-func NewStorageMock(storage map[string]Subscription) Storage {
+func NewStorageMock(storage map[string]model.Subscription) Storage {
 	return storageMock{
 		storage: storage,
 	}
@@ -25,12 +25,12 @@ func (s storageMock) Close() error {
 	return nil
 }
 
-func (s storageMock) Create(ctx context.Context, sub Subscription) error {
+func (s storageMock) Create(ctx context.Context, sub model.Subscription) error {
 	s.storage[sub.Name] = sub
 	return nil
 }
 
-func (s storageMock) Read(ctx context.Context, name string) (sub Subscription, err error) {
+func (s storageMock) Read(ctx context.Context, name string) (sub model.Subscription, err error) {
 	var found bool
 	sub, found = s.storage[name]
 	if !found {
@@ -39,8 +39,8 @@ func (s storageMock) Read(ctx context.Context, name string) (sub Subscription, e
 	return
 }
 
-func (s storageMock) Update(ctx context.Context, sub Subscription) (err error) {
-	var subOld Subscription
+func (s storageMock) Update(ctx context.Context, sub model.Subscription) (err error) {
+	var subOld model.Subscription
 	var found bool
 	name := sub.Name
 	subOld, found = s.storage[name]
@@ -76,7 +76,7 @@ func (s storageMock) List(ctx context.Context, limit uint32, cursor *string) (pa
 	return
 }
 
-func (s storageMock) FindCandidates(ctx context.Context, limit uint32, cursor *string, key string, patternCode patterns.PatternCode) (page []Subscription, err error) {
+func (s storageMock) FindCandidates(ctx context.Context, limit uint32, cursor *string, key string, patternCode model.PatternCode) (page []model.Subscription, err error) {
 	sortedNames := util.SortedKeys(s.storage)
 	for _, name := range sortedNames {
 		if uint32(len(page)) >= limit {
@@ -94,6 +94,6 @@ func (s storageMock) FindCandidates(ctx context.Context, limit uint32, cursor *s
 	return
 }
 
-func matches(matcher Matcher, key string, patternCode patterns.PatternCode) bool {
-	return key == matcher.Key && bytes.Equal(patternCode, matcher.PatternCode)
+func matches(matcher model.Matcher, key string, patternCode model.PatternCode) bool {
+	return key == matcher.Key && bytes.Equal(patternCode, matcher.Pattern.Code)
 }
