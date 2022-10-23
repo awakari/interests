@@ -124,7 +124,7 @@ Example data:
 ```yaml
 - name: subscription0
   version: 42
-  description: Orders that are not in Helsinki
+  description: Anything related to orders that are not in Helsinki
   includes:
     all: false
     matchers:
@@ -146,7 +146,7 @@ Example data:
 ```yaml
 - name: subscription1
   version: 0
-  description: Messages that have foo=bar and reply-to address of John Doe
+  description: Messages that have both high priority and reply-to address of John Doe
   includes:
     all: true
     matchers:
@@ -155,10 +155,10 @@ Example data:
         code: john.doe@email.com
         regex: john.doe@email.com
       partial: false
-    - key: foo
+    - key: priority
       pattern: 
-        code: bar
-        regex: bar
+        code: high
+        regex: high
       partial: false
   excludes: {}
 ```
