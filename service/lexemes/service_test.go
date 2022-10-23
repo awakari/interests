@@ -1,11 +1,12 @@
-package model
+package lexemes
 
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestTokenizer(t *testing.T) {
+func TestSplit(t *testing.T) {
+	svc := NewService()
 	cases := []struct {
 		input   string
 		lexemes []string
@@ -21,7 +22,6 @@ func TestTokenizer(t *testing.T) {
 				"a",
 				"lazy",
 				"dog",
-				"!",
 			},
 		},
 		{
@@ -30,11 +30,9 @@ func TestTokenizer(t *testing.T) {
 				"Летом",
 				"не",
 				"припасёшь",
-				",",
 				"зимой",
 				"не",
 				"принесёшь",
-				".",
 			},
 		},
 		{
@@ -44,7 +42,6 @@ func TestTokenizer(t *testing.T) {
 				"kala",
 				"miestä",
 				"hae",
-				",",
 				"jollei",
 				"mies",
 				"kalaa",
@@ -53,26 +50,27 @@ func TestTokenizer(t *testing.T) {
 		{
 			input: "养军千日，用军一朝。",
 			lexemes: []string{
-				"养军千日",
-				"，",
-				"用军一朝",
-				"。",
+				"养",
+				"军",
+				"千",
+				"日",
+				"用",
+				"军",
+				"一",
+				"朝",
 			},
 		},
 		{
 			input: "3.1415926 1.2e+34 2022-10-22 22:11:45",
 			lexemes: []string{
 				"3.1415926",
-				"1.2e+34",
+				"1.2e",
+				"34",
 				"2022",
-				"-",
 				"10",
-				"-",
 				"22",
 				"22",
-				":",
 				"11",
-				":",
 				"45",
 			},
 		},
@@ -83,16 +81,7 @@ func TestTokenizer(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.input, func(t *testing.T) {
-			tknzr := NewTokenizer(c.input)
-			var lexemes []string
-			for {
-				l, eoi := tknzr.Next()
-				if eoi {
-					break
-				} else {
-					lexemes = append(lexemes, l)
-				}
-			}
+			lexemes := svc.Split(c.input)
 			assert.ElementsMatch(t, c.lexemes, lexemes)
 		})
 	}

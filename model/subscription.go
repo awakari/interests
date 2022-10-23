@@ -21,17 +21,3 @@ type (
 		Excludes MatcherGroup
 	}
 )
-
-func (sub Subscription) Matches(md Metadata, key string, patternCode PatternCode) (matches bool) {
-	//includes := sub.Includes
-	//if includes.All {
-	//	for _, m := range includes.Matchers {
-	//		// skip the matched before (key, patternCode) pair
-	//		if key != m.Key || !bytes.Equal(patternCode, m.Pattern.Code) && !m.Matches(md) {
-	//			matches = false
-	//			break
-	//		}
-	//	}
-	//}
-	return
-}

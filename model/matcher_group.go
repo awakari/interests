@@ -12,20 +12,3 @@ type (
 		Matchers []Matcher
 	}
 )
-
-func (mg MatcherGroup) Matches(md Metadata) (matches bool, err error) {
-	for _, m := range mg.Matchers {
-		matches, err = m.Matches(md)
-		if err != nil {
-			break
-		}
-		if matches {
-			if !mg.All {
-				break // any match is enough
-			}
-		} else if mg.All {
-			break // any mismatch is enough
-		}
-	}
-	return
-}
