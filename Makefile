@@ -4,7 +4,6 @@ default: build
 BINARY_FILE_NAME=subscriptions
 COVERAGE_FILE_NAME=cover.out
 COVERAGE_TMP_FILE_NAME=cover.tmp
-VERSION_FILE_NAME=version.txt
 
 proto:
 	go install github.com/golang/protobuf/protoc-gen-go@latest
@@ -27,17 +26,15 @@ build: proto
 	chmod ugo+x ${BINARY_FILE_NAME}
 
 docker: build
-	./scripts/version.sh > ${VERSION_FILE_NAME}
 	docker build -t meandros-messaging/subscriptions .
-	rm -f ${VERSION_FILE_NAME}
 
 run: docker
 	docker run \
 		-d \
-		--name subscriptions \
+		--name meandros-subscriptions \
 		-p 8080:8080 \
 		--expose 8080 \
-		--env-file env.txt \
+		--volume $(shell pwd)/config/dev.yaml:/etc/matchers.yaml \
 		meandros-messaging/subscriptions
 
 release: docker
@@ -45,4 +42,4 @@ release: docker
 
 clean:
 	go clean
-	rm -f ${BINARY_FILE_NAME} ${COVERAGE_FILE_NAME} ${VERSION_FILE_NAME}
+	rm -f ${BINARY_FILE_NAME} ${COVERAGE_FILE_NAME}

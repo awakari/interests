@@ -2,76 +2,26 @@ package main
 
 import (
 	"fmt"
+	"github.com/meandros-messaging/subscriptions/config"
 	"github.com/sirupsen/logrus"
 	"os"
-	"strconv"
-)
-
-const (
-	name           = "subscriptions"
-	version        = "1.0.0"
-	envApiPort     = "API_PORT"
-	envDbUri       = "DB_URI"
-	envDbName      = "DB_NAME"
-	envDbTblName   = "DB_TBL_NAME"
-	envPatternsUri = "PATTERNS_URI"
-)
-
-var (
-	homePath = fmt.Sprintf("%s/.%s/%s", os.Getenv("HOME"), name, version)
-)
-
-type (
-	configApi struct {
-		port uint16
-	}
-	configDb struct {
-		uri  string
-		name string
-		tbl  string
-	}
-	config struct {
-		api         configApi
-		db          configDb
-		patternsUri string
-	}
 )
 
 func main() {
-	logger := logrus.WithFields(logrus.Fields{})
-	logger.Info(fmt.Sprintf("%s %s", name, version))
-	cfg := loadEnvConfig(logger)
-	println(cfg)
-}
-
-func loadEnvConfig(logger *logrus.Entry) (cfg config) {
-	apiPortRaw := os.Getenv(envApiPort)
-	if apiPortRaw == "" {
-		logger.Fatalf("%s value not set", envApiPort)
+	log := logrus.WithFields(logrus.Fields{})
+	log.Info("starting...")
+	if len(os.Args) != 2 {
+		log.Fatalf("invalid command line arguments, try: matchers <config-file-path>")
 	}
-	apiPort, err := strconv.ParseUint(apiPortRaw, 10, 16)
+	cfgFilePath := os.Args[1]
+	log.Infof("loading the configuration from the file: %s ...", cfgFilePath)
+	cfgFile, err := os.Open(cfgFilePath)
 	if err != nil {
-		logger.Fatalf("Invalid %s value: %s", envApiPort, apiPortRaw)
+		log.Fatalf("failed to open the config file %s: %s", cfgFilePath, err)
 	}
-	cfg = config{
-		api: configApi{
-			port: uint16(apiPort),
-		},
-		db: configDb{
-			uri:  os.Getenv(envDbUri),
-			name: os.Getenv(envDbName),
-			tbl:  os.Getenv(envDbTblName),
-		},
-		patternsUri: os.Getenv(envPatternsUri),
+	cfg, err := config.NewConfigFromYaml(cfgFile)
+	if err != nil {
+		log.Fatalf("failed to load the yaml config from the file %s: %s", cfgFilePath, err)
 	}
-	if cfg.db.uri == "" {
-		logger.Fatalf("%s value not set", envDbUri)
-	}
-	if cfg.db.name == "" {
-		logger.Fatalf("%s value not set", envDbName)
-	}
-	if cfg.db.tbl == "" {
-		logger.Fatalf("%s value not set", envDbTblName)
-	}
-	return
+	fmt.Println(cfg)
 }

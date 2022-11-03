@@ -243,8 +243,10 @@ TODO
 ## 6.1. Versioning
 
 The service uses the [semantic versioning](http://semver.org/).
-The single source of the version info is constant `version` declared in the [cmd/main.go](cmd/main.go) file.
-The script [scripts/version.sh](scripts/version.sh) is used to extract that version.
+The single source of the version info is the git tag:
+```shell
+git describe --tags --abbrev=0
+```
 
 ## 6.2. Issue Reporting
 

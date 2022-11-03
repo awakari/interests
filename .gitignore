@@ -18,6 +18,6 @@ vendor/
 **/*.pb.go
 **/*.krproj
 
-env.txt
+config/dev.yaml
 ghcr_io_pat.txt
 version.txt
