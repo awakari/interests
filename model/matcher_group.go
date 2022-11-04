@@ -1,5 +1,7 @@
 package model
 
+import "bytes"
+
 type (
 
 	// MatcherGroup represent a set of Matcher linked together with some option.
@@ -12,3 +14,24 @@ type (
 		Matchers []Matcher
 	}
 )
+
+func (mg MatcherGroup) Matches(md Metadata, key string, patternCode PatternCode) (matches bool, err error) {
+	for _, m := range mg.Matchers {
+		if key == m.Key && bytes.Equal(patternCode, m.Pattern.Code) {
+			matches = true // matched before (key, patternCode) pair
+		} else {
+			matches, err = m.Matches(md)
+			if err != nil {
+				break
+			}
+		}
+		if matches {
+			if !mg.All {
+				break // any match is enough
+			}
+		} else if mg.All {
+			break // any mismatch is enough
+		}
+	}
+	return
+}

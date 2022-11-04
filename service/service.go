@@ -1,15 +1,12 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/service/lexemes"
 	"github.com/meandros-messaging/subscriptions/service/patterns"
 	"github.com/meandros-messaging/subscriptions/storage"
 	"github.com/meandros-messaging/subscriptions/util"
-	"regexp"
 )
 
 const (
@@ -79,16 +76,14 @@ type (
 	}
 
 	service struct {
-		lexemesSvc        lexemes.Service
 		patternsSvc       patterns.Service
 		patternsPageLimit uint32
 		s                 storage.Storage
 	}
 )
 
-func NewService(lexemesSvc lexemes.Service, patternsSvc patterns.Service, patternsPageLimit uint32, s storage.Storage) Service {
+func NewService(patternsSvc patterns.Service, patternsPageLimit uint32, s storage.Storage) Service {
 	return service{
-		lexemesSvc:        lexemesSvc,
 		patternsSvc:       patternsSvc,
 		patternsPageLimit: patternsPageLimit,
 		s:                 s,
@@ -169,7 +164,7 @@ func (svc service) findAndSetToResult(ctx context.Context, limit uint32, md mode
 		if remainingLimit > 0 {
 			subs, err = svc.s.FindCandidates(ctx, remainingLimit, r.NextPageCursor.Name, k, patternCode)
 			if err == nil && len(subs) > 0 {
-				if err = svc.filterMatching(subs, md, k, patternCode, r); err != nil {
+				if err = r.filterMatching(subs, md, k, patternCode); err != nil {
 					break
 				}
 			} else {
@@ -182,10 +177,10 @@ func (svc service) findAndSetToResult(ctx context.Context, limit uint32, md mode
 	return
 }
 
-func (svc service) filterMatching(subs []model.Subscription, md model.Metadata, k string, patternCode model.PatternCode, r *ResolveResult) (err error) {
+func (r *ResolveResult) filterMatching(subs []model.Subscription, md model.Metadata, k string, patternCode model.PatternCode) (err error) {
 	var matches bool
 	for _, sub := range subs {
-		matches, err = svc.subscriptionMatches(sub, md, k, patternCode)
+		matches, err = sub.Matches(md, k, patternCode)
 		if err != nil {
 			break
 		}
@@ -193,61 +188,6 @@ func (svc service) filterMatching(subs []model.Subscription, md model.Metadata, 
 			r.NamesPage = append(r.NamesPage, sub.Name)
 		}
 		r.NextPageCursor.Name = &sub.Name
-	}
-	return
-}
-
-func (svc service) subscriptionMatches(sub model.Subscription, md model.Metadata, key string, patternCode model.PatternCode) (matches bool, err error) {
-	matches, err = svc.matcherGroupMatches(sub.Excludes, md, key, patternCode)
-	if err == nil && !matches { // excludes group should not match
-		matches, err = svc.matcherGroupMatches(sub.Includes, md, key, patternCode)
-	}
-	return
-}
-
-func (svc service) matcherGroupMatches(mg model.MatcherGroup, md model.Metadata, key string, patternCode model.PatternCode) (matches bool, err error) {
-	for _, m := range mg.Matchers {
-		if key == m.Key && bytes.Equal(patternCode, m.Pattern.Code) {
-			matches = true // matched before (key, patternCode) pair
-		} else {
-			matches, err = svc.matcherMatches(m, md)
-			if err != nil {
-				break
-			}
-		}
-		if matches {
-			if !mg.All {
-				break // any match is enough
-			}
-		} else if mg.All {
-			break // any mismatch is enough
-		}
-	}
-	return
-}
-
-func (svc service) matcherMatches(m model.Matcher, md model.Metadata) (matches bool, err error) {
-	var input string
-	input, matches = md[m.Key]
-	if matches {
-		matches, err = svc.patternMatches(m.Pattern, input, m.Partial)
-	}
-	return
-}
-
-func (svc service) patternMatches(p model.Pattern, input string, partial bool) (matches bool, err error) {
-	var r *regexp.Regexp
-	r, err = regexp.Compile(p.Regex)
-	if err == nil {
-		matches = r.MatchString(input)
-		if !matches && partial {
-			for _, lexeme := range svc.lexemesSvc.Split(input) {
-				matches = r.MatchString(lexeme)
-				if matches {
-					break
-				}
-			}
-		}
 	}
 	return
 }
