@@ -21,11 +21,3 @@ type (
 		Excludes MatcherGroup
 	}
 )
-
-func (sub Subscription) Matches(md Metadata, key string, patternCode PatternCode) (matches bool, err error) {
-	matches, err = sub.Excludes.Matches(md, key, patternCode)
-	if err == nil && !matches { // excludes group should not match
-		matches, err = sub.Includes.Matches(md, key, patternCode)
-	}
-	return
-}

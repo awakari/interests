@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "./api/grpc/matchers";
+
+message Matcher {
+  string key = 1;
+  bytes patternCode = 2;
+}
