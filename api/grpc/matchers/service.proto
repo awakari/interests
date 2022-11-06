@@ -20,11 +20,11 @@ message CreateRequest {
 
 message CreateResponse {
   string err = 1;
-  Matcher matcher = 2;
+  MatcherData matcher = 2;
 }
 
 message DeleteRequest {
-  Matcher matcher = 1;
+  MatcherData matcher = 1;
 }
 
 message DeleteResponse {
