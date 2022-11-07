@@ -22,18 +22,16 @@ type (
 		// Update the specified subscription with new details.
 		Update(ctx context.Context, sub model.Subscription) (err error)
 
-		// Delete a subscription means unsubscribing.
-		Delete(ctx context.Context, name string) (err error)
+		// DeleteVersion the same as Delete but removes the subscription only if version matches.
+		DeleteVersion(ctx context.Context, subKey model.SubscriptionKey) (err error)
 
-		// List returns all known Subscription.Name with the pagination support that match the specified query.
-		List(ctx context.Context, limit uint32, cursor *string) (page []string, err error)
+		// ListNames returns all known model.Subscription names with the pagination support that match the specified query.
+		ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error)
 
-		// FindCandidates returns candidate subscriptions page where:<br/>
-		// * Subscription.Name is greater than the cursor:<br/>
-		// * and that have any Matcher in the Subscription.Includes MatcherGroup where:<br/>
-		//		* Matcher.Key equals to the specified one:<br/>
-		// 		* and that Matcher.PatternCode equals to the specified one.<br/>
-		FindCandidates(ctx context.Context, limit uint32, cursor *string, key string, patternCode model.PatternCode) (page []model.Subscription, err error)
+		// FindByMatcherData returns candidate subscriptions page where:<br/>
+		// * model.Subscription name is greater than the cursor:<br/>
+		// * and that have any model.Matcher in any associated model.MatcherGroup
+		FindByMatcherData(ctx context.Context, limit uint32, cursor string, md model.MatcherData) (page []model.Subscription, err error)
 	}
 )
 
