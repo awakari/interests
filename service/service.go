@@ -89,15 +89,33 @@ func NewService(
 }
 
 func (svc service) Create(ctx context.Context, sub model.Subscription) (err error) {
-	//
-	var ms []model.Matcher
+	var excl []model.Matcher
+	excl, err = createMatchers(ctx, sub.Excludes.Matchers, svc.excludesPartialMatchers, svc.excludesCompleteMatchers)
+	if err == nil {
+		sub.Excludes.Matchers = excl
+		var incl []model.Matcher
+		incl, err = createMatchers(ctx, sub.Includes.Matchers, svc.includesPartialMatchers, svc.includesCompleteMatchers)
+		if err == nil {
+			sub.Includes.Matchers = incl
+			err = svc.stor.Create(ctx, sub)
+		}
+	}
+	err = translateError(err)
+	return
+}
+
+func createMatchers(
+	ctx context.Context,
+	matcherInputs []model.Matcher,
+	partialMatchersSvc matchers.Service,
+	completeMatchersSvc matchers.Service,
+) (ms []model.Matcher, err error) {
 	var md model.MatcherData
-	//
-	for _, em := range sub.Excludes.Matchers {
+	for _, em := range matcherInputs {
 		if em.Partial {
-			md, err = svc.excludesPartialMatchers.Create(ctx, em.Key, em.Pattern.Src)
+			md, err = partialMatchersSvc.Create(ctx, em.Key, em.Pattern.Src)
 		} else {
-			md, err = svc.excludesCompleteMatchers.Create(ctx, em.Key, em.Pattern.Src)
+			md, err = completeMatchersSvc.Create(ctx, em.Key, em.Pattern.Src)
 		}
 		if err != nil {
 			break
@@ -107,37 +125,6 @@ func (svc service) Create(ctx context.Context, sub model.Subscription) (err erro
 			Partial:     em.Partial,
 		}
 		ms = append(ms, m)
-	}
-	if err != nil {
-		err = translateError(err)
-		return
-	}
-	sub.Excludes.Matchers = ms
-	//
-	for _, em := range sub.Includes.Matchers {
-		if em.Partial {
-			md, err = svc.includesPartialMatchers.Create(ctx, em.Key, em.Pattern.Src)
-		} else {
-			md, err = svc.includesCompleteMatchers.Create(ctx, em.Key, em.Pattern.Src)
-		}
-		if err != nil {
-			break
-		}
-		m := model.Matcher{
-			MatcherData: md,
-			Partial:     em.Partial,
-		}
-		ms = append(ms, m)
-	}
-	if err != nil {
-		err = translateError(err)
-		return
-	}
-	sub.Includes.Matchers = ms
-	//
-	err = svc.stor.Create(ctx, sub)
-	if err != nil {
-		err = translateError(err)
 	}
 	return
 }
