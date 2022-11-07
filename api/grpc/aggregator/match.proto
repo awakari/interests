@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package aggregator;
+
+option go_package = "./api/grpc/aggregator";
+
+import "api/grpc/aggregator/subscription_key.proto";
+import "api/grpc/aggregator/match_in_group.proto";
+
+message Match {
+  uint64 messageId = 1;
+  SubscriptionKey subscriptionKey = 2;
+  optional MatchInGroup includes = 3;
+  optional MatchInGroup excludes = 4;
+}

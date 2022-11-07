@@ -45,7 +45,7 @@ type (
 		// Resolve all matching subscriptions by the specified message model.Metadata.
 		// Once returns all the matching subscriptions should be available in the aggregator with the specified
 		// model.MessageId. It's client responsibility to filter the model.Subscription candidates from the aggregator.
-		Resolve(ctx context.Context, id model.MessageId, md model.Metadata) (err error)
+		Resolve(ctx context.Context, md model.MessageDescriptor) (err error)
 	}
 
 	service struct {
@@ -75,6 +75,6 @@ func (svc service) Delete(ctx context.Context, name string) (err error) {
 	return nil
 }
 
-func (svc service) Resolve(ctx context.Context, id model.MessageId, md model.Metadata) (err error) {
+func (svc service) Resolve(ctx context.Context, md model.MessageDescriptor) (err error) {
 	return nil
 }

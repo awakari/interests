@@ -1,5 +1,9 @@
 package util
 
-type HashCoder interface {
-	HashCode() uint64
-}
+type (
+	HashCode uint64
+
+	HashCoder interface {
+		HashCode() HashCode
+	}
+)

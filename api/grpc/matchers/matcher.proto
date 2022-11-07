@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package grpc;
+package matchers;
 
 option go_package = "./api/grpc/matchers";
 

@@ -89,7 +89,7 @@ func TestService_Delete(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		t.Run(c.m.String(), func(t *testing.T) {
+		t.Run(c.m.Key+": "+c.m.Pattern.String(), func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
 			err := svc.Delete(ctx, c.m)

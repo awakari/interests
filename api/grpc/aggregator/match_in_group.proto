@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package aggregator;
+
+option go_package = "./api/grpc/aggregator";
+
+message MatchInGroup {
+  bool all = 1;
+  uint32 matcherCount = 2;
+}

@@ -4,12 +4,7 @@ type (
 
 	// Subscription represents the storage-level subscription entry.
 	Subscription struct {
-
-		// Name represents a unique subscription name.
-		Name string
-
-		// Version represents a Subscription entry version for the optimistic lock purpose.
-		Version uint64
+		SubscriptionKey
 
 		// Description represents an optional human readable Subscription description.
 		Description string
