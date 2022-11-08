@@ -10,3 +10,7 @@ type (
 		Partial bool
 	}
 )
+
+func (m Matcher) Equal(another Matcher) bool {
+	return m.Partial == another.Partial && m.MatcherData.Equal(another.MatcherData)
+}

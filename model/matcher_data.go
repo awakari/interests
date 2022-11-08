@@ -12,3 +12,7 @@ type (
 		Pattern Pattern
 	}
 )
+
+func (md MatcherData) Equal(another MatcherData) bool {
+	return md.Key == another.Key && md.Pattern.Equal(another.Pattern)
+}

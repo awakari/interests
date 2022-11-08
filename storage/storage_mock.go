@@ -5,17 +5,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/util"
-	"strings"
+	"golang.org/x/exp/slices"
 )
 
 type (
 	storageMock struct {
-		storage map[string]model.Subscription
+		storage map[model.SubscriptionKey]model.Subscription
 	}
 )
 
-func NewStorageMock(storage map[string]model.Subscription) Storage {
+func NewStorageMock(storage map[model.SubscriptionKey]model.Subscription) Storage {
 	return storageMock{
 		storage: storage,
 	}
@@ -26,13 +25,18 @@ func (s storageMock) Close() error {
 }
 
 func (s storageMock) Create(ctx context.Context, sub model.Subscription) error {
-	s.storage[sub.Name] = sub
+	s.storage[sub.SubscriptionKey] = sub
 	return nil
 }
 
 func (s storageMock) Read(ctx context.Context, name string) (sub model.Subscription, err error) {
 	var found bool
-	sub, found = s.storage[name]
+	for k, v := range s.storage {
+		if k.Name == name {
+			sub = v
+			found = true
+		}
+	}
 	if !found {
 		err = fmt.Errorf("%w by name: %s", ErrNotFound, name)
 	}
@@ -40,60 +44,50 @@ func (s storageMock) Read(ctx context.Context, name string) (sub model.Subscript
 }
 
 func (s storageMock) Update(ctx context.Context, sub model.Subscription) (err error) {
-	var subOld model.Subscription
-	var found bool
-	name := sub.Name
-	subOld, found = s.storage[name]
-	if found && subOld.Version == sub.Version {
-		s.storage[name] = sub
-	} else {
-		err = fmt.Errorf("%w by name: %s", ErrNotFound, name)
+	err = s.DeleteVersion(ctx, sub.SubscriptionKey)
+	if err == nil {
+		err = s.Create(ctx, sub)
 	}
 	return
 }
 
-func (s storageMock) Delete(ctx context.Context, name string) (err error) {
+func (s storageMock) DeleteVersion(ctx context.Context, subKey model.SubscriptionKey) (err error) {
 	var found bool
-	_, found = s.storage[name]
+	_, found = s.storage[subKey]
 	if found {
-		delete(s.storage, name)
+		delete(s.storage, subKey)
 	} else {
-		err = fmt.Errorf("%w by name: %s", ErrNotFound, name)
+		err = fmt.Errorf("%w by name: %s", ErrNotFound, subKey.Name)
 	}
 	return
 }
 
-func (s storageMock) List(ctx context.Context, limit uint32, cursor *string) (page []string, err error) {
-	sortedNames := util.SortedKeys(s.storage)
-	for _, name := range sortedNames {
-		if uint32(len(page)) >= limit {
-			break
-		}
-		if cursor == nil || strings.Compare(*cursor, name) < 0 {
-			page = append(page, name)
-		}
+func (s storageMock) ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error) {
+	for k, _ := range s.storage {
+		page = append(page, k.Name)
 	}
+	slices.Sort(page)
 	return
 }
 
-func (s storageMock) FindCandidates(ctx context.Context, limit uint32, cursor *string, key string, patternCode model.PatternCode) (page []model.Subscription, err error) {
-	sortedNames := util.SortedKeys(s.storage)
-	for _, name := range sortedNames {
-		if uint32(len(page)) >= limit {
-			break
+func (s storageMock) Find(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error) {
+	var mg model.MatcherGroup
+	for _, sub := range s.storage {
+		if q.Includes {
+			mg = sub.Includes
+		} else if q.Includes {
+			mg = sub.Excludes
 		}
-		if cursor == nil || strings.Compare(*cursor, name) < 0 {
-			sub := s.storage[name]
-			for _, matcher := range sub.Includes.Matchers {
-				if matches(matcher, key, patternCode) {
-					page = append(page, sub)
-				}
+		for _, m := range mg.Matchers {
+			if matchersEqual(m, q.Matcher) {
+				page = append(page, sub)
+				break
 			}
 		}
 	}
 	return
 }
 
-func matches(matcher model.Matcher, key string, patternCode model.PatternCode) bool {
-	return key == matcher.Key && bytes.Equal(patternCode, matcher.Pattern.Code)
+func matchersEqual(m1, m2 model.Matcher) bool {
+	return m1.Partial == m2.Partial && m1.Key == m2.Key && bytes.Equal(m1.Pattern.Code, m2.Pattern.Code)
 }
