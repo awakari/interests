@@ -15,11 +15,14 @@ type (
 	// Service represents the matchers service.
 	Service interface {
 
-		// Create creates a new Pattern and registers the corresponding Matcher.
+		// Create creates a new Pattern and registers the corresponding model.MatcherData.
+		// It increments the model.MatcherData reference count by 1 if it exists already.
 		// Repeating the same Create call yields the same state.
 		Create(ctx context.Context, k string, patternSrc string) (m model.MatcherData, err error)
 
-		// Delete removes a specified Matcher from the underlying storage.
+		// Delete decrements the model.MatcherData reference count by 1.
+		// It removes a specified model.MatcherData from the underlying storage if the resulting reference count is less
+		// than 1.
 		Delete(ctx context.Context, m model.MatcherData) (err error)
 
 		// Search returns all matchers those match the specified key/value pair.

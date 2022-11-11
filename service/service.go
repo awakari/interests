@@ -192,10 +192,10 @@ func (svc service) Update(ctx context.Context, subKey model.SubscriptionKey, req
 				return createErr
 			})
 			g.Go(func() error {
-				return svc.safeDeleteMatchers(ctx, req.Includes.Delete, false)
+				return svc.deleteMatchers(ctx, req.Includes.Delete, false)
 			})
 			g.Go(func() error {
-				return svc.safeDeleteMatchers(ctx, req.Excludes.Delete, true)
+				return svc.deleteMatchers(ctx, req.Excludes.Delete, true)
 			})
 			g.Go(func() error {
 				return svc.stor.Update(gCtx, sub)
@@ -253,46 +253,26 @@ func (svc service) Delete(ctx context.Context, name string) (err error) {
 				break
 			}
 		}
-		// clean up matchers also
-		err = svc.safeDeleteMatchers(ctx, sub.Excludes.Matchers, true)
-		if err != nil {
-			break
-		}
-		err = svc.safeDeleteMatchers(ctx, sub.Includes.Matchers, false)
+		// delete matchers or decrement the corresponding reference counts also
+		g, gCtx := errgroup.WithContext(ctx)
+		g.Go(func() error {
+			return svc.deleteMatchers(gCtx, sub.Includes.Matchers, false)
+		})
+		g.Go(func() error {
+			return svc.deleteMatchers(gCtx, sub.Excludes.Matchers, true)
+		})
+		err = g.Wait()
 		break
 	}
 	err = translateError(err)
 	return
 }
 
-func (svc service) safeDeleteMatchers(ctx context.Context, ms []model.Matcher, inExcludes bool) (err error) {
+func (svc service) deleteMatchers(ctx context.Context, ms []model.Matcher, inExcludes bool) (err error) {
 	for _, m := range ms {
-		err = svc.safeDeleteMatcher(ctx, m, inExcludes)
+		err = svc.deleteMatcher(ctx, m, inExcludes)
 		if err != nil {
 			break
-		}
-	}
-	return
-}
-
-func (svc service) safeDeleteMatcher(ctx context.Context, m model.Matcher, inExcludes bool) (err error) {
-	q := storage.Query{
-		Limit:    1,
-		Includes: !inExcludes,
-		Excludes: inExcludes,
-		Matcher:  m,
-	}
-	var subs []model.Subscription
-	// find any subscription that is also using this matcher
-	subs, err = svc.stor.Find(ctx, q, "")
-	if err == nil {
-		if len(subs) == 0 {
-			// no other subscriptions found, let's delete the matcher from the corresponding storage
-			err = svc.deleteMatcher(ctx, m, inExcludes)
-			if err == nil {
-				// a new subscription using this matcher may be created between the matcher usage check and its deletion
-				err = svc.findAndUpdateSubscriptions(ctx, m, inExcludes)
-			}
 		}
 	}
 	return
@@ -310,38 +290,6 @@ func (svc service) deleteMatcher(ctx context.Context, m model.Matcher, inExclude
 			err = svc.includesPartialMatchers.Delete(ctx, m.MatcherData)
 		} else {
 			err = svc.includesCompleteMatchers.Delete(ctx, m.MatcherData)
-		}
-	}
-	return
-}
-
-func (svc service) findAndUpdateSubscriptions(ctx context.Context, m model.Matcher, inExcludes bool) (err error) {
-	q := storage.Query{
-		Limit:    svc.subsPageSizeLimit,
-		Includes: !inExcludes,
-		Excludes: inExcludes,
-		Matcher:  m,
-	}
-	var cursor string
-	var subs []model.Subscription
-	for {
-		subs, err = svc.stor.Find(ctx, q, cursor)
-		if err != nil {
-			break
-		}
-		if len(subs) == 0 {
-			break
-		}
-		cursor = subs[len(subs)-1].Name
-		for _, sub := range subs {
-			err = svc.Update(ctx, sub) // update causes the matchers re-creation in the matchers storage
-			if err != nil {
-				if errors.Is(err, ErrNotFound) {
-					err = nil // the subscription has been already changed, nothing to do
-				} else {
-					break
-				}
-			}
 		}
 	}
 	return
