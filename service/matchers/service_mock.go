@@ -32,6 +32,22 @@ func (svc serviceMock) Create(ctx context.Context, k string, patternSrc string) 
 	return
 }
 
+func (svc serviceMock) TryLockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
+	if string(patternCode) == "locked" {
+		err = ErrNotFound
+	} else if string(patternCode) == "fail" {
+		err = ErrInternal
+	}
+	return
+}
+
+func (svc serviceMock) UnlockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
+	if string(patternCode) == "fail" {
+		err = ErrInternal
+	}
+	return
+}
+
 func (svc serviceMock) Delete(ctx context.Context, m model.MatcherData) (err error) {
 	if m.Key == "fail" {
 		return errors.New("unexpected")

@@ -15,13 +15,9 @@ type (
 		// Limit defines a results page size limit.
 		Limit uint32
 
-		// Includes defines if it's necessary to find a model.Subscription with same model.Matcher in the "Excludes"
+		// InExcludes defines if it's necessary to find a model.Subscription with same model.Matcher in the "InExcludes"
 		// model.MatcherGroup
-		Includes bool
-
-		// Excludes defines if it's necessary to find a model.Subscription with same model.Matcher in the "Excludes"
-		// model.MatcherGroup
-		Excludes bool
+		InExcludes bool
 
 		// Matcher represents a model.Matcher that should be present in the model.Subscription to include into the
 		// search results.
@@ -49,11 +45,16 @@ type (
 
 		// Find returns subscriptions page where:<br/>
 		// * model.Subscription name is greater than the one specified by the cursor<br/>
-		// *
+		// * subscriptions match the specified Query.
 		Find(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error)
 	}
 )
 
 var (
+
+	// ErrConflict indicates the subscription exists in the underlying storage and can not be created.
+	ErrConflict = errors.New("subscription already exists")
+
+	// ErrNotFound indicates the subscription is missing in the storage and can not be read/updated/deleted.
 	ErrNotFound = errors.New("subscription was not found")
 )

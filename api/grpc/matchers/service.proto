@@ -9,6 +9,8 @@ import "api/grpc/matchers/query.proto";
 
 service Service {
   rpc Create(CreateRequest) returns (CreateResponse);
+  rpc TryLockCreate(TryLockCreateRequest) returns (TryLockCreateResponse);
+  rpc UnlockCreate(UnlockCreateRequest) returns (UnlockCreateResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc Search(SearchRequest) returns (SearchResponse);
 }
@@ -21,6 +23,22 @@ message CreateRequest {
 message CreateResponse {
   string err = 1;
   MatcherData matcher = 2;
+}
+
+message TryLockCreateRequest {
+  bytes patternCode = 1;
+}
+
+message TryLockCreateResponse {
+  string error = 1;
+}
+
+message UnlockCreateRequest {
+  bytes patternCode = 1;
+}
+
+message UnlockCreateResponse {
+  string error = 1;
 }
 
 message DeleteRequest {

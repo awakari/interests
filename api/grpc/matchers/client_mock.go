@@ -34,6 +34,26 @@ func (c clientMock) Create(ctx context.Context, in *CreateRequest, opts ...grpc.
 	return
 }
 
+func (c clientMock) TryLockCreate(ctx context.Context, in *TryLockCreateRequest, opts ...grpc.CallOption) (resp *TryLockCreateResponse, err error) {
+	if string(in.PatternCode) == "fail" {
+		err = status.Error(codes.Internal, "fail")
+	} else if string(in.PatternCode) == "missing" {
+		err = status.Error(codes.NotFound, "missing")
+	} else {
+		resp = &TryLockCreateResponse{}
+	}
+	return
+}
+
+func (c clientMock) UnlockCreate(ctx context.Context, in *UnlockCreateRequest, opts ...grpc.CallOption) (resp *UnlockCreateResponse, err error) {
+	if string(in.PatternCode) == "fail" {
+		err = status.Error(codes.Internal, "fail")
+	} else {
+		resp = &UnlockCreateResponse{}
+	}
+	return
+}
+
 func (c clientMock) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (resp *DeleteResponse, err error) {
 	if in.Matcher.Key == "missing" {
 		err = status.Error(codes.NotFound, "")

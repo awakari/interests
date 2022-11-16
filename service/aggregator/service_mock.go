@@ -2,7 +2,6 @@ package aggregator
 
 import (
 	"context"
-	"errors"
 	"github.com/meandros-messaging/subscriptions/model"
 )
 
@@ -30,37 +29,47 @@ func NewServiceMock(
 }
 
 func (svc *serviceMock) Update(ctx context.Context, m Match) (err error) {
+	//
 	msgId := m.MessageId
-	var mgEvt MatchInGroup
-	var tbl *map[model.MessageId]*map[model.SubscriptionKey]MatchInGroupMock
-	if m.Includes != nil {
-		if m.Excludes != nil {
-			return errors.New("invalid match event")
-		}
-		mgEvt = *m.Includes
-		tbl = svc.includes
-	} else if m.Excludes != nil {
-		mgEvt = *m.Excludes
-		tbl = svc.excludes
-	} else {
-		return errors.New("invalid match event")
-	}
-	mgBySub, found := (*tbl)[msgId]
+	subKey := m.SubscriptionKey
+	//
+	incMgBySub, found := (*svc.includes)[msgId]
 	if !found {
 		t := make(map[model.SubscriptionKey]MatchInGroupMock)
-		mgBySub = &t
-		(*tbl)[msgId] = mgBySub
+		incMgBySub = &t
+		(*svc.includes)[msgId] = incMgBySub
 	}
-	subKey := m.SubscriptionKey
-	mg, found := (*mgBySub)[subKey]
+	incMg, found := (*incMgBySub)[subKey]
 	if !found {
-		mg = MatchInGroupMock{
-			all:          mgEvt.All,
-			matcherCount: mgEvt.MatcherCount,
+		incMg = MatchInGroupMock{
+			all:          m.Includes.All,
+			matcherCount: m.Includes.MatcherCount,
 			matchedCount: 0,
 		}
 	}
-	mg.matchedCount += 1
-	(*mgBySub)[subKey] = mg
+	//
+	excMgBySub, found := (*svc.excludes)[msgId]
+	if !found {
+		t := make(map[model.SubscriptionKey]MatchInGroupMock)
+		excMgBySub = &t
+		(*svc.excludes)[msgId] = excMgBySub
+	}
+	excMg, found := (*excMgBySub)[subKey]
+	if !found {
+		excMg = MatchInGroupMock{
+			all:          m.Excludes.All,
+			matcherCount: m.Excludes.MatcherCount,
+			matchedCount: 0,
+		}
+	}
+	//
+	if m.InExcludes {
+		excMg.matchedCount += 1
+		(*excMgBySub)[subKey] = excMg
+	} else {
+		incMg.matchedCount += 1
+		(*incMgBySub)[subKey] = incMg
+	}
+	//
 	return
 }

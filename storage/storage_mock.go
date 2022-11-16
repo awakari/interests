@@ -24,9 +24,14 @@ func (s storageMock) Close() error {
 	return nil
 }
 
-func (s storageMock) Create(ctx context.Context, sub model.Subscription) error {
-	s.storage[sub.SubscriptionKey] = sub
-	return nil
+func (s storageMock) Create(ctx context.Context, sub model.Subscription) (err error) {
+	_, found := s.storage[sub.SubscriptionKey]
+	if found {
+		err = ErrConflict
+	} else {
+		s.storage[sub.SubscriptionKey] = sub
+	}
+	return
 }
 
 func (s storageMock) Read(ctx context.Context, name string) (sub model.Subscription, err error) {
@@ -73,10 +78,10 @@ func (s storageMock) ListNames(ctx context.Context, limit uint32, cursor string)
 func (s storageMock) Find(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error) {
 	var mg model.MatcherGroup
 	for _, sub := range s.storage {
-		if q.Includes {
-			mg = sub.Includes
-		} else if q.Includes {
+		if q.InExcludes {
 			mg = sub.Excludes
+		} else {
+			mg = sub.Includes
 		}
 		for _, m := range mg.Matchers {
 			if matchersEqual(m, q.Matcher) {

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/meandros-messaging/subscriptions/model"
 	"github.com/meandros-messaging/subscriptions/service/aggregator"
 	"github.com/meandros-messaging/subscriptions/service/lexemes"
@@ -82,6 +83,12 @@ var (
 
 	// ErrNotFound indicates the subscription is missing in the storage and can not be read/updated/deleted.
 	ErrNotFound = errors.New("subscription was not found")
+
+	// ErrShouldRetry indicates a storage entity is locked and the operation should be retried.
+	ErrShouldRetry = errors.New("retry the operation")
+
+	// ErrInternal indicates some unexpected internal failure.
+	ErrInternal = errors.New("internal failure")
 )
 
 func NewService(
@@ -134,19 +141,8 @@ func (svc service) createMatchers(
 ) {
 	var md model.MatcherData
 	for _, em := range matcherInputs {
-		if inExcludes {
-			if em.Partial {
-				md, err = svc.excludesPartialMatchers.Create(ctx, em.Key, em.Pattern.Src)
-			} else {
-				md, err = svc.excludesCompleteMatchers.Create(ctx, em.Key, em.Pattern.Src)
-			}
-		} else {
-			if em.Partial {
-				md, err = svc.includesPartialMatchers.Create(ctx, em.Key, em.Pattern.Src)
-			} else {
-				md, err = svc.includesCompleteMatchers.Create(ctx, em.Key, em.Pattern.Src)
-			}
-		}
+		matchersSvc := svc.selectMatchersService(inExcludes, em.Partial)
+		md, err = matchersSvc.Create(ctx, em.Key, em.Pattern.Src)
 		if err != nil {
 			break
 		}
@@ -155,6 +151,23 @@ func (svc service) createMatchers(
 			Partial:     em.Partial,
 		}
 		ms = append(ms, m)
+	}
+	return
+}
+
+func (svc service) selectMatchersService(inExcludes bool, partial bool) (matchersSvc matchers.Service) {
+	if inExcludes {
+		if partial {
+			matchersSvc = svc.excludesPartialMatchers
+		} else {
+			matchersSvc = svc.excludesCompleteMatchers
+		}
+	} else {
+		if partial {
+			matchersSvc = svc.includesPartialMatchers
+		} else {
+			matchersSvc = svc.includesCompleteMatchers
+		}
 	}
 	return
 }
@@ -192,10 +205,10 @@ func (svc service) Update(ctx context.Context, subKey model.SubscriptionKey, req
 				return createErr
 			})
 			g.Go(func() error {
-				return svc.deleteMatchers(ctx, req.Includes.Delete, false)
+				return svc.clearUnusedMatchers(ctx, req.Includes.Delete, false)
 			})
 			g.Go(func() error {
-				return svc.deleteMatchers(ctx, req.Excludes.Delete, true)
+				return svc.clearUnusedMatchers(ctx, req.Excludes.Delete, true)
 			})
 			g.Go(func() error {
 				return svc.stor.Update(gCtx, sub)
@@ -256,10 +269,10 @@ func (svc service) Delete(ctx context.Context, name string) (err error) {
 		// delete matchers or decrement the corresponding reference counts also
 		g, gCtx := errgroup.WithContext(ctx)
 		g.Go(func() error {
-			return svc.deleteMatchers(gCtx, sub.Includes.Matchers, false)
+			return svc.clearUnusedMatchers(gCtx, sub.Includes.Matchers, false)
 		})
 		g.Go(func() error {
-			return svc.deleteMatchers(gCtx, sub.Excludes.Matchers, true)
+			return svc.clearUnusedMatchers(gCtx, sub.Excludes.Matchers, true)
 		})
 		err = g.Wait()
 		break
@@ -268,9 +281,9 @@ func (svc service) Delete(ctx context.Context, name string) (err error) {
 	return
 }
 
-func (svc service) deleteMatchers(ctx context.Context, ms []model.Matcher, inExcludes bool) (err error) {
+func (svc service) clearUnusedMatchers(ctx context.Context, ms []model.Matcher, inExcludes bool) (err error) {
 	for _, m := range ms {
-		err = svc.deleteMatcher(ctx, m, inExcludes)
+		err = svc.deleteMatcherIfUnused(ctx, m, inExcludes)
 		if err != nil {
 			break
 		}
@@ -278,21 +291,41 @@ func (svc service) deleteMatchers(ctx context.Context, ms []model.Matcher, inExc
 	return
 }
 
-func (svc service) deleteMatcher(ctx context.Context, m model.Matcher, inExcludes bool) (err error) {
-	if inExcludes {
-		if m.Partial {
-			err = svc.excludesPartialMatchers.Delete(ctx, m.MatcherData)
-		} else {
-			err = svc.excludesCompleteMatchers.Delete(ctx, m.MatcherData)
-		}
-	} else {
-		if m.Partial {
-			err = svc.includesPartialMatchers.Delete(ctx, m.MatcherData)
-		} else {
-			err = svc.includesCompleteMatchers.Delete(ctx, m.MatcherData)
+func (svc service) deleteMatcherIfUnused(ctx context.Context, m model.Matcher, inExcludes bool) (err error) {
+	q := storage.Query{
+		Limit:      1,
+		InExcludes: inExcludes,
+		Matcher:    m,
+	}
+	var subs []model.Subscription
+	err = svc.tryLockMatcher(ctx, m, inExcludes)
+	if err == nil {
+		defer svc.unlockMatcher(ctx, m, inExcludes)
+		// find any subscription that is also using this matcher
+		subs, err = svc.stor.Find(ctx, q, "")
+		if err == nil {
+			if len(subs) == 0 {
+				// no other subscriptions found, let's delete the matcher from the corresponding storage
+				err = svc.deleteMatcher(ctx, m, inExcludes)
+			}
 		}
 	}
 	return
+}
+
+func (svc service) tryLockMatcher(ctx context.Context, m model.Matcher, inExcludes bool) (err error) {
+	matchersSvc := svc.selectMatchersService(inExcludes, m.Partial)
+	return matchersSvc.TryLockCreate(ctx, m.MatcherData.Pattern.Code)
+}
+
+func (svc service) unlockMatcher(ctx context.Context, m model.Matcher, inExcludes bool) {
+	matchersSvc := svc.selectMatchersService(inExcludes, m.Partial)
+	_ = matchersSvc.UnlockCreate(ctx, m.MatcherData.Pattern.Code)
+}
+
+func (svc service) deleteMatcher(ctx context.Context, m model.Matcher, inExcludes bool) (err error) {
+	matchersSvc := svc.selectMatchersService(inExcludes, m.Partial)
+	return matchersSvc.Delete(ctx, m.MatcherData)
 }
 
 func (svc service) ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error) {
@@ -346,20 +379,7 @@ func (svc service) resolveMatchers(
 	g, groupCtx := errgroup.WithContext(ctx)
 	var cursor model.PatternCode
 	var page []model.PatternCode
-	var matchersSvc matchers.Service
-	if inExcludes {
-		if isPartial {
-			matchersSvc = svc.excludesPartialMatchers
-		} else {
-			matchersSvc = svc.excludesCompleteMatchers
-		}
-	} else {
-		if isPartial {
-			matchersSvc = svc.includesPartialMatchers
-		} else {
-			matchersSvc = svc.includesCompleteMatchers
-		}
-	}
+	matchersSvc := svc.selectMatchersService(inExcludes, isPartial)
 	for {
 		page, err = matchersSvc.Search(ctx, k, v, svc.matchersPageSizeLimit, cursor)
 		if err != nil {
@@ -399,10 +419,9 @@ func (svc service) resolveSubscriptions(
 	var cursor string
 	var page []model.Subscription
 	q := storage.Query{
-		Limit:    svc.subsPageSizeLimit,
-		Includes: !inExcludes,
-		Excludes: inExcludes,
-		Matcher:  m,
+		Limit:      svc.subsPageSizeLimit,
+		InExcludes: inExcludes,
+		Matcher:    m,
 	}
 	for {
 		page, err = svc.stor.Find(ctx, q, cursor)
@@ -414,19 +433,20 @@ func (svc service) resolveSubscriptions(
 		}
 		cursor = page[len(page)-1].Name
 		for _, sub := range page {
-			in := aggregator.MatchInGroup{
+			in := aggregator.MatchGroup{
 				All:          sub.Includes.All,
 				MatcherCount: uint32(len(sub.Includes.Matchers)),
 			}
-			ex := aggregator.MatchInGroup{
+			ex := aggregator.MatchGroup{
 				All:          sub.Excludes.All,
 				MatcherCount: uint32(len(sub.Excludes.Matchers)),
 			}
 			match := aggregator.Match{
 				MessageId:       msgId,
 				SubscriptionKey: sub.SubscriptionKey,
-				Includes:        &in,
-				Excludes:        &ex,
+				InExcludes:      inExcludes,
+				Includes:        in,
+				Excludes:        ex,
 			}
 			g.Go(func() error {
 				return svc.aggregatorSvc.Update(groupCtx, match)
@@ -440,8 +460,16 @@ func translateError(srcErr error) (dstErr error) {
 	if srcErr == nil {
 		dstErr = nil
 	} else {
-		// TODO
-		dstErr = srcErr
+		switch {
+		case errors.Is(srcErr, storage.ErrConflict):
+			dstErr = fmt.Errorf("%w: %s", ErrConflict, srcErr)
+		case errors.Is(srcErr, storage.ErrNotFound):
+			dstErr = fmt.Errorf("%w: %s", ErrNotFound, srcErr)
+		case errors.Is(srcErr, matchers.ErrShouldRetry):
+			dstErr = fmt.Errorf("%w: %s", ErrShouldRetry, srcErr)
+		case errors.Is(srcErr, matchers.ErrInternal):
+			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)
+		}
 	}
 	return
 }

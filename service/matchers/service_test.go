@@ -6,6 +6,7 @@ import (
 	grpcApi "github.com/meandros-messaging/subscriptions/api/grpc/matchers"
 	"github.com/meandros-messaging/subscriptions/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
@@ -118,4 +119,34 @@ func TestService_Search_Fail(t *testing.T) {
 	page, err := svc.Search(ctx, "fail", "bar", 123, nil)
 	assert.ErrorIs(t, err, ErrInternal)
 	assert.Empty(t, page)
+}
+
+func TestService_TryLockCreate(t *testing.T) {
+	//
+	client := grpcApi.NewClientMock()
+	svc := NewService(client)
+	//
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	_, err := svc.Create(ctx, "subject", "orders")
+	require.Nil(t, err)
+	err = svc.TryLockCreate(ctx, []byte("orders"))
+	assert.Nil(t, err)
+	err = svc.TryLockCreate(ctx, []byte("missing"))
+	assert.ErrorIs(t, err, ErrNotFound)
+	err = svc.TryLockCreate(ctx, []byte("fail"))
+	assert.ErrorIs(t, err, ErrInternal)
+}
+
+func TestService_UnlockCreate(t *testing.T) {
+	//
+	client := grpcApi.NewClientMock()
+	svc := NewService(client)
+	//
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	err := svc.UnlockCreate(ctx, []byte("orders"))
+	assert.Nil(t, err)
+	err = svc.UnlockCreate(ctx, []byte("fail"))
+	assert.ErrorIs(t, err, ErrInternal)
 }

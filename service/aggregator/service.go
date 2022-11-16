@@ -2,14 +2,15 @@ package aggregator
 
 import (
 	"context"
+	"errors"
 	"github.com/meandros-messaging/subscriptions/model"
 )
 
 type (
 
-	// MatchInGroup represents the reduced information about the model.MatcherGroup necessary to match it on the
+	// MatchGroup represents the reduced information about the model.MatcherGroup necessary to match it on the
 	// aggregator side.
-	MatchInGroup struct {
+	MatchGroup struct {
 
 		// All represents the model.MatcherGroup matching constraint. See the corresponding field in the
 		// model.MatcherGroup for details.
@@ -29,13 +30,15 @@ type (
 		// SubscriptionKey represents the model.Subscription for which the current Match event occurred.
 		SubscriptionKey model.SubscriptionKey
 
+		// InExcludes defines whether the match occurred in the Excludes matcher group.
+		// Match occurred in Includes matcher group otherwise (when false).
+		InExcludes bool
+
 		// Includes represents the corresponding model.Subscription includes model.Matcher group.
-		// Nil if match occurred in another (Excludes) group.
-		Includes *MatchInGroup
+		Includes MatchGroup
 
 		// Includes represents the corresponding model.Subscription excludes model.Matcher group.
-		// Nil if match occured in another (Includes) group.
-		Excludes *MatchInGroup
+		Excludes MatchGroup
 	}
 
 	// Service represents the aggregator service.
@@ -45,4 +48,10 @@ type (
 		// model.MessageId and model.SubscriptionKey pair in the event.
 		Update(ctx context.Context, m Match) (err error)
 	}
+)
+
+var (
+
+	// ErrInternal indicates some unexpected internal failure.
+	ErrInternal = errors.New("internal failure")
 )
