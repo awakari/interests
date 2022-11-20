@@ -18,6 +18,7 @@ type (
 
 		// Create an empty model.Subscription with the specified name and description.
 		// Returns ErrConflict if a Subscription with the same name already present in the underlying storage.
+		// Returns model.ErrInvalidSubscription if the specified CreateRequest is invalid.
 		Create(ctx context.Context, name string, req CreateRequest) (err error)
 
 		// Read the specified model.Subscription.
@@ -25,7 +26,8 @@ type (
 		Read(ctx context.Context, name string) (sub model.Subscription, err error)
 
 		// Update applies the updates specified in the request to the existing model.Subscription.
-		// Returns ErrNotFund f not exist or version mismatches.
+		// Returns ErrNotFound f not exist or version mismatches.
+		// Returns model.ErrInvalidSubscription if the update yields an invalid subscription state.
 		Update(ctx context.Context, subKey model.SubscriptionKey, req UpdateRequest) (err error)
 
 		// Delete a model.Subscription and all associated model.Matcher those not in use by any other model.Subscription.
@@ -72,10 +74,6 @@ type (
 	}
 )
 
-const (
-	versionInitial = uint64(0)
-)
-
 var (
 
 	// ErrConflict indicates the subscription exists in the underlying storage and can not be created.
@@ -118,13 +116,17 @@ func NewService(
 func (svc service) Create(ctx context.Context, name string, req CreateRequest) (err error) {
 	var sub model.Subscription
 	sub.Name = name
-	sub.Version = versionInitial
 	sub.Description = req.Description
-	sub.Includes.Matchers, err = svc.createMatchers(ctx, sub.Includes.Matchers, false)
+	sub.Includes = req.Includes
+	sub.Excludes = req.Excludes
+	err = sub.Validate()
 	if err == nil {
-		sub.Excludes.Matchers, err = svc.createMatchers(ctx, req.Excludes.Matchers, true)
+		sub.Includes.Matchers, err = svc.createMatchers(ctx, req.Includes.Matchers, false)
 		if err == nil {
-			err = svc.stor.Create(ctx, sub)
+			sub.Excludes.Matchers, err = svc.createMatchers(ctx, req.Excludes.Matchers, true)
+			if err == nil {
+				err = svc.stor.Create(ctx, sub)
+			}
 		}
 	}
 	err = translateError(err)
@@ -195,25 +197,28 @@ func (svc service) Update(ctx context.Context, subKey model.SubscriptionKey, req
 			sub.Includes.Matchers = delAllExisting(req.Includes.Delete, sub.Includes.Matchers)
 			sub.Excludes.Matchers = delAllExisting(req.Excludes.Delete, sub.Excludes.Matchers)
 			//
-			g, gCtx := errgroup.WithContext(ctx)
-			g.Go(func() error {
-				_, createErr := svc.createMatchers(ctx, req.Includes.Add, false)
-				return createErr
-			})
-			g.Go(func() error {
-				_, createErr := svc.createMatchers(ctx, req.Excludes.Add, true)
-				return createErr
-			})
-			g.Go(func() error {
-				return svc.clearUnusedMatchers(ctx, req.Includes.Delete, false)
-			})
-			g.Go(func() error {
-				return svc.clearUnusedMatchers(ctx, req.Excludes.Delete, true)
-			})
-			g.Go(func() error {
-				return svc.stor.Update(gCtx, sub)
-			})
-			err = g.Wait()
+			err = sub.Validate()
+			if err == nil {
+				g, gCtx := errgroup.WithContext(ctx)
+				g.Go(func() error {
+					_, createErr := svc.createMatchers(ctx, req.Includes.Add, false)
+					return createErr
+				})
+				g.Go(func() error {
+					_, createErr := svc.createMatchers(ctx, req.Excludes.Add, true)
+					return createErr
+				})
+				g.Go(func() error {
+					return svc.clearUnusedMatchers(ctx, req.Includes.Delete, false)
+				})
+				g.Go(func() error {
+					return svc.clearUnusedMatchers(ctx, req.Excludes.Delete, true)
+				})
+				g.Go(func() error {
+					return svc.stor.Update(gCtx, sub)
+				})
+				err = g.Wait()
+			}
 		}
 	}
 	err = translateError(err)
@@ -243,6 +248,16 @@ func delAllExisting(deletions []model.Matcher, dst []model.Matcher) (result []mo
 			if !del.Equal(m) {
 				result = append(result, m)
 			}
+		}
+	}
+	return
+}
+
+func (svc service) clearUnusedMatchers(ctx context.Context, ms []model.Matcher, inExcludes bool) (err error) {
+	for _, m := range ms {
+		err = svc.deleteMatcherIfUnused(ctx, m, inExcludes)
+		if err != nil {
+			break
 		}
 	}
 	return
@@ -278,16 +293,6 @@ func (svc service) Delete(ctx context.Context, name string) (err error) {
 		break
 	}
 	err = translateError(err)
-	return
-}
-
-func (svc service) clearUnusedMatchers(ctx context.Context, ms []model.Matcher, inExcludes bool) (err error) {
-	for _, m := range ms {
-		err = svc.deleteMatcherIfUnused(ctx, m, inExcludes)
-		if err != nil {
-			break
-		}
-	}
 	return
 }
 
@@ -468,6 +473,10 @@ func translateError(srcErr error) (dstErr error) {
 		case errors.Is(srcErr, matchers.ErrShouldRetry):
 			dstErr = fmt.Errorf("%w: %s", ErrShouldRetry, srcErr)
 		case errors.Is(srcErr, matchers.ErrInternal):
+			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)
+		case errors.Is(srcErr, model.ErrInvalidSubscription):
+			dstErr = srcErr
+		default:
 			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)
 		}
 	}

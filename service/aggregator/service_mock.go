@@ -13,14 +13,14 @@ type (
 	}
 
 	serviceMock struct {
-		includes *map[model.MessageId]*map[model.SubscriptionKey]MatchInGroupMock
-		excludes *map[model.MessageId]*map[model.SubscriptionKey]MatchInGroupMock
+		includes map[model.MessageId]map[model.SubscriptionKey]MatchInGroupMock
+		excludes map[model.MessageId]map[model.SubscriptionKey]MatchInGroupMock
 	}
 )
 
 func NewServiceMock(
-	includes *map[model.MessageId]*map[model.SubscriptionKey]MatchInGroupMock,
-	excludes *map[model.MessageId]*map[model.SubscriptionKey]MatchInGroupMock,
+	includes map[model.MessageId]map[model.SubscriptionKey]MatchInGroupMock,
+	excludes map[model.MessageId]map[model.SubscriptionKey]MatchInGroupMock,
 ) Service {
 	return &serviceMock{
 		includes: includes,
@@ -33,13 +33,12 @@ func (svc *serviceMock) Update(ctx context.Context, m Match) (err error) {
 	msgId := m.MessageId
 	subKey := m.SubscriptionKey
 	//
-	incMgBySub, found := (*svc.includes)[msgId]
+	incMgBySub, found := svc.includes[msgId]
 	if !found {
-		t := make(map[model.SubscriptionKey]MatchInGroupMock)
-		incMgBySub = &t
-		(*svc.includes)[msgId] = incMgBySub
+		incMgBySub = make(map[model.SubscriptionKey]MatchInGroupMock)
+		svc.includes[msgId] = incMgBySub
 	}
-	incMg, found := (*incMgBySub)[subKey]
+	incMg, found := incMgBySub[subKey]
 	if !found {
 		incMg = MatchInGroupMock{
 			all:          m.Includes.All,
@@ -48,13 +47,12 @@ func (svc *serviceMock) Update(ctx context.Context, m Match) (err error) {
 		}
 	}
 	//
-	excMgBySub, found := (*svc.excludes)[msgId]
+	excMgBySub, found := svc.excludes[msgId]
 	if !found {
-		t := make(map[model.SubscriptionKey]MatchInGroupMock)
-		excMgBySub = &t
-		(*svc.excludes)[msgId] = excMgBySub
+		excMgBySub = make(map[model.SubscriptionKey]MatchInGroupMock)
+		svc.excludes[msgId] = excMgBySub
 	}
-	excMg, found := (*excMgBySub)[subKey]
+	excMg, found := excMgBySub[subKey]
 	if !found {
 		excMg = MatchInGroupMock{
 			all:          m.Excludes.All,
@@ -65,10 +63,10 @@ func (svc *serviceMock) Update(ctx context.Context, m Match) (err error) {
 	//
 	if m.InExcludes {
 		excMg.matchedCount += 1
-		(*excMgBySub)[subKey] = excMg
+		excMgBySub[subKey] = excMg
 	} else {
 		incMg.matchedCount += 1
-		(*incMgBySub)[subKey] = incMg
+		incMgBySub[subKey] = incMg
 	}
 	//
 	return

@@ -1,5 +1,10 @@
 package model
 
+import (
+	"errors"
+	"fmt"
+)
+
 type (
 
 	// Subscription represents the storage-level subscription entry.
@@ -16,3 +21,21 @@ type (
 		Excludes MatcherGroup
 	}
 )
+
+var (
+
+	// ErrInvalidSubscription indicates the Subscription is invalid
+	ErrInvalidSubscription = errors.New("invalid subscription")
+)
+
+func (sub Subscription) Validate() (err error) {
+	err = sub.SubscriptionKey.Validate()
+	if err != nil {
+		err = fmt.Errorf("%w: %s", ErrInvalidSubscription, err)
+	} else {
+		if len(sub.Includes.Matchers) == 0 && len(sub.Excludes.Matchers) == 0 {
+			err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "both includes and excludes matcher groups are empty")
+		}
+	}
+	return
+}
