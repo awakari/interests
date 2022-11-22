@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/service/aggregator"
-	"github.com/meandros-messaging/subscriptions/service/lexemes"
 	"github.com/meandros-messaging/subscriptions/service/matchers"
 	"github.com/meandros-messaging/subscriptions/storage"
 	"github.com/stretchr/testify/assert"
@@ -15,26 +13,22 @@ import (
 
 func TestService_Create(t *testing.T) {
 	//
-	storMem := make(map[model.SubscriptionKey]model.Subscription)
+	storMem := make(map[string]model.Subscription)
 	stor := storage.NewStorageMock(storMem)
-	lexemesSvc := lexemes.NewServiceMock()
 	excCompleteMatchersSvc := matchers.NewServiceMock()
 	excPartialMatchersSvc := matchers.NewServiceMock()
 	incCompleteMatchersSvc := matchers.NewServiceMock()
 	incPartialMatchersSvc := matchers.NewServiceMock()
-	aggregatorExcStor := make(map[model.MessageId]map[model.SubscriptionKey]aggregator.MatchInGroupMock)
-	aggregatorIncStor := make(map[model.MessageId]map[model.SubscriptionKey]aggregator.MatchInGroupMock)
-	aggregatorSvc := aggregator.NewServiceMock(aggregatorIncStor, aggregatorExcStor)
 	svc := NewService(
 		stor,
 		10,
-		lexemesSvc,
+		nil,
 		excCompleteMatchersSvc,
 		excPartialMatchersSvc,
 		incCompleteMatchersSvc,
 		incPartialMatchersSvc,
 		0,
-		aggregatorSvc,
+		nil,
 	)
 	require.Nil(
 		t, svc.Create(
@@ -166,6 +160,91 @@ func TestService_Create(t *testing.T) {
 			err := svc.Create(ctx, c.name, c.req)
 			if c.err == nil {
 				assert.Nil(t, err)
+			} else {
+				assert.ErrorIs(t, err, c.err)
+			}
+		})
+	}
+}
+
+func TestService_Read(t *testing.T) {
+	//
+	storMem := make(map[string]model.Subscription)
+	stor := storage.NewStorageMock(storMem)
+	excCompleteMatchersSvc := matchers.NewServiceMock()
+	excPartialMatchersSvc := matchers.NewServiceMock()
+	incCompleteMatchersSvc := matchers.NewServiceMock()
+	incPartialMatchersSvc := matchers.NewServiceMock()
+	svc := NewService(
+		stor,
+		10,
+		nil,
+		excCompleteMatchersSvc,
+		excPartialMatchersSvc,
+		incCompleteMatchersSvc,
+		incPartialMatchersSvc,
+		0,
+		nil,
+	)
+	require.Nil(
+		t, svc.Create(
+			nil,
+			"subscription 1",
+			CreateRequest{
+				Description: "pre existing",
+				Includes: model.MatcherGroup{
+					Matchers: []model.Matcher{
+						{
+							MatcherData: model.MatcherData{
+								Key: "key0",
+								Pattern: model.Pattern{
+									Src: "pattern0",
+								},
+							},
+						},
+					},
+				},
+			},
+		),
+	)
+	//
+	cases := map[string]struct {
+		sub model.Subscription
+		err error
+	}{
+		"subscription 0": {
+			err: ErrNotFound,
+		},
+		"subscription 1": {
+			sub: model.Subscription{
+				Name:        "subscription 1",
+				Description: "pre existing",
+				Includes: model.MatcherGroup{
+					Matchers: []model.Matcher{
+						{
+							MatcherData: model.MatcherData{
+								Key: "key0",
+								Pattern: model.Pattern{
+									Src:  "pattern0",
+									Code: model.PatternCode{0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x30},
+								},
+							},
+						},
+					},
+				},
+				Excludes: model.MatcherGroup{},
+			},
+		},
+	}
+	//
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			defer cancel()
+			sub, err := svc.Read(ctx, name)
+			if c.err == nil {
+				assert.Nil(t, err)
+				assert.Equal(t, c.sub, sub)
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}

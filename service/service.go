@@ -25,11 +25,6 @@ type (
 		// Returns ErrNotFound if Subscription is missing in the underlying storage.
 		Read(ctx context.Context, name string) (sub model.Subscription, err error)
 
-		// Update applies the updates specified in the request to the existing model.Subscription.
-		// Returns ErrNotFound f not exist or version mismatches.
-		// Returns model.ErrInvalidSubscription if the update yields an invalid subscription state.
-		Update(ctx context.Context, subKey model.SubscriptionKey, req UpdateRequest) (err error)
-
 		// Delete a model.Subscription and all associated model.Matcher those not in use by any other model.Subscription.
 		// Returns ErrNotFound if model.Subscription with the specified name is missing in the underlying storage.
 		Delete(ctx context.Context, name string) (err error)
@@ -182,87 +177,6 @@ func (svc service) Read(ctx context.Context, name string) (sub model.Subscriptio
 	return
 }
 
-func (svc service) Update(ctx context.Context, subKey model.SubscriptionKey, req UpdateRequest) (err error) {
-	var sub model.Subscription
-	sub, err = svc.stor.Read(ctx, subKey.Name)
-	if err == nil {
-		if sub.Version != subKey.Version {
-			err = ErrNotFound
-		} else {
-			sub.Description = req.Description
-			sub.Includes.All = req.Includes.All
-			sub.Excludes.All = req.Excludes.All
-			sub.Includes.Matchers = addAllMissing(req.Includes.Add, sub.Includes.Matchers)
-			sub.Excludes.Matchers = addAllMissing(req.Excludes.Add, sub.Excludes.Matchers)
-			sub.Includes.Matchers = delAllExisting(req.Includes.Delete, sub.Includes.Matchers)
-			sub.Excludes.Matchers = delAllExisting(req.Excludes.Delete, sub.Excludes.Matchers)
-			//
-			err = sub.Validate()
-			if err == nil {
-				g, gCtx := errgroup.WithContext(ctx)
-				g.Go(func() error {
-					_, createErr := svc.createMatchers(ctx, req.Includes.Add, false)
-					return createErr
-				})
-				g.Go(func() error {
-					_, createErr := svc.createMatchers(ctx, req.Excludes.Add, true)
-					return createErr
-				})
-				g.Go(func() error {
-					return svc.clearUnusedMatchers(ctx, req.Includes.Delete, false)
-				})
-				g.Go(func() error {
-					return svc.clearUnusedMatchers(ctx, req.Excludes.Delete, true)
-				})
-				g.Go(func() error {
-					return svc.stor.Update(gCtx, sub)
-				})
-				err = g.Wait()
-			}
-		}
-	}
-	err = translateError(err)
-	return
-}
-
-func addAllMissing(additions []model.Matcher, dst []model.Matcher) []model.Matcher {
-	var exists bool
-	for _, addition := range additions {
-		exists = false
-		for _, m := range dst {
-			if addition.Equal(m) {
-				exists = true
-				break
-			}
-		}
-		if !exists {
-			dst = append(dst, addition)
-		}
-	}
-	return dst
-}
-
-func delAllExisting(deletions []model.Matcher, dst []model.Matcher) (result []model.Matcher) {
-	for _, m := range dst {
-		for _, del := range deletions {
-			if !del.Equal(m) {
-				result = append(result, m)
-			}
-		}
-	}
-	return
-}
-
-func (svc service) clearUnusedMatchers(ctx context.Context, ms []model.Matcher, inExcludes bool) (err error) {
-	for _, m := range ms {
-		err = svc.deleteMatcherIfUnused(ctx, m, inExcludes)
-		if err != nil {
-			break
-		}
-	}
-	return
-}
-
 func (svc service) Delete(ctx context.Context, name string) (err error) {
 	var sub model.Subscription
 	for {
@@ -272,7 +186,7 @@ func (svc service) Delete(ctx context.Context, name string) (err error) {
 			break
 		}
 		// delete only if there's no change in the subscription matchers
-		err = svc.stor.DeleteVersion(ctx, sub.SubscriptionKey)
+		err = svc.stor.Delete(ctx, name)
 		if err != nil {
 			if errors.Is(err, storage.ErrNotFound) {
 				err = nil
@@ -293,6 +207,16 @@ func (svc service) Delete(ctx context.Context, name string) (err error) {
 		break
 	}
 	err = translateError(err)
+	return
+}
+
+func (svc service) clearUnusedMatchers(ctx context.Context, ms []model.Matcher, inExcludes bool) (err error) {
+	for _, m := range ms {
+		err = svc.deleteMatcherIfUnused(ctx, m, inExcludes)
+		if err != nil {
+			break
+		}
+	}
 	return
 }
 
@@ -447,11 +371,11 @@ func (svc service) resolveSubscriptions(
 				MatcherCount: uint32(len(sub.Excludes.Matchers)),
 			}
 			match := aggregator.Match{
-				MessageId:       msgId,
-				SubscriptionKey: sub.SubscriptionKey,
-				InExcludes:      inExcludes,
-				Includes:        in,
-				Excludes:        ex,
+				MessageId:        msgId,
+				SubscriptionName: sub.Name,
+				InExcludes:       inExcludes,
+				Includes:         in,
+				Excludes:         ex,
 			}
 			g.Go(func() error {
 				return svc.aggregatorSvc.Update(groupCtx, match)
@@ -475,6 +399,14 @@ func translateError(srcErr error) (dstErr error) {
 		case errors.Is(srcErr, matchers.ErrInternal):
 			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)
 		case errors.Is(srcErr, model.ErrInvalidSubscription):
+			dstErr = srcErr
+		case errors.Is(srcErr, ErrNotFound):
+			dstErr = srcErr
+		case errors.Is(srcErr, ErrInternal):
+			dstErr = srcErr
+		case errors.Is(srcErr, ErrConflict):
+			dstErr = srcErr
+		case errors.Is(srcErr, ErrShouldRetry):
 			dstErr = srcErr
 		default:
 			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)

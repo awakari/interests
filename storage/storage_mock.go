@@ -10,11 +10,11 @@ import (
 
 type (
 	storageMock struct {
-		storage map[model.SubscriptionKey]model.Subscription
+		storage map[string]model.Subscription
 	}
 )
 
-func NewStorageMock(storage map[model.SubscriptionKey]model.Subscription) Storage {
+func NewStorageMock(storage map[string]model.Subscription) Storage {
 	return storageMock{
 		storage: storage,
 	}
@@ -25,11 +25,11 @@ func (s storageMock) Close() error {
 }
 
 func (s storageMock) Create(ctx context.Context, sub model.Subscription) (err error) {
-	_, found := s.storage[sub.SubscriptionKey]
+	_, found := s.storage[sub.Name]
 	if found {
 		err = ErrConflict
 	} else {
-		s.storage[sub.SubscriptionKey] = sub
+		s.storage[sub.Name] = sub
 	}
 	return
 }
@@ -37,7 +37,7 @@ func (s storageMock) Create(ctx context.Context, sub model.Subscription) (err er
 func (s storageMock) Read(ctx context.Context, name string) (sub model.Subscription, err error) {
 	var found bool
 	for k, v := range s.storage {
-		if k.Name == name {
+		if k == name {
 			sub = v
 			found = true
 		}
@@ -48,28 +48,20 @@ func (s storageMock) Read(ctx context.Context, name string) (sub model.Subscript
 	return
 }
 
-func (s storageMock) Update(ctx context.Context, sub model.Subscription) (err error) {
-	err = s.DeleteVersion(ctx, sub.SubscriptionKey)
-	if err == nil {
-		err = s.Create(ctx, sub)
-	}
-	return
-}
-
-func (s storageMock) DeleteVersion(ctx context.Context, subKey model.SubscriptionKey) (err error) {
+func (s storageMock) Delete(ctx context.Context, name string) (err error) {
 	var found bool
-	_, found = s.storage[subKey]
+	_, found = s.storage[name]
 	if found {
-		delete(s.storage, subKey)
+		delete(s.storage, name)
 	} else {
-		err = fmt.Errorf("%w by name: %s", ErrNotFound, subKey.Name)
+		err = fmt.Errorf("%w by name: %s", ErrNotFound, name)
 	}
 	return
 }
 
 func (s storageMock) ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error) {
 	for k, _ := range s.storage {
-		page = append(page, k.Name)
+		page = append(page, k)
 	}
 	slices.Sort(page)
 	return

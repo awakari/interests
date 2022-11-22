@@ -13,14 +13,14 @@ type (
 	}
 
 	serviceMock struct {
-		includes map[model.MessageId]map[model.SubscriptionKey]MatchInGroupMock
-		excludes map[model.MessageId]map[model.SubscriptionKey]MatchInGroupMock
+		includes map[model.MessageId]map[string]MatchInGroupMock
+		excludes map[model.MessageId]map[string]MatchInGroupMock
 	}
 )
 
 func NewServiceMock(
-	includes map[model.MessageId]map[model.SubscriptionKey]MatchInGroupMock,
-	excludes map[model.MessageId]map[model.SubscriptionKey]MatchInGroupMock,
+	includes map[model.MessageId]map[string]MatchInGroupMock,
+	excludes map[model.MessageId]map[string]MatchInGroupMock,
 ) Service {
 	return &serviceMock{
 		includes: includes,
@@ -31,14 +31,14 @@ func NewServiceMock(
 func (svc *serviceMock) Update(ctx context.Context, m Match) (err error) {
 	//
 	msgId := m.MessageId
-	subKey := m.SubscriptionKey
+	subName := m.SubscriptionName
 	//
 	incMgBySub, found := svc.includes[msgId]
 	if !found {
-		incMgBySub = make(map[model.SubscriptionKey]MatchInGroupMock)
+		incMgBySub = make(map[string]MatchInGroupMock)
 		svc.includes[msgId] = incMgBySub
 	}
-	incMg, found := incMgBySub[subKey]
+	incMg, found := incMgBySub[subName]
 	if !found {
 		incMg = MatchInGroupMock{
 			all:          m.Includes.All,
@@ -49,10 +49,10 @@ func (svc *serviceMock) Update(ctx context.Context, m Match) (err error) {
 	//
 	excMgBySub, found := svc.excludes[msgId]
 	if !found {
-		excMgBySub = make(map[model.SubscriptionKey]MatchInGroupMock)
+		excMgBySub = make(map[string]MatchInGroupMock)
 		svc.excludes[msgId] = excMgBySub
 	}
-	excMg, found := excMgBySub[subKey]
+	excMg, found := excMgBySub[subName]
 	if !found {
 		excMg = MatchInGroupMock{
 			all:          m.Excludes.All,
@@ -63,10 +63,10 @@ func (svc *serviceMock) Update(ctx context.Context, m Match) (err error) {
 	//
 	if m.InExcludes {
 		excMg.matchedCount += 1
-		excMgBySub[subKey] = excMg
+		excMgBySub[subName] = excMg
 	} else {
 		incMg.matchedCount += 1
-		incMgBySub[subKey] = incMg
+		incMgBySub[subName] = incMg
 	}
 	//
 	return

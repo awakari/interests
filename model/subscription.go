@@ -9,7 +9,9 @@ type (
 
 	// Subscription represents the storage-level subscription entry.
 	Subscription struct {
-		SubscriptionKey
+
+		// Name represents the unique Subscription name.
+		Name string
 
 		// Description represents an optional human readable Subscription description.
 		Description string
@@ -29,13 +31,8 @@ var (
 )
 
 func (sub Subscription) Validate() (err error) {
-	err = sub.SubscriptionKey.Validate()
-	if err != nil {
-		err = fmt.Errorf("%w: %s", ErrInvalidSubscription, err)
-	} else {
-		if len(sub.Includes.Matchers) == 0 && len(sub.Excludes.Matchers) == 0 {
-			err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "both includes and excludes matcher groups are empty")
-		}
+	if len(sub.Includes.Matchers) == 0 && len(sub.Excludes.Matchers) == 0 {
+		err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "both includes and excludes matcher groups are empty")
 	}
 	return
 }

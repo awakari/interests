@@ -27,8 +27,8 @@ type (
 		// MessageId represents the model.Message for which the current Match event occurred.
 		MessageId model.MessageId
 
-		// SubscriptionKey represents the model.Subscription for which the current Match event occurred.
-		SubscriptionKey model.SubscriptionKey
+		// SubscriptionName represents the model.Subscription unique name for which the current Match event occurred.
+		SubscriptionName string
 
 		// InExcludes defines whether the match occurred in the Excludes matcher group.
 		// Match occurred in Includes matcher group otherwise (when false).
@@ -45,7 +45,7 @@ type (
 	Service interface {
 
 		// Update sends the Match event for a further aggregation into a single record defined by the supplied
-		// model.MessageId and model.SubscriptionKey pair in the event.
+		// model.MessageId and model.Subscription name pair in the event.
 		Update(ctx context.Context, m Match) (err error)
 	}
 )

@@ -34,11 +34,8 @@ type (
 		// Read the specified subscription details.
 		Read(ctx context.Context, name string) (sub model.Subscription, err error)
 
-		// Update the specified subscription with new details.
-		Update(ctx context.Context, sub model.Subscription) (err error)
-
-		// DeleteVersion the same as Delete but removes the subscription only if version matches.
-		DeleteVersion(ctx context.Context, subKey model.SubscriptionKey) (err error)
+		// Delete removes the model.Subscription specified by its unique name.
+		Delete(ctx context.Context, name string) (err error)
 
 		// ListNames returns all known subscription names with the pagination support that match the specified query.
 		ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error)
