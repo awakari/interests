@@ -44,9 +44,9 @@ type (
 	// Service represents the aggregator service.
 	Service interface {
 
-		// Update sends the Match event for a further aggregation into a single record defined by the supplied
+		// Enroll sends the Match event for a further aggregation into a single record defined by the supplied
 		// model.MessageId and model.Subscription name pair in the event.
-		Update(ctx context.Context, m Match) (err error)
+		Enroll(ctx context.Context, m Match) (err error)
 	}
 )
 

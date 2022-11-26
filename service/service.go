@@ -179,22 +179,8 @@ func (svc service) Read(ctx context.Context, name string) (sub model.Subscriptio
 
 func (svc service) Delete(ctx context.Context, name string) (err error) {
 	var sub model.Subscription
-	for {
-		//
-		sub, err = svc.stor.Read(ctx, name)
-		if err != nil {
-			break
-		}
-		// delete only if there's no change in the subscription matchers
-		err = svc.stor.Delete(ctx, name)
-		if err != nil {
-			if errors.Is(err, storage.ErrNotFound) {
-				err = nil
-				continue
-			} else {
-				break
-			}
-		}
+	sub, err = svc.stor.Delete(ctx, name)
+	if err == nil {
 		// delete matchers or decrement the corresponding reference counts also
 		g, gCtx := errgroup.WithContext(ctx)
 		g.Go(func() error {
@@ -204,7 +190,6 @@ func (svc service) Delete(ctx context.Context, name string) (err error) {
 			return svc.clearUnusedMatchers(gCtx, sub.Excludes.Matchers, true)
 		})
 		err = g.Wait()
-		break
 	}
 	err = translateError(err)
 	return
@@ -378,7 +363,7 @@ func (svc service) resolveSubscriptions(
 				Excludes:         ex,
 			}
 			g.Go(func() error {
-				return svc.aggregatorSvc.Update(groupCtx, match)
+				return svc.aggregatorSvc.Enroll(groupCtx, match)
 			})
 		}
 	}
@@ -394,6 +379,8 @@ func translateError(srcErr error) (dstErr error) {
 			dstErr = fmt.Errorf("%w: %s", ErrConflict, srcErr)
 		case errors.Is(srcErr, storage.ErrNotFound):
 			dstErr = fmt.Errorf("%w: %s", ErrNotFound, srcErr)
+		case errors.Is(srcErr, storage.ErrInternal):
+			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)
 		case errors.Is(srcErr, matchers.ErrShouldRetry):
 			dstErr = fmt.Errorf("%w: %s", ErrShouldRetry, srcErr)
 		case errors.Is(srcErr, matchers.ErrInternal):

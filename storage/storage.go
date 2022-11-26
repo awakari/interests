@@ -35,7 +35,8 @@ type (
 		Read(ctx context.Context, name string) (sub model.Subscription, err error)
 
 		// Delete removes the model.Subscription specified by its unique name.
-		Delete(ctx context.Context, name string) (err error)
+		// Returns the model.Subscription if deleted, error otherwise.
+		Delete(ctx context.Context, name string) (sub model.Subscription, err error)
 
 		// ListNames returns all known subscription names with the pagination support that match the specified query.
 		ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error)
@@ -54,4 +55,7 @@ var (
 
 	// ErrNotFound indicates the subscription is missing in the storage and can not be read/updated/deleted.
 	ErrNotFound = errors.New("subscription was not found")
+
+	// ErrInternal indicates the internal storage failure happened.
+	ErrInternal = errors.New("internal subscription storage failure")
 )

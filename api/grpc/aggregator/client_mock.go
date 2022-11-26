@@ -3,6 +3,7 @@ package aggregator
 import (
 	"context"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type (
@@ -14,8 +15,7 @@ func NewClientMock() ServiceClient {
 	return clientMock{}
 }
 
-func (c clientMock) Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (resp *UpdateResponse, err error) {
+func (c clientMock) Enroll(ctx context.Context, in *EnrollRequest, opts ...grpc.CallOption) (empty *emptypb.Empty, err error) {
 	//TODO implement me
-	resp = &UpdateResponse{}
 	return
 }

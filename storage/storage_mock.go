@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/meandros-messaging/subscriptions/model"
@@ -48,9 +47,9 @@ func (s storageMock) Read(ctx context.Context, name string) (sub model.Subscript
 	return
 }
 
-func (s storageMock) Delete(ctx context.Context, name string) (err error) {
+func (s storageMock) Delete(ctx context.Context, name string) (sub model.Subscription, err error) {
 	var found bool
-	_, found = s.storage[name]
+	sub, found = s.storage[name]
 	if found {
 		delete(s.storage, name)
 	} else {
@@ -60,10 +59,14 @@ func (s storageMock) Delete(ctx context.Context, name string) (err error) {
 }
 
 func (s storageMock) ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error) {
-	for k, _ := range s.storage {
-		page = append(page, k)
+	if cursor == "fail" {
+		err = ErrInternal
+	} else {
+		for k, _ := range s.storage {
+			page = append(page, k)
+		}
+		slices.Sort(page)
 	}
-	slices.Sort(page)
 	return
 }
 
@@ -76,15 +79,11 @@ func (s storageMock) Find(ctx context.Context, q Query, cursor string) (page []m
 			mg = sub.Includes
 		}
 		for _, m := range mg.Matchers {
-			if matchersEqual(m, q.Matcher) {
+			if m.Equal(q.Matcher) && sub.Name > cursor {
 				page = append(page, sub)
 				break
 			}
 		}
 	}
 	return
-}
-
-func matchersEqual(m1, m2 model.Matcher) bool {
-	return m1.Partial == m2.Partial && m1.Key == m2.Key && bytes.Equal(m1.Pattern.Code, m2.Pattern.Code)
 }

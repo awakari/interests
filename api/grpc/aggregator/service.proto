@@ -5,15 +5,12 @@ package aggregator;
 option go_package = "./api/grpc/aggregator";
 
 import "api/grpc/aggregator/match.proto";
+import "google/protobuf/empty.proto";
 
 service Service {
-  rpc Update(UpdateRequest) returns (UpdateResponse);
+  rpc Enroll(EnrollRequest) returns (google.protobuf.Empty);
 }
 
-message UpdateRequest {
+message EnrollRequest {
   Match match = 1;
-}
-
-message UpdateResponse {
-  string error = 1;
 }
