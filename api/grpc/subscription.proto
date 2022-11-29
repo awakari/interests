@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "./api/grpc";
+
+import "api/grpc/matcher_group.proto";
+
+message Subscription {
+  string name = 1;
+  string description = 2;
+  MatcherGroup excludes = 3;
+  MatcherGroup includes = 4;
+}

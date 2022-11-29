@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "./api/grpc";
+
+import "api/grpc/matcher.proto";
+
+message MatcherGroup {
+  bool all = 1;
+  repeated Matcher matchers = 2;
+}

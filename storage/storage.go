@@ -41,10 +41,10 @@ type (
 		// ListNames returns all known subscription names with the pagination support that match the specified query.
 		ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error)
 
-		// Find returns subscriptions page where:<br/>
+		// Search returns subscriptions page where:<br/>
 		// * model.Subscription name is greater than the one specified by the cursor<br/>
 		// * subscriptions match the specified Query.
-		Find(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error)
+		Search(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error)
 	}
 )
 

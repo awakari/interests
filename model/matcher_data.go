@@ -5,10 +5,10 @@ type (
 	// MatcherData is the part of Matcher stored in the external matchers service.
 	MatcherData struct {
 
-		// Key represents the Metadata Key
+		// Key represents the metadata Key
 		Key string
 
-		// Pattern represents a Metadata value matching Pattern
+		// Pattern represents a metadata value matching Pattern
 		Pattern Pattern
 	}
 )

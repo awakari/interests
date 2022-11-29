@@ -15,8 +15,7 @@
    5.1. [Requirements](#51-requirements)<br/>
    5.2. [Approach](#52-approach)<br/>
    &nbsp;&nbsp;&nbsp;5.2.1. [Data Schema](#521-data-schema)<br/>
-   &nbsp;&nbsp;&nbsp;5.2.2. [Resolution Algorithm](#522-resolution-algorithm)<br/>
-   &nbsp;&nbsp;&nbsp;5.2.2 [Results Pagination](#523-results-pagination)<br/>
+   &nbsp;&nbsp;&nbsp;5.2.2 [Results Pagination](#522-results-pagination)<br/>
    5.3. [Limitations](#53-limitations)<br/>
 6. [Contributing](#6-contributing)<br/>
    6.1. [Versioning](#61-versioning)<br/>
@@ -123,7 +122,6 @@ Example data:
 
 ```yaml
 - name: subscription0
-  version: 42
   description: Anything related to orders that are not in Helsinki
   includes:
     all: false
@@ -145,7 +143,6 @@ Example data:
 
 ```yaml
 - name: subscription1
-  version: 0
   description: Messages that have both high priority and reply-to address of John Doe
   includes:
     all: true
@@ -168,7 +165,6 @@ Example data:
 | Attribute   | Type                                 | Description                                                 |
 |-------------|--------------------------------------|-------------------------------------------------------------|
 | name        | String                               | Unique subscription name                                    |
-| version     | Unsigned Integer                     | Subscription entry version for the optimistic lock purpose  |
 | description | String                               | Human readable subscription description                     |
 | includes    | [Matcher Group](#5212-matcher-group) | Matchers to include the subscription to query results       |
 | excludes    | [Matcher Group](#5212-matcher-group) | Matchers to exclude the subscription from the query results |
@@ -195,37 +191,7 @@ Example data:
 | code      | Array of byte | Unique pattern path in the [patterns tree](https://github.com/meandros-messaging/patterns#52-approach) |
 | regex     | String        | A regular expression to finally filter the resolved subscription candidates                            |
 
-### 5.2.2. Resolution Algorithm
-
-Pseudocode:
-```text
-- for each ($key, $pattern_code) pair resolved from the external service by the input sorted $metadata map
-    - query all subscriptions where
-        name is greater than $cursor
-            and 
-        that have any matcher in the includes group where
-            key == $key 
-                and 
-            pattern_code == $pattern_code
-    - for each $subscription from the step (2)
-        - if includes matchers group has all attribute set to true
-            - check that all matchers where 
-                (key, pattern_code) != ($key, $pattern_code)
-                are matching the corresponding values in the input $metadata map
-                if any not matching, skip the $subscription
-        - for each matcher in the excludes group
-            - assume $all_matches = true
-            - if matches anything in the input $metadata map
-                - if the excludes group has all set to false
-                    - skip the $subscription
-            - else if the excludes group has all set to true
-                - interrupt a further check
-        - if not excluded in the checks above
-            - include the subscription into the $results
-            - $cursor = $subscription.name
-```
-
-### 5.2.3. Results Pagination
+### 5.2.2. Results Pagination
 
 The limit and cursor search parameters are used to support the results' pagination.
 

@@ -1,9 +1,11 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/meandros-messaging/subscriptions/model"
+	"github.com/meandros-messaging/subscriptions/util"
 	"golang.org/x/exp/slices"
 )
 
@@ -70,20 +72,30 @@ func (s storageMock) ListNames(ctx context.Context, limit uint32, cursor string)
 	return
 }
 
-func (s storageMock) Find(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error) {
+func (s storageMock) Search(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error) {
 	var mg model.MatcherGroup
-	for _, sub := range s.storage {
+	sortedNames := util.SortedKeys(s.storage)
+	for _, subName := range sortedNames {
+		sub := s.storage[subName]
 		if q.InExcludes {
 			mg = sub.Excludes
 		} else {
 			mg = sub.Includes
 		}
 		for _, m := range mg.Matchers {
-			if m.Equal(q.Matcher) && sub.Name > cursor {
+			if matchersEqual(m, q.Matcher) && sub.Name > cursor {
 				page = append(page, sub)
 				break
 			}
 		}
+		if uint32(len(page)) == q.Limit {
+			break
+		}
 	}
 	return
+}
+
+// do not replace it with Matcher.Equal because Pattern.Source is missing in the matchers response
+func matchersEqual(m1, m2 model.Matcher) bool {
+	return m1.Partial == m2.Partial && m1.Key == m2.Key && bytes.Equal(m1.Pattern.Code, m2.Pattern.Code)
 }

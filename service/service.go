@@ -5,15 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/service/aggregator"
-	"github.com/meandros-messaging/subscriptions/service/lexemes"
 	"github.com/meandros-messaging/subscriptions/service/matchers"
 	"github.com/meandros-messaging/subscriptions/storage"
 	"golang.org/x/sync/errgroup"
 )
 
 type (
-	// Service is a Subscription CRUDL service.
+	// Service is a model.Subscription CRUDL service.
 	Service interface {
 
 		// Create an empty model.Subscription with the specified name and description.
@@ -32,10 +30,10 @@ type (
 		// ListNames returns all subscription names starting from the specified cursor.
 		ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error)
 
-		// Resolve all matching subscriptions by the specified message model.Metadata and send them to aggregator.
-		// Once returns all the matching subscriptions should be available in the aggregator with the specified
-		// model.MessageId. It's client responsibility to filter the model.Subscription candidates from the aggregator.
-		Resolve(ctx context.Context, md model.MessageDescriptor) (err error)
+		// Search returns subscriptions page where:<br/>
+		// * model.Subscription name is greater than the one specified by the cursor<br/>
+		// * subscriptions match the specified Query.
+		Search(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error)
 	}
 
 	CreateRequest struct {
@@ -44,28 +42,27 @@ type (
 		Excludes    model.MatcherGroup
 	}
 
-	UpdateRequest struct {
-		Description string
-		Includes    MatcherGroupUpdate
-		Excludes    MatcherGroupUpdate
-	}
+	// Query represents the search query to use in Service.Search
+	Query struct {
 
-	MatcherGroupUpdate struct {
-		All    bool
-		Add    []model.Matcher
-		Delete []model.Matcher
+		// Limit defines a results page size limit.
+		Limit uint32
+
+		// InExcludes defines if it's necessary to find a model.Subscription with same model.Matcher in the "InExcludes"
+		// model.MatcherGroup
+		InExcludes bool
+
+		// Matcher represents a model.Matcher that should be present in the model.Subscription to include into the
+		// search results.
+		Matcher model.Matcher
 	}
 
 	service struct {
 		stor                     storage.Storage
-		subsPageSizeLimit        uint32
-		lexemesSvc               lexemes.Service
 		excludesCompleteMatchers matchers.Service
 		excludesPartialMatchers  matchers.Service
 		includesCompleteMatchers matchers.Service
 		includesPartialMatchers  matchers.Service
-		matchersPageSizeLimit    uint32
-		aggregatorSvc            aggregator.Service
 	}
 )
 
@@ -86,25 +83,17 @@ var (
 
 func NewService(
 	stor storage.Storage,
-	subsPageSizeLimit uint32,
-	lexemesSvc lexemes.Service,
 	excludesCompleteMatchers matchers.Service,
 	excludesPartialMatchers matchers.Service,
 	includesCompleteMatchers matchers.Service,
 	includesPartialMatchers matchers.Service,
-	matchersPageSizeLimit uint32,
-	aggregatorSvc aggregator.Service,
 ) Service {
 	return service{
 		stor:                     stor,
-		subsPageSizeLimit:        subsPageSizeLimit,
-		lexemesSvc:               lexemesSvc,
 		excludesCompleteMatchers: excludesCompleteMatchers,
 		excludesPartialMatchers:  excludesPartialMatchers,
 		includesCompleteMatchers: includesCompleteMatchers,
 		includesPartialMatchers:  includesPartialMatchers,
-		matchersPageSizeLimit:    matchersPageSizeLimit,
-		aggregatorSvc:            aggregatorSvc,
 	}
 }
 
@@ -181,7 +170,6 @@ func (svc service) Delete(ctx context.Context, name string) (err error) {
 	var sub model.Subscription
 	sub, err = svc.stor.Delete(ctx, name)
 	if err == nil {
-		// delete matchers or decrement the corresponding reference counts also
 		g, gCtx := errgroup.WithContext(ctx)
 		g.Go(func() error {
 			return svc.clearUnusedMatchers(gCtx, sub.Includes.Matchers, false)
@@ -216,7 +204,7 @@ func (svc service) deleteMatcherIfUnused(ctx context.Context, m model.Matcher, i
 	if err == nil {
 		defer svc.unlockMatcher(ctx, m, inExcludes)
 		// find any subscription that is also using this matcher
-		subs, err = svc.stor.Find(ctx, q, "")
+		subs, err = svc.stor.Search(ctx, q, "")
 		if err == nil {
 			if len(subs) == 0 {
 				// no other subscriptions found, let's delete the matcher from the corresponding storage
@@ -250,124 +238,17 @@ func (svc service) ListNames(ctx context.Context, limit uint32, cursor string) (
 	return
 }
 
-func (svc service) Resolve(ctx context.Context, md model.MessageDescriptor) (err error) {
-	for k, v := range md.Metadata {
-		err = svc.resolve(ctx, md.Id, k, v)
-		if err != nil {
-			break
-		}
+func (svc service) Search(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error) {
+	storageQuery := storage.Query{
+		Limit:      q.Limit,
+		InExcludes: q.InExcludes,
+		Matcher:    q.Matcher,
+	}
+	page, err = svc.stor.Search(ctx, storageQuery, cursor)
+	if err != nil {
+		err = translateError(err)
 	}
 	return
-}
-
-func (svc service) resolve(ctx context.Context, msgId model.MessageId, k, v string) (err error) {
-	g, groupCtx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		return svc.resolveMatchers(groupCtx, msgId, k, v, false, false)
-	})
-	g.Go(func() error {
-		return svc.resolveMatchers(groupCtx, msgId, k, v, true, false)
-	})
-	valLexemes := svc.lexemesSvc.Split(v)
-	for _, lexeme := range valLexemes {
-		g.Go(func() error {
-			return svc.resolveMatchers(groupCtx, msgId, k, lexeme, false, true)
-		})
-		g.Go(func() error {
-			return svc.resolveMatchers(groupCtx, msgId, k, lexeme, true, true)
-		})
-	}
-	return g.Wait()
-}
-
-func (svc service) resolveMatchers(
-	ctx context.Context,
-	msgId model.MessageId,
-	k string,
-	v string,
-	inExcludes bool,
-	isPartial bool,
-) (
-	err error,
-) {
-	g, groupCtx := errgroup.WithContext(ctx)
-	var cursor model.PatternCode
-	var page []model.PatternCode
-	matchersSvc := svc.selectMatchersService(inExcludes, isPartial)
-	for {
-		page, err = matchersSvc.Search(ctx, k, v, svc.matchersPageSizeLimit, cursor)
-		if err != nil {
-			break
-		}
-		if len(page) == 0 {
-			break
-		}
-		cursor = page[len(page)-1]
-		for _, pc := range page {
-			m := model.Matcher{
-				MatcherData: model.MatcherData{
-					Key: k,
-					Pattern: model.Pattern{
-						Code: pc,
-					},
-				},
-				Partial: isPartial,
-			}
-			g.Go(func() error {
-				return svc.resolveSubscriptions(groupCtx, msgId, m, inExcludes)
-			})
-		}
-	}
-	return g.Wait()
-}
-
-func (svc service) resolveSubscriptions(
-	ctx context.Context,
-	msgId model.MessageId,
-	m model.Matcher,
-	inExcludes bool,
-) (
-	err error,
-) {
-	g, groupCtx := errgroup.WithContext(ctx)
-	var cursor string
-	var page []model.Subscription
-	q := storage.Query{
-		Limit:      svc.subsPageSizeLimit,
-		InExcludes: inExcludes,
-		Matcher:    m,
-	}
-	for {
-		page, err = svc.stor.Find(ctx, q, cursor)
-		if err != nil {
-			break
-		}
-		if len(page) == 0 {
-			break
-		}
-		cursor = page[len(page)-1].Name
-		for _, sub := range page {
-			in := aggregator.MatchGroup{
-				All:          sub.Includes.All,
-				MatcherCount: uint32(len(sub.Includes.Matchers)),
-			}
-			ex := aggregator.MatchGroup{
-				All:          sub.Excludes.All,
-				MatcherCount: uint32(len(sub.Excludes.Matchers)),
-			}
-			match := aggregator.Match{
-				MessageId:        msgId,
-				SubscriptionName: sub.Name,
-				InExcludes:       inExcludes,
-				Includes:         in,
-				Excludes:         ex,
-			}
-			g.Go(func() error {
-				return svc.aggregatorSvc.Enroll(groupCtx, match)
-			})
-		}
-	}
-	return g.Wait()
 }
 
 func translateError(srcErr error) (dstErr error) {

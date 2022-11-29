@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/service/aggregator"
 	"github.com/meandros-messaging/subscriptions/service/matchers"
 	"github.com/meandros-messaging/subscriptions/storage"
 	"github.com/stretchr/testify/assert"
@@ -23,14 +22,10 @@ func TestService_Create(t *testing.T) {
 	incPartialMatchersSvc := matchers.NewServiceMock()
 	svc := NewService(
 		stor,
-		10,
-		nil,
 		excCompleteMatchersSvc,
 		excPartialMatchersSvc,
 		incCompleteMatchersSvc,
 		incPartialMatchersSvc,
-		0,
-		nil,
 	)
 	require.Nil(
 		t, svc.Create(
@@ -179,14 +174,10 @@ func TestService_Read(t *testing.T) {
 	incPartialMatchersSvc := matchers.NewServiceMock()
 	svc := NewService(
 		stor,
-		10,
-		nil,
 		excCompleteMatchersSvc,
 		excPartialMatchersSvc,
 		incCompleteMatchersSvc,
 		incPartialMatchersSvc,
-		0,
-		nil,
 	)
 	require.Nil(
 		t, svc.Create(
@@ -264,14 +255,10 @@ func TestService_Delete(t *testing.T) {
 	incPartialMatchersSvc := matchers.NewServiceMock()
 	svc := NewService(
 		stor,
-		10,
-		nil,
 		excCompleteMatchersSvc,
 		excPartialMatchersSvc,
 		incCompleteMatchersSvc,
 		incPartialMatchersSvc,
-		0,
-		nil,
 	)
 	require.Nil(
 		t, svc.Create(
@@ -341,14 +328,10 @@ func TestService_ListNames(t *testing.T) {
 	incPartialMatchersSvc := matchers.NewServiceMock()
 	svc := NewService(
 		stor,
-		10,
-		nil,
 		excCompleteMatchersSvc,
 		excPartialMatchersSvc,
 		incCompleteMatchersSvc,
 		incPartialMatchersSvc,
-		0,
-		nil,
 	)
 	//
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -407,7 +390,7 @@ func TestService_ListNames(t *testing.T) {
 	}
 }
 
-func TestService_resolveSubscriptions(t *testing.T) {
+func TestService_Search(t *testing.T) {
 	//
 	storMem := make(map[string]model.Subscription)
 	stor := storage.NewStorageMock(storMem)
@@ -415,60 +398,224 @@ func TestService_resolveSubscriptions(t *testing.T) {
 	excPartialMatchersSvc := matchers.NewServiceMock()
 	incCompleteMatchersSvc := matchers.NewServiceMock()
 	incPartialMatchersSvc := matchers.NewServiceMock()
-	aggregatorSink := make(chan aggregator.Match, 10)
-	aggregatorSvc := aggregator.NewServiceMock(aggregatorSink)
 	svc := NewService(
 		stor,
-		10,
-		nil,
 		excCompleteMatchersSvc,
 		excPartialMatchersSvc,
 		incCompleteMatchersSvc,
 		incPartialMatchersSvc,
-		10,
-		aggregatorSvc,
 	)
 	//
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	//
-	for i := 0; i < 10; i++ {
-		req := CreateRequest{
-			Description: fmt.Sprintf("my subscription #%d", i),
-			Includes: model.MatcherGroup{
-				Matchers: []model.Matcher{
-					{
-						MatcherData: model.MatcherData{
-							Key: fmt.Sprintf("key%d", i),
-						},
+	for i := 0; i < 100; i++ {
+		inExcludes := i%2 == 1 // every 2nd: 1, 3, 5, 7, 9, ...
+		matchers := []model.Matcher{
+			{
+				Partial: i%3 == 2, // every 3rd: 2, 5, 8, ...
+				MatcherData: model.MatcherData{
+					Key: fmt.Sprintf("key%d", i%4),
+					Pattern: model.Pattern{
+						Src: fmt.Sprintf("pattern%d", i%5),
 					},
 				},
 			},
 		}
+		var req CreateRequest
+		if inExcludes {
+			req.Excludes = model.MatcherGroup{
+				Matchers: matchers,
+			}
+		} else {
+			req.Includes = model.MatcherGroup{
+				Matchers: matchers,
+			}
+		}
 		require.Nil(t, svc.Create(ctx, fmt.Sprintf("sub%d", i), req))
 	}
 	//
-	err := svc.(service).resolveSubscriptions(
-		ctx,
-		31415926,
-		model.Matcher{
-			MatcherData: model.MatcherData{
-				Key: "key1",
+	cases := map[string]struct {
+		query  Query
+		cursor string
+		page   []model.Subscription
+		err    error
+	}{
+		"key0/pattern0 -> 3 subs": {
+			query: Query{
+				Limit: 10,
+				Matcher: model.Matcher{
+					MatcherData: model.MatcherData{
+						Key: "key0",
+						Pattern: model.Pattern{
+							Code: []byte("pattern0"),
+						},
+					},
+				},
+			},
+			page: []model.Subscription{
+				{
+					Name: "sub0",
+					Includes: model.MatcherGroup{
+						Matchers: []model.Matcher{
+							{
+								MatcherData: model.MatcherData{
+									Key: "key0",
+									Pattern: model.Pattern{
+										Code: []byte("pattern0"),
+										Src:  "pattern0",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Name: "sub40",
+					Includes: model.MatcherGroup{
+						Matchers: []model.Matcher{
+							{
+								MatcherData: model.MatcherData{
+									Key: "key0",
+									Pattern: model.Pattern{
+										Code: []byte("pattern0"),
+										Src:  "pattern0",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Name: "sub60",
+					Includes: model.MatcherGroup{
+						Matchers: []model.Matcher{
+							{
+								MatcherData: model.MatcherData{
+									Key: "key0",
+									Pattern: model.Pattern{
+										Code: []byte("pattern0"),
+										Src:  "pattern0",
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
-		false,
-	)
-	assert.Nil(t, err)
-	select {
-	case m := <-aggregatorSink:
-		assert.Equal(t, aggregator.Match{
-			MessageId:        31415926,
-			SubscriptionName: "sub1",
-			Includes: aggregator.MatchGroup{
-				MatcherCount: 1,
+		"key1/pattern1, limit=2": {
+			query: Query{
+				Limit:      2,
+				InExcludes: true,
+				Matcher: model.Matcher{
+					MatcherData: model.MatcherData{
+						Key: "key1",
+						Pattern: model.Pattern{
+							Code: []byte("pattern1"),
+						},
+					},
+				},
 			},
-		}, m)
-	default:
-		assert.Fail(t, "no match received")
+			page: []model.Subscription{
+				{
+					Name: "sub1",
+					Excludes: model.MatcherGroup{
+						Matchers: []model.Matcher{
+							{
+								MatcherData: model.MatcherData{
+									Key: "key1",
+									Pattern: model.Pattern{
+										Code: []byte("pattern1"),
+										Src:  "pattern1",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Name: "sub21",
+					Excludes: model.MatcherGroup{
+						Matchers: []model.Matcher{
+							{
+								MatcherData: model.MatcherData{
+									Key: "key1",
+									Pattern: model.Pattern{
+										Code: []byte("pattern1"),
+										Src:  "pattern1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"key1/pattern1, cursor=sub21": {
+			query: Query{
+				Limit:      3,
+				InExcludes: true,
+				Matcher: model.Matcher{
+					MatcherData: model.MatcherData{
+						Key: "key1",
+						Pattern: model.Pattern{
+							Code: []byte("pattern1"),
+						},
+					},
+				},
+			},
+			cursor: "sub21",
+			page: []model.Subscription{
+				{
+					Name: "sub61",
+					Excludes: model.MatcherGroup{
+						Matchers: []model.Matcher{
+							{
+								MatcherData: model.MatcherData{
+									Key: "key1",
+									Pattern: model.Pattern{
+										Code: []byte("pattern1"),
+										Src:  "pattern1",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Name: "sub81",
+					Excludes: model.MatcherGroup{
+						Matchers: []model.Matcher{
+							{
+								MatcherData: model.MatcherData{
+									Key: "key1",
+									Pattern: model.Pattern{
+										Code: []byte("pattern1"),
+										Src:  "pattern1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	//
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			defer cancel()
+			page, err := svc.Search(ctx, c.query, c.cursor)
+			if c.err == nil {
+				assert.Nil(t, err)
+				assert.Equal(t, len(c.page), len(page))
+				for i, sub := range page {
+					assert.Equal(t, c.page[i], sub)
+				}
+			} else {
+				assert.ErrorIs(t, err, c.err)
+			}
+		})
 	}
 }

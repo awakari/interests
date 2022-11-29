@@ -50,6 +50,58 @@ func TestSubscription_Validate(t *testing.T) {
 				},
 			},
 		},
+		"dup matcher in includes group": {
+			sub: Subscription{
+				Name: "sub0",
+				Includes: MatcherGroup{
+					Matchers: []Matcher{
+						{
+							MatcherData: MatcherData{
+								Key: "key0",
+								Pattern: Pattern{
+									Src: "pattern0",
+								},
+							},
+						},
+						{
+							MatcherData: MatcherData{
+								Key: "key0",
+								Pattern: Pattern{
+									Src: "pattern0",
+								},
+							},
+						},
+					},
+				},
+			},
+			err: ErrInvalidSubscription,
+		},
+		"dup matcher in excludes group": {
+			sub: Subscription{
+				Name: "sub0",
+				Excludes: MatcherGroup{
+					Matchers: []Matcher{
+						{
+							MatcherData: MatcherData{
+								Key: "key0",
+								Pattern: Pattern{
+									Src: "pattern0",
+								},
+							},
+						},
+						{
+							MatcherData: MatcherData{
+								Key: "key0",
+								Pattern: Pattern{
+									Src: "pattern0",
+								},
+							},
+						},
+					},
+				},
+			},
+			err: ErrInvalidSubscription,
+		},
 	}
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {

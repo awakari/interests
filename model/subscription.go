@@ -35,6 +35,16 @@ func (sub Subscription) Validate() (err error) {
 		err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "empty name")
 	} else if len(sub.Includes.Matchers) == 0 && len(sub.Excludes.Matchers) == 0 {
 		err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "both includes and excludes matcher groups are empty")
+	} else {
+		err = sub.Includes.Validate()
+		if err != nil {
+			err = fmt.Errorf("%w: includes: %s", ErrInvalidSubscription, err)
+		} else {
+			err = sub.Excludes.Validate()
+			if err != nil {
+				err = fmt.Errorf("%w: excludes: %s", ErrInvalidSubscription, err)
+			}
+		}
 	}
 	return
 }

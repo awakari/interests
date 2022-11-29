@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "./api/grpc";
+
+import "api/grpc/matcher.proto";
+import "api/grpc/matcher_group.proto";
+import "api/grpc/subscription.proto";
+import "google/protobuf/empty.proto";
+
+service Service {
+  rpc Create(CreateRequest) returns (google.protobuf.Empty);
+  rpc Read(ReadRequest) returns (Subscription);
+  rpc Delete(DeleteRequest) returns (google.protobuf.Empty);
+  rpc ListNames(ListNamesRequest) returns (ListNamesResponse);
+  rpc Search(SearchRequest) returns (SearchResponse);
+}
+
+message CreateRequest {
+  string name = 1;
+  string description = 2;
+  MatcherGroup excludes = 3;
+  MatcherGroup includes = 4;
+}
+
+message ReadRequest {
+  string name = 1;
+}
+
+message DeleteRequest {
+  string name = 1;
+}
+
+message ListNamesRequest {
+  string cursor = 1;
+  uint32 limit = 2;
+}
+
+message ListNamesResponse {
+  repeated string names = 1;
+}
+
+message SearchRequest {
+  string cursor = 1;
+  uint32 limit = 2;
+  bool inExcludes = 3;
+  Matcher matcher = 4;
+}
+
+message SearchResponse {
+  repeated Subscription page = 1;
+}

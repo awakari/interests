@@ -58,12 +58,16 @@ func (svc serviceMock) Delete(ctx context.Context, m model.MatcherData) (err err
 }
 
 func (svc serviceMock) Search(ctx context.Context, k, v string, limit uint32, cursor model.PatternCode) (page []model.PatternCode, err error) {
-	if k == "fail" {
-		err = ErrInternal
-	} else {
-		page = []model.PatternCode{
-			[]byte("abc"),
-			[]byte("def"),
+	if cursor == nil {
+		if k == "fail" {
+			err = ErrInternal
+		} else {
+			page = []model.PatternCode{
+				[]byte("pattern0"),
+				[]byte("pattern1"),
+				[]byte("pattern2"),
+				[]byte("pattern3"),
+			}
 		}
 	}
 	return

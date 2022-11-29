@@ -4,7 +4,7 @@
 *.dll
 *.so
 *.dylib
-subscriptions
+./subscriptions
 cover.tmp
 
 # Test binary, built with `go test -c`
@@ -20,4 +20,3 @@ vendor/
 
 config/dev.yaml
 ghcr_io_pat.txt
-version.txt
