@@ -79,6 +79,9 @@ var (
 
 	// ErrInternal indicates some unexpected internal failure.
 	ErrInternal = errors.New("internal failure")
+
+	// ErrCleanMatcher indicates unused matchers cleanup failure upon a subscription deletion.
+	ErrCleanMatcher = errors.New("matchers cleanup failure, may cause matchers garbage")
 )
 
 func NewService(
@@ -178,16 +181,19 @@ func (svc service) Delete(ctx context.Context, name string) (err error) {
 			return svc.clearUnusedMatchers(gCtx, sub.Excludes.Matchers, true)
 		})
 		err = g.Wait()
+		if err != nil {
+			err = fmt.Errorf("%w: %s, subscription: %v", ErrCleanMatcher, err, sub)
+		}
 	}
 	err = translateError(err)
 	return
 }
 
-func (svc service) clearUnusedMatchers(ctx context.Context, ms []model.Matcher, inExcludes bool) (err error) {
+func (svc service) clearUnusedMatchers(ctx context.Context, ms []model.Matcher, inExcludes bool) (firstErr error) {
 	for _, m := range ms {
-		err = svc.deleteMatcherIfUnused(ctx, m, inExcludes)
-		if err != nil {
-			break
+		err := svc.deleteMatcherIfUnused(ctx, m, inExcludes)
+		if err != nil && firstErr == nil {
+			firstErr = err
 		}
 	}
 	return
@@ -200,7 +206,7 @@ func (svc service) deleteMatcherIfUnused(ctx context.Context, m model.Matcher, i
 		Matcher:    m,
 	}
 	var subs []model.Subscription
-	err = svc.tryLockMatcher(ctx, m, inExcludes)
+	err = svc.lockMatcher(ctx, m, inExcludes)
 	if err == nil {
 		defer svc.unlockMatcher(ctx, m, inExcludes)
 		// find any subscription that is also using this matcher
@@ -215,9 +221,9 @@ func (svc service) deleteMatcherIfUnused(ctx context.Context, m model.Matcher, i
 	return
 }
 
-func (svc service) tryLockMatcher(ctx context.Context, m model.Matcher, inExcludes bool) (err error) {
+func (svc service) lockMatcher(ctx context.Context, m model.Matcher, inExcludes bool) error {
 	matchersSvc := svc.selectMatchersService(inExcludes, m.Partial)
-	return matchersSvc.TryLockCreate(ctx, m.MatcherData.Pattern.Code)
+	return matchersSvc.LockCreate(ctx, m.MatcherData.Pattern.Code)
 }
 
 func (svc service) unlockMatcher(ctx context.Context, m model.Matcher, inExcludes bool) {
@@ -275,6 +281,8 @@ func translateError(srcErr error) (dstErr error) {
 		case errors.Is(srcErr, ErrConflict):
 			dstErr = srcErr
 		case errors.Is(srcErr, ErrShouldRetry):
+			dstErr = srcErr
+		case errors.Is(srcErr, ErrCleanMatcher):
 			dstErr = srcErr
 		default:
 			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)

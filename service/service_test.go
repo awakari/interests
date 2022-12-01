@@ -294,14 +294,54 @@ func TestService_Delete(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(
+		t, svc.Create(
+			nil,
+			"subscription 2",
+			CreateRequest{
+				Description: "fails to clean up matchers",
+				Includes: model.MatcherGroup{
+					Matchers: []model.Matcher{
+						{
+							MatcherData: model.MatcherData{
+								Key: "key0",
+								Pattern: model.Pattern{
+									Src: "pattern0",
+								},
+							},
+						},
+					},
+				},
+				Excludes: model.MatcherGroup{
+					Matchers: []model.Matcher{
+						{
+							Partial: true,
+							MatcherData: model.MatcherData{
+								Key: "key1",
+								Pattern: model.Pattern{
+									Src: "fail",
+								},
+							},
+						},
+					},
+				},
+			},
+		),
+	)
 	//
 	cases := map[string]struct {
-		err error
+		err    error
+		errMsg string
 	}{
 		"subscription 0": {
-			ErrNotFound,
+			err:    ErrNotFound,
+			errMsg: "subscription was not found: subscription was not found by name: subscription 0",
 		},
 		"subscription 1": {},
+		"subscription 2": {
+			err:    ErrCleanMatcher,
+			errMsg: "matchers cleanup failure, may cause matchers garbage: internal failure, subscription: {subscription 2 fails to clean up matchers {false [{{key0 pattern0} false}]} {false [{{key1 fail} true}]}}",
+		},
 	}
 	//
 	for name, c := range cases {
@@ -313,6 +353,7 @@ func TestService_Delete(t *testing.T) {
 				assert.Nil(t, err)
 			} else {
 				assert.ErrorIs(t, err, c.err)
+				assert.Equal(t, c.errMsg, err.Error())
 			}
 		})
 	}

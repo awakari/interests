@@ -21,11 +21,10 @@ type (
 		// May also return ErrInternal.
 		Create(ctx context.Context, k string, patternSrc string) (m model.MatcherData, err error)
 
-		// TryLockCreate attempts to set a lock in the underlying storage to prevent the creation of any model.Matcher
-		// where pattern source translates to the same model.PatternCode.
-		// Returns ErrNotFound if locked already or the specified model.PatternCode is not present.
-		// May also return ErrInternal.
-		TryLockCreate(ctx context.Context, patternCode model.PatternCode) (err error)
+		// LockCreate sets a lock in the underlying storage to prevent the creation of any model.Matcher where the
+		// pattern source translates to the same model.PatternCode.
+		// Returns ErrNotFound if the specified model.PatternCode is not present. May also return ErrInternal.
+		LockCreate(ctx context.Context, patternCode model.PatternCode) (err error)
 
 		// UnlockCreate unsets the lock set by TryLockCreate, if any. Otherwise, the result depends on the underlying
 		// storage implementation. May return ErrInternal.
@@ -35,10 +34,6 @@ type (
 		// Returns ErrNotFound when the specified model.MatcherData is missing in the underlying storage.
 		// May also return ErrInternal.
 		Delete(ctx context.Context, m model.MatcherData) (err error)
-
-		// Search returns all matchers those match the specified key/value pair.
-		// Results are paginated, use the last pattern code from the previous page as a cursor to get the next.
-		Search(ctx context.Context, k, v string, limit uint32, cursor model.PatternCode) (page []model.PatternCode, err error)
 	}
 
 	service struct {
@@ -72,28 +67,28 @@ func (svc service) Create(ctx context.Context, k string, patternSrc string) (m m
 		Key:        k,
 		PatternSrc: patternSrc,
 	}
-	var resp *grpcApi.CreateResponse
+	var resp *grpcApi.MatcherData
 	resp, err = svc.client.Create(ctx, req)
 	if err != nil {
 		err = decodeError(err)
 	} else {
 		p := model.Pattern{
-			Code: resp.Matcher.PatternCode,
+			Code: resp.PatternCode,
 			Src:  patternSrc,
 		}
 		m = model.MatcherData{
-			Key:     resp.Matcher.Key,
+			Key:     resp.Key,
 			Pattern: p,
 		}
 	}
 	return
 }
 
-func (svc service) TryLockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
-	req := &grpcApi.TryLockCreateRequest{
+func (svc service) LockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
+	req := &grpcApi.LockCreateRequest{
 		PatternCode: patternCode,
 	}
-	_, err = svc.client.TryLockCreate(ctx, req)
+	_, err = svc.client.LockCreate(ctx, req)
 	if err != nil {
 		err = decodeError(err)
 	}
@@ -123,27 +118,6 @@ func (svc service) Delete(ctx context.Context, m model.MatcherData) (err error) 
 		err = decodeError(err)
 	}
 	return err
-}
-
-func (svc service) Search(ctx context.Context, k, v string, limit uint32, cursor model.PatternCode) (page []model.PatternCode, err error) {
-	req := &grpcApi.SearchRequest{
-		Query: &grpcApi.Query{
-			Key:   k,
-			Value: v,
-			Limit: limit,
-		},
-		Cursor: cursor,
-	}
-	var resp *grpcApi.SearchResponse
-	resp, err = svc.client.Search(ctx, req)
-	if err != nil {
-		err = decodeError(err)
-	} else {
-		for _, pc := range resp.Page {
-			page = append(page, pc)
-		}
-	}
-	return
 }
 
 func decodeError(grpcErr error) (svcErr error) {

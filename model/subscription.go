@@ -7,7 +7,7 @@ import (
 
 type (
 
-	// Subscription represents the storage-level subscription entry.
+	// Subscription represents the subscription entry.
 	Subscription struct {
 
 		// Name represents the unique Subscription name.

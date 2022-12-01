@@ -5,14 +5,13 @@ package matchers;
 option go_package = "./api/grpc/matchers";
 
 import "api/grpc/matchers/matcher.proto";
-import "api/grpc/matchers/query.proto";
+import "google/protobuf/empty.proto";
 
 service Service {
-  rpc Create(CreateRequest) returns (CreateResponse);
-  rpc TryLockCreate(TryLockCreateRequest) returns (TryLockCreateResponse);
-  rpc UnlockCreate(UnlockCreateRequest) returns (UnlockCreateResponse);
-  rpc Delete(DeleteRequest) returns (DeleteResponse);
-  rpc Search(SearchRequest) returns (SearchResponse);
+  rpc Create(CreateRequest) returns (MatcherData);
+  rpc LockCreate(LockCreateRequest) returns (google.protobuf.Empty);
+  rpc UnlockCreate(UnlockCreateRequest) returns (google.protobuf.Empty);
+  rpc Delete(DeleteRequest) returns (google.protobuf.Empty);
 }
 
 message CreateRequest {
@@ -20,41 +19,14 @@ message CreateRequest {
   string patternSrc = 2;
 }
 
-message CreateResponse {
-  string err = 1;
-  MatcherData matcher = 2;
-}
-
-message TryLockCreateRequest {
+message LockCreateRequest {
   bytes patternCode = 1;
-}
-
-message TryLockCreateResponse {
-  string error = 1;
 }
 
 message UnlockCreateRequest {
   bytes patternCode = 1;
 }
 
-message UnlockCreateResponse {
-  string error = 1;
-}
-
 message DeleteRequest {
   MatcherData matcher = 1;
-}
-
-message DeleteResponse {
-  string error = 1;
-}
-
-message SearchRequest {
-  Query query = 1;
-  optional bytes cursor = 2;
-}
-
-message SearchResponse {
-  string error = 1;
-  repeated bytes page = 2;
 }

@@ -31,11 +31,11 @@ func (lm loggingMiddleware) Create(ctx context.Context, k string, patternSrc str
 	return lm.svc.Create(ctx, k, patternSrc)
 }
 
-func (lm loggingMiddleware) TryLockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
+func (lm loggingMiddleware) LockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("%s.TryLockCreate(%s): %s", lm.pkgName, patternCode, err))
+		lm.log.Debug(fmt.Sprintf("%s.LockCreate(%s): %s", lm.pkgName, patternCode, err))
 	}()
-	return lm.svc.TryLockCreate(ctx, patternCode)
+	return lm.svc.LockCreate(ctx, patternCode)
 }
 
 func (lm loggingMiddleware) UnlockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
@@ -50,11 +50,4 @@ func (lm loggingMiddleware) Delete(ctx context.Context, m model.MatcherData) (er
 		lm.log.Debug(fmt.Sprintf("%s.Delete(%s): %s", lm.pkgName, m, err))
 	}()
 	return lm.svc.Delete(ctx, m)
-}
-
-func (lm loggingMiddleware) Search(ctx context.Context, k, v string, limit uint32, cursor model.PatternCode) (page []model.PatternCode, err error) {
-	defer func() {
-		lm.log.Debug(fmt.Sprintf("%s.Search(%s, %s, %d, %s): %s", lm.pkgName, k, v, limit, cursor, err))
-	}()
-	return lm.svc.Search(ctx, k, v, limit, cursor)
 }

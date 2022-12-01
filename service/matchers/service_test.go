@@ -99,29 +99,7 @@ func TestService_Delete(t *testing.T) {
 	}
 }
 
-func TestService_Search(t *testing.T) {
-	client := grpcApi.NewClientMock()
-	svc := NewService(client)
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-	page, err := svc.Search(ctx, "foo", "bar", 123, nil)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(page))
-	assert.Equal(t, model.PatternCode("abc"), page[0])
-	assert.Equal(t, model.PatternCode("def"), page[1])
-}
-
-func TestService_Search_Fail(t *testing.T) {
-	client := grpcApi.NewClientMock()
-	svc := NewService(client)
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-	page, err := svc.Search(ctx, "fail", "bar", 123, nil)
-	assert.ErrorIs(t, err, ErrInternal)
-	assert.Empty(t, page)
-}
-
-func TestService_TryLockCreate(t *testing.T) {
+func TestService_LockCreate(t *testing.T) {
 	//
 	client := grpcApi.NewClientMock()
 	svc := NewService(client)
@@ -130,11 +108,11 @@ func TestService_TryLockCreate(t *testing.T) {
 	defer cancel()
 	_, err := svc.Create(ctx, "subject", "orders")
 	require.Nil(t, err)
-	err = svc.TryLockCreate(ctx, []byte("orders"))
+	err = svc.LockCreate(ctx, []byte("orders"))
 	assert.Nil(t, err)
-	err = svc.TryLockCreate(ctx, []byte("missing"))
+	err = svc.LockCreate(ctx, []byte("missing"))
 	assert.ErrorIs(t, err, ErrNotFound)
-	err = svc.TryLockCreate(ctx, []byte("fail"))
+	err = svc.LockCreate(ctx, []byte("fail"))
 	assert.ErrorIs(t, err, ErrInternal)
 }
 

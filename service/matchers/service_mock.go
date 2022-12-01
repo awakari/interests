@@ -32,10 +32,8 @@ func (svc serviceMock) Create(ctx context.Context, k string, patternSrc string) 
 	return
 }
 
-func (svc serviceMock) TryLockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
-	if string(patternCode) == "locked" {
-		err = ErrNotFound
-	} else if string(patternCode) == "fail" {
+func (svc serviceMock) LockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
+	if string(patternCode) == "fail" {
 		err = ErrInternal
 	}
 	return
@@ -53,22 +51,6 @@ func (svc serviceMock) Delete(ctx context.Context, m model.MatcherData) (err err
 		return errors.New("unexpected")
 	} else if m.Key == "missing" || string(m.Pattern.Code) == "missing" {
 		err = ErrNotFound
-	}
-	return
-}
-
-func (svc serviceMock) Search(ctx context.Context, k, v string, limit uint32, cursor model.PatternCode) (page []model.PatternCode, err error) {
-	if cursor == nil {
-		if k == "fail" {
-			err = ErrInternal
-		} else {
-			page = []model.PatternCode{
-				[]byte("pattern0"),
-				[]byte("pattern1"),
-				[]byte("pattern2"),
-				[]byte("pattern3"),
-			}
-		}
 	}
 	return
 }

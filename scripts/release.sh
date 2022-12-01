@@ -1,9 +1,12 @@
 #!/bin/bash
 
-export SLUG=ghcr.io/meandros-messaging/subscriptions
-export VERSION=$(git describe --tags --abbrev=0)
+export REGISTRY=ghcr.io
+export ORG=meandros-messaging
+export COMPONENT=subscriptions
+export SLUG=${REGISTRY}/${ORG}/${COMPONENT}
+export VERSION=$(git describe --tags --abbrev=0 | cut -c 2-)
 echo "Releasing version: $VERSION"
-docker tag meandros-messaging/subscriptions "${SLUG}":"${VERSION}"
-docker tag meandros-messaging/subscriptions "${SLUG}":latest
+docker tag ${ORG}/${COMPONENT} "${SLUG}":"${VERSION}"
+docker tag ${ORG}/${COMPONENT} "${SLUG}":latest
 docker push "${SLUG}":"${VERSION}"
 docker push "${SLUG}":latest
