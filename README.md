@@ -30,23 +30,48 @@
 
 ## 1.1. Purpose
 
-TODO
+The main function is to find all subscriptions by a linked wildcard. Wildcard may be found by the sample text input 
+using [matchers](https://github.com/meandros-messaging/matchers) service, hence, it makes possible to resolve all 
+matching wildcard subscriptions.
 
 ## 1.2. Definitions
 
-TODO
+### 1.2.1. Pattern
+
+See the [definition here](https://github.com/meandros-messaging/matchers#122-pattern).
+
+### 1.2.1. Matcher
+
+Same as [matcher](https://github.com/meandros-messaging/matchers#123-matcher) but with an additional `partial` flag.
+The `partial` flag controls whether the matcher should be used to match the sample text parts matching or complete only.
+
+### 1.2.2. Matcher Group
+
+Matcher group is just a set of matchers with an additional `all` flag. This `all` flag controls whether all matchers in
+this group should match the sample input or any is enough. 
+
+### 1.2.3. Subscription
+
+Subscription is a named bundle of matchers with assigned routes and human-readable description. Matchers are listed in 
+two matcher groups:
+* `Includes`: matchers those should match the input data, all or any (matcher group attribute), completely or partially (matcher attribute).
+* `Excludes`: matchers those should not match the input data, all or any, completely or partially.
+These two matcher groups control whether the entire subscription matches the input data or not.
 
 # 2. Configuration
 
 The service is configurable using the environment variables:
 
-| Variable     | Example value                                          | Description                                                                    |
-|--------------|--------------------------------------------------------|--------------------------------------------------------------------------------|
-| API_PORT     | `8081`                                                 | gRPC API port                                                                  |
-| DB_URI       | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                              |
-| DB_NAME      | `subscriptions`                                        | DB name to store the data                                                      |
-| DB_TBL_NAME  | `subscriptions`                                        | DB table name to store the tree data                                           |
-| PATTERNS_URI | `http://localhost:8080`                                | [Patterns](https://github.com/meandros-messaging/patterns) dependency service URI |
+| Variable                           | Example value                                          | Description                                                                                          |
+|------------------------------------|--------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| API_PORT                           | `8081`                                                 | gRPC API port                                                                                        |
+| DB_URI                             | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                                    |
+| DB_NAME                            | `subscriptions`                                        | DB name to store the data                                                                            |
+| DB_TABLE_NAME                      | `subscriptions`                                        | DB table name to store the tree data                                                                 |
+| API_MATCHERS_URI_EXCLUDES_COMPLETE | `http://localhost:8080`                                | Excluding complete [matchers](https://github.com/meandros-messaging/matchers) dependency service URI |
+| API_MATCHERS_URI_EXCLUDES_PARTIAL  | `http://localhost:8080`                                | Excluding partial [matchers](https://github.com/meandros-messaging/matchers) dependency service URI  |
+| API_MATCHERS_URI_INCLUDES_COMPLETE | `http://localhost:8080`                                | Including complete [matchers](https://github.com/meandros-messaging/matchers) dependency service URI |
+| API_MATCHERS_URI_INCLUDES_PARTIAL  | `http://localhost:8080`                                | Including partial [matchers](https://github.com/meandros-messaging/matchers) dependency service URI  |
 
 # 3. Deployment
 
@@ -88,7 +113,15 @@ TODO
 
 ### 3.4.1. Helm
 
-TODO
+Create a helm package from the sources:
+```shell
+helm package helm/matchers/
+```
+
+Install the helm chart:
+```shell
+helm install meandros-matchers ./matchers-<CHART_VERSION>.tgz
+```
 
 # 4. Usage
 
@@ -123,14 +156,16 @@ Example data:
 ```yaml
 - name: subscription0
   description: Anything related to orders that are not in Helsinki
+  routes:
+  - devnull
   includes:
     all: false
     matchers:
-     - key: subject
-       pattern:
-         code: orders
-         regex: orders
-       partial: true
+    - key: subject
+      pattern:
+        code: orders
+        regex: orders
+      partial: true
   excludes:
     all: false
     matchers:
@@ -144,6 +179,9 @@ Example data:
 ```yaml
 - name: subscription1
   description: Messages that have both high priority and reply-to address of John Doe
+  routes:
+  - john_doe
+  - important
   includes:
     all: true
     matchers:
@@ -162,12 +200,13 @@ Example data:
 
 #### 5.2.1.1. Subscription
 
-| Attribute   | Type                                 | Description                                                 |
-|-------------|--------------------------------------|-------------------------------------------------------------|
-| name        | String                               | Unique subscription name                                    |
-| description | String                               | Human readable subscription description                     |
-| includes    | [Matcher Group](#5212-matcher-group) | Matchers to include the subscription to query results       |
-| excludes    | [Matcher Group](#5212-matcher-group) | Matchers to exclude the subscription from the query results |
+| Attribute   | Type                                 | Description                                                  |
+|-------------|--------------------------------------|--------------------------------------------------------------|
+| name        | String                               | Unique subscription name                                     |
+| description | String                               | Human readable subscription description                      |
+| routes      | Array of String                      | Destination routes to use for the matching messages delivery |
+| includes    | [Matcher Group](#5212-matcher-group) | Matchers to include the subscription to query results        |
+| excludes    | [Matcher Group](#5212-matcher-group) | Matchers to exclude the subscription from the query results  |
 
 #### 5.2.1.2. Matcher Group
 
@@ -195,14 +234,11 @@ Example data:
 
 The limit and cursor search parameters are used to support the results' pagination.
 
-TODO
-
 ## 5.3. Limitations
 
 | #     | Summary                        | Description                                                                                                                                   |
 |-------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| LIM-1 | Excluding only is not allowed  | A subscription should have at least 1 key entry with non `exclude` Action. Otherwise the subscription never matches anything in practice.     |
-| LIM-2 | Multiple required key matchers | A subscription should have at least 2 key entries with `require` Action. If single only, then `require` type should be replaced with `match`. |
+| LIM-1 | Excluding only is not allowed  | A subscription should have at least 1 in `includes` matcher group. Otherwise the subscription never matches anything in practice.             |
 
 # 6. Contributing
 
