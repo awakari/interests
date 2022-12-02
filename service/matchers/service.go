@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	grpcApi "github.com/meandros-messaging/subscriptions/api/grpc/matchers"
+	"github.com/meandros-messaging/subscriptions/api/grpc/matchers"
 	"github.com/meandros-messaging/subscriptions/model"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -37,7 +37,7 @@ type (
 	}
 
 	service struct {
-		client grpcApi.ServiceClient
+		client matchers.ServiceClient
 	}
 )
 
@@ -56,18 +56,18 @@ var (
 	ErrShouldRetry = errors.New("retry the operation")
 )
 
-func NewService(client grpcApi.ServiceClient) Service {
+func NewService(client matchers.ServiceClient) Service {
 	return service{
 		client: client,
 	}
 }
 
 func (svc service) Create(ctx context.Context, k string, patternSrc string) (m model.MatcherData, err error) {
-	req := &grpcApi.CreateRequest{
+	req := &matchers.CreateRequest{
 		Key:        k,
 		PatternSrc: patternSrc,
 	}
-	var resp *grpcApi.MatcherData
+	var resp *matchers.MatcherData
 	resp, err = svc.client.Create(ctx, req)
 	if err != nil {
 		err = decodeError(err)
@@ -85,7 +85,7 @@ func (svc service) Create(ctx context.Context, k string, patternSrc string) (m m
 }
 
 func (svc service) LockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
-	req := &grpcApi.LockCreateRequest{
+	req := &matchers.LockCreateRequest{
 		PatternCode: patternCode,
 	}
 	_, err = svc.client.LockCreate(ctx, req)
@@ -96,7 +96,7 @@ func (svc service) LockCreate(ctx context.Context, patternCode model.PatternCode
 }
 
 func (svc service) UnlockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
-	req := &grpcApi.UnlockCreateRequest{
+	req := &matchers.UnlockCreateRequest{
 		PatternCode: patternCode,
 	}
 	_, err = svc.client.UnlockCreate(ctx, req)
@@ -107,8 +107,8 @@ func (svc service) UnlockCreate(ctx context.Context, patternCode model.PatternCo
 }
 
 func (svc service) Delete(ctx context.Context, m model.MatcherData) (err error) {
-	req := &grpcApi.DeleteRequest{
-		Matcher: &grpcApi.MatcherData{
+	req := &matchers.DeleteRequest{
+		Matcher: &matchers.MatcherData{
 			Key:         m.Key,
 			PatternCode: m.Pattern.Code,
 		},

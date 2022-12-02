@@ -17,6 +17,10 @@ cover.tmp
 vendor/
 **/*.pb.go
 **/*.krproj
+**/*.krpref
+**/*.krenv
+**/*.krop
+api/grpc/*-request.json
 
 config/dev.yaml
 ghcr_io_pat.txt
