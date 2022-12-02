@@ -20,8 +20,9 @@ service Service {
 message CreateRequest {
   string name = 1;
   string description = 2;
-  MatcherGroup excludes = 3;
-  MatcherGroup includes = 4;
+  repeated string routes = 3;
+  MatcherGroup excludes = 4;
+  MatcherGroup includes = 5;
 }
 
 message ReadRequest {

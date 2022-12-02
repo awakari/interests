@@ -64,14 +64,14 @@ The service is configurable using the environment variables:
 
 | Variable                           | Example value                                          | Description                                                                                          |
 |------------------------------------|--------------------------------------------------------|------------------------------------------------------------------------------------------------------|
-| API_PORT                           | `8081`                                                 | gRPC API port                                                                                        |
+| API_PORT                           | `8080`                                                 | gRPC API port                                                                                        |
 | DB_URI                             | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                                    |
 | DB_NAME                            | `subscriptions`                                        | DB name to store the data                                                                            |
 | DB_TABLE_NAME                      | `subscriptions`                                        | DB table name to store the tree data                                                                 |
-| API_MATCHERS_URI_EXCLUDES_COMPLETE | `http://localhost:8080`                                | Excluding complete [matchers](https://github.com/meandros-messaging/matchers) dependency service URI |
-| API_MATCHERS_URI_EXCLUDES_PARTIAL  | `http://localhost:8080`                                | Excluding partial [matchers](https://github.com/meandros-messaging/matchers) dependency service URI  |
-| API_MATCHERS_URI_INCLUDES_COMPLETE | `http://localhost:8080`                                | Including complete [matchers](https://github.com/meandros-messaging/matchers) dependency service URI |
-| API_MATCHERS_URI_INCLUDES_PARTIAL  | `http://localhost:8080`                                | Including partial [matchers](https://github.com/meandros-messaging/matchers) dependency service URI  |
+| API_MATCHERS_URI_EXCLUDES_COMPLETE | `matchers-excludes-complete:8080`                      | Excluding complete [matchers](https://github.com/meandros-messaging/matchers) dependency service URI |
+| API_MATCHERS_URI_EXCLUDES_PARTIAL  | `matchers-excludes-partial:8080`                       | Excluding partial [matchers](https://github.com/meandros-messaging/matchers) dependency service URI  |
+| API_MATCHERS_URI_INCLUDES_COMPLETE | `matchers-includes-complete:8080`                      | Including complete [matchers](https://github.com/meandros-messaging/matchers) dependency service URI |
+| API_MATCHERS_URI_INCLUDES_PARTIAL  | `matchers-includes-partial:8080`                       | Including partial [matchers](https://github.com/meandros-messaging/matchers) dependency service URI  |
 
 # 3. Deployment
 
@@ -84,21 +84,24 @@ It's possible to obtain a free cluster for testing purposes using [Atlas](https:
 
 Preconditions:
 1. Build patterns executive using ```make build```
-2. Run the [patterns](https://github.com/meandros-messaging/patterns) dependency service
+2. Run the [patterns](https://github.com/meandros-messaging/matchers) dependency services (x4: includes/excludes, complete/partial)
 
 Then run the command:
 ```shell
 API_PORT=8081 \
 DB_URI=mongodb+srv://localhost/?retryWrites=true&w=majority \
 DB_NAME=subscriptions \
-DB_TBL_NAME=subscriptions \
-PATTERNS_URI=http://localhost:8081 \
+DB_TABLE_NAME=subscriptions \
+API_MATCHERS_URI_EXCLUDES_COMPLETE=http://localhost:8081 \
+API_MATCHERS_URI_EXCLUDES_PARTIAL=http://localhost:8082 \
+API_MATCHERS_URI_INCLUDES_COMPLETE=http://localhost:8083 \
+API_MATCHERS_URI_INCLUDES_PARTIAL=http://localhost:8084 \
 ./subscriptions
 ```
 
 ## 3.3. Docker
 
-TODO: run the patterns and subscriptions in the same network
+TODO: run the matchers (x4) and subscriptions in the same network
 
 alternatively, it's possible to build and run the new docker image in place using the command:
 (note that the command below requires all env vars to be set in the file `env.txt`)
@@ -115,13 +118,18 @@ TODO
 
 Create a helm package from the sources:
 ```shell
-helm package helm/matchers/
+helm package helm/subscriptions/
 ```
 
 Install the helm chart:
 ```shell
-helm install meandros-matchers ./matchers-<CHART_VERSION>.tgz
+helm install subscriptions ./subscriptions-<CHART_VERSION>.tgz \
+  --values helm/subscriptions/values-db-uri.yaml
 ```
+
+where
+* `values-db-uri.yaml` contains the value override for the DB URI
+* `<CHART_VERSION>` is the helm chart version
 
 # 4. Usage
 

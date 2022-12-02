@@ -38,6 +38,7 @@ type (
 
 	CreateRequest struct {
 		Description string
+		Routes      []string
 		Includes    model.MatcherGroup
 		Excludes    model.MatcherGroup
 	}
@@ -104,6 +105,7 @@ func (svc service) Create(ctx context.Context, name string, req CreateRequest) (
 	var sub model.Subscription
 	sub.Name = name
 	sub.Description = req.Description
+	sub.Routes = req.Routes
 	sub.Includes = req.Includes
 	sub.Excludes = req.Excludes
 	err = sub.Validate()

@@ -33,6 +33,9 @@ func TestService_Create(t *testing.T) {
 			"subscription 4",
 			CreateRequest{
 				Description: "pre existing",
+				Routes: []string{
+					"route 4",
+				},
 				Includes: model.MatcherGroup{
 					Matchers: []model.Matcher{
 						{
@@ -65,6 +68,9 @@ func TestService_Create(t *testing.T) {
 			name: "",
 			req: CreateRequest{
 				Description: "my subscription",
+				Routes: []string{
+					"route",
+				},
 				Includes: model.MatcherGroup{
 					Matchers: []model.Matcher{
 						{
@@ -83,6 +89,9 @@ func TestService_Create(t *testing.T) {
 			name: "subscription 1",
 			req: CreateRequest{
 				Description: "my subscription",
+				Routes: []string{
+					"route 1",
+				},
 				Includes: model.MatcherGroup{
 					Matchers: []model.Matcher{
 						{
@@ -101,6 +110,9 @@ func TestService_Create(t *testing.T) {
 			name: "subscription 2",
 			req: CreateRequest{
 				Description: "my subscription",
+				Routes: []string{
+					"route 2",
+				},
 				Includes: model.MatcherGroup{
 					Matchers: []model.Matcher{
 						{
@@ -117,6 +129,9 @@ func TestService_Create(t *testing.T) {
 			name: "subscription 3",
 			req: CreateRequest{
 				Description: "my subscription",
+				Routes: []string{
+					"route 3",
+				},
 				Includes: model.MatcherGroup{
 					Matchers: []model.Matcher{
 						{
@@ -132,6 +147,9 @@ func TestService_Create(t *testing.T) {
 		"conflict": {
 			name: "subscription 4",
 			req: CreateRequest{
+				Routes: []string{
+					"route 4",
+				},
 				Excludes: model.MatcherGroup{
 					Matchers: []model.Matcher{
 						{
@@ -185,6 +203,9 @@ func TestService_Read(t *testing.T) {
 			"subscription 1",
 			CreateRequest{
 				Description: "pre existing",
+				Routes: []string{
+					"route 1",
+				},
 				Includes: model.MatcherGroup{
 					Matchers: []model.Matcher{
 						{
@@ -212,6 +233,9 @@ func TestService_Read(t *testing.T) {
 			sub: model.Subscription{
 				Name:        "subscription 1",
 				Description: "pre existing",
+				Routes: []string{
+					"route 1",
+				},
 				Includes: model.MatcherGroup{
 					Matchers: []model.Matcher{
 						{
@@ -266,6 +290,9 @@ func TestService_Delete(t *testing.T) {
 			"subscription 1",
 			CreateRequest{
 				Description: "pre existing",
+				Routes: []string{
+					"route 1",
+				},
 				Includes: model.MatcherGroup{
 					Matchers: []model.Matcher{
 						{
@@ -300,6 +327,9 @@ func TestService_Delete(t *testing.T) {
 			"subscription 2",
 			CreateRequest{
 				Description: "fails to clean up matchers",
+				Routes: []string{
+					"route 2",
+				},
 				Includes: model.MatcherGroup{
 					Matchers: []model.Matcher{
 						{
@@ -340,7 +370,7 @@ func TestService_Delete(t *testing.T) {
 		"subscription 1": {},
 		"subscription 2": {
 			err:    ErrCleanMatcher,
-			errMsg: "matchers cleanup failure, may cause matchers garbage: internal failure, subscription: {subscription 2 fails to clean up matchers {false [{{key0 pattern0} false}]} {false [{{key1 fail} true}]}}",
+			errMsg: "matchers cleanup failure, may cause matchers garbage: internal failure, subscription: {subscription 2 fails to clean up matchers [route 2] {false [{{key0 pattern0} false}]} {false [{{key1 fail} true}]}}",
 		},
 	}
 	//
@@ -381,6 +411,9 @@ func TestService_ListNames(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		req := CreateRequest{
 			Description: "my subscription",
+			Routes: []string{
+				"route",
+			},
 			Includes: model.MatcherGroup{
 				Matchers: []model.Matcher{
 					{
@@ -462,7 +495,11 @@ func TestService_Search(t *testing.T) {
 				},
 			},
 		}
-		var req CreateRequest
+		req := CreateRequest{
+			Routes: []string{
+				"route 4",
+			},
+		}
 		if inExcludes {
 			req.Excludes = model.MatcherGroup{
 				Matchers: matchers,
@@ -496,6 +533,9 @@ func TestService_Search(t *testing.T) {
 			page: []model.Subscription{
 				{
 					Name: "sub0",
+					Routes: []string{
+						"route 4",
+					},
 					Includes: model.MatcherGroup{
 						Matchers: []model.Matcher{
 							{
@@ -512,6 +552,9 @@ func TestService_Search(t *testing.T) {
 				},
 				{
 					Name: "sub40",
+					Routes: []string{
+						"route 4",
+					},
 					Includes: model.MatcherGroup{
 						Matchers: []model.Matcher{
 							{
@@ -528,6 +571,9 @@ func TestService_Search(t *testing.T) {
 				},
 				{
 					Name: "sub60",
+					Routes: []string{
+						"route 4",
+					},
 					Includes: model.MatcherGroup{
 						Matchers: []model.Matcher{
 							{
@@ -560,6 +606,9 @@ func TestService_Search(t *testing.T) {
 			page: []model.Subscription{
 				{
 					Name: "sub1",
+					Routes: []string{
+						"route 4",
+					},
 					Excludes: model.MatcherGroup{
 						Matchers: []model.Matcher{
 							{
@@ -576,6 +625,9 @@ func TestService_Search(t *testing.T) {
 				},
 				{
 					Name: "sub21",
+					Routes: []string{
+						"route 4",
+					},
 					Excludes: model.MatcherGroup{
 						Matchers: []model.Matcher{
 							{
@@ -609,6 +661,9 @@ func TestService_Search(t *testing.T) {
 			page: []model.Subscription{
 				{
 					Name: "sub61",
+					Routes: []string{
+						"route 4",
+					},
 					Excludes: model.MatcherGroup{
 						Matchers: []model.Matcher{
 							{
@@ -625,6 +680,9 @@ func TestService_Search(t *testing.T) {
 				},
 				{
 					Name: "sub81",
+					Routes: []string{
+						"route 4",
+					},
 					Excludes: model.MatcherGroup{
 						Matchers: []model.Matcher{
 							{

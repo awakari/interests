@@ -97,8 +97,11 @@ func TestServiceController_Create(t *testing.T) {
 			_, err = client.Create(ctx, &CreateRequest{
 				Name:        k,
 				Description: k,
-				Excludes:    c.excludes,
-				Includes:    c.includes,
+				Routes: []string{
+					"destination",
+				},
+				Excludes: c.excludes,
+				Includes: c.includes,
 			})
 			if c.err == nil {
 				assert.Nil(t, err)
@@ -124,6 +127,9 @@ func TestServiceController_Read(t *testing.T) {
 			sub: &Subscription{
 				Name:        "ok",
 				Description: "description",
+				Routes: []string{
+					"destination",
+				},
 				Includes: &MatcherGroup{
 					All: true,
 					Matchers: []*Matcher{

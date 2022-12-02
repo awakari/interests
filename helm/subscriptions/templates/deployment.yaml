@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "subscriptions.fullname" . }}
+  labels:
+    {{- include "subscriptions.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "subscriptions.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "subscriptions.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "subscriptions.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          env:
+            - name: API_PORT
+              value: "{{ .Values.service.port }}"
+            - name: DB_URI
+              value: {{ .Values.db.uri }}
+            - name: DB_NAME
+              value: {{ .Values.db.name }}
+            - name: DB_TABLE_NAME
+              value: {{ .Values.db.table.name }}
+            - name: API_MATCHERS_URI_EXCLUDES_COMPLETE
+              value: {{ .Values.api.uri.matchers.excludes.complete }}
+            - name: API_MATCHERS_URI_EXCLUDES_PARTIAL
+              value: {{ .Values.api.uri.matchers.excludes.partial }}
+            - name: API_MATCHERS_URI_INCLUDES_COMPLETE
+              value: {{ .Values.api.uri.matchers.includes.complete }}
+            - name: API_MATCHERS_URI_INCLUDES_PARTIAL
+              value: {{ .Values.api.uri.matchers.includes.partial }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            grpc:
+              port: {{ .Values.service.port }}
+          readinessProbe:
+            grpc:
+              port: {{ .Values.service.port }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

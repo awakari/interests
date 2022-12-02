@@ -9,6 +9,7 @@ import "api/grpc/matcher_group.proto";
 message Subscription {
   string name = 1;
   string description = 2;
-  MatcherGroup excludes = 3;
-  MatcherGroup includes = 4;
+  repeated string routes = 3;
+  MatcherGroup excludes = 4;
+  MatcherGroup includes = 5;
 }

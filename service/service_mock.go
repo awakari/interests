@@ -36,6 +36,9 @@ func (sm serviceMock) Read(ctx context.Context, name string) (sub model.Subscrip
 		sub = model.Subscription{
 			Name:        name,
 			Description: "description",
+			Routes: []string{
+				"destination",
+			},
 			Includes: model.MatcherGroup{
 				All: true,
 				Matchers: []model.Matcher{

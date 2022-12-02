@@ -39,6 +39,7 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 	}
 	createReq := service.CreateRequest{
 		Description: req.Description,
+		Routes:      req.Routes,
 		Includes:    includes,
 		Excludes:    excludes,
 	}
@@ -129,6 +130,7 @@ func encodeSubscription(sub model.Subscription) (resp *Subscription) {
 	resp = &Subscription{
 		Name:        sub.Name,
 		Description: sub.Description,
+		Routes:      sub.Routes,
 		Excludes:    encodeMatcherGroup(sub.Excludes),
 		Includes:    encodeMatcherGroup(sub.Includes),
 	}

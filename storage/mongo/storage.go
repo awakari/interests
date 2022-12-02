@@ -108,6 +108,7 @@ func (s storageImpl) Create(ctx context.Context, sub model.Subscription) (err er
 	rec := subscription{
 		Name:        sub.Name,
 		Description: sub.Description,
+		Routes:      sub.Routes,
 		Includes:    toMatcherGroupRec(sub.Includes),
 		Excludes:    toMatcherGroupRec(sub.Excludes),
 	}
@@ -173,6 +174,7 @@ func decodeSingleResult(name string, result *mongo.SingleResult) (sub model.Subs
 func decodeSubscription(rec subscription, sub *model.Subscription) {
 	sub.Name = rec.Name
 	sub.Description = rec.Description
+	sub.Routes = rec.Routes
 	sub.Excludes.All = rec.Excludes.All
 	sub.Excludes.Matchers = decodeMatchers(rec.Excludes.Matchers)
 	sub.Includes.All = rec.Includes.All

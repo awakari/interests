@@ -20,3 +20,4 @@ vendor/
 
 config/dev.yaml
 ghcr_io_pat.txt
+helm/subscriptions/values-dev.yaml

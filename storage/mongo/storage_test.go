@@ -57,6 +57,9 @@ func TestStorageImpl_Create(t *testing.T) {
 	err = s.Create(ctx, model.Subscription{
 		Name:        "sub0",
 		Description: "test subscription 0",
+		Routes: []string{
+			"test route 0",
+		},
 		Includes: model.MatcherGroup{
 			All: true,
 			Matchers: []model.Matcher{
@@ -83,6 +86,9 @@ func TestStorageImpl_Create(t *testing.T) {
 			sub: model.Subscription{
 				Name:        "sub1",
 				Description: "test subscription 1",
+				Routes: []string{
+					"test route 0",
+				},
 				Excludes: model.MatcherGroup{
 					Matchers: []model.Matcher{
 						{
@@ -112,6 +118,9 @@ func TestStorageImpl_Create(t *testing.T) {
 			sub: model.Subscription{
 				Name:        "sub0",
 				Description: "test subscription 123",
+				Routes: []string{
+					"test route 0",
+				},
 				Excludes: model.MatcherGroup{
 					Matchers: []model.Matcher{
 						{
@@ -187,6 +196,9 @@ func TestStorageImpl_Read(t *testing.T) {
 	err = s.Create(ctx, model.Subscription{
 		Name:        "sub0",
 		Description: "test subscription 0",
+		Routes: []string{
+			"test route 0",
+		},
 		Includes: model.MatcherGroup{
 			All: true,
 			Matchers: []model.Matcher{
@@ -215,6 +227,9 @@ func TestStorageImpl_Read(t *testing.T) {
 			sub: model.Subscription{
 				Name:        "sub0",
 				Description: "test subscription 0",
+				Routes: []string{
+					"test route 0",
+				},
 				Includes: model.MatcherGroup{
 					All: true,
 					Matchers: []model.Matcher{
@@ -268,6 +283,9 @@ func TestStorageImpl_Delete(t *testing.T) {
 	err = s.Create(ctx, model.Subscription{
 		Name:        "sub0",
 		Description: "test subscription 0",
+		Routes: []string{
+			"test route 0",
+		},
 		Includes: model.MatcherGroup{
 			All: true,
 			Matchers: []model.Matcher{
@@ -296,6 +314,9 @@ func TestStorageImpl_Delete(t *testing.T) {
 			sub: model.Subscription{
 				Name:        "sub0",
 				Description: "test subscription 0",
+				Routes: []string{
+					"test route 0",
+				},
 				Includes: model.MatcherGroup{
 					All: true,
 					Matchers: []model.Matcher{
@@ -349,6 +370,9 @@ func TestStorageImpl_ListNames(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		err = s.Create(ctx, model.Subscription{
 			Name: fmt.Sprintf("sub%d", i),
+			Routes: []string{
+				"test route 0",
+			},
 			Includes: model.MatcherGroup{
 				Matchers: []model.Matcher{
 					{
@@ -470,6 +494,9 @@ func TestStorageImpl_Search(t *testing.T) {
 		sub := model.Subscription{
 			Name:        fmt.Sprintf("sub%d", i),
 			Description: fmt.Sprintf("test subscription %d", i),
+			Routes: []string{
+				fmt.Sprintf("test route %d", i),
+			},
 		}
 		if i%4 == 0 {
 			sub.Excludes = mg
@@ -504,6 +531,9 @@ func TestStorageImpl_Search(t *testing.T) {
 				{
 					Name:        "sub0",
 					Description: "test subscription 0",
+					Routes: []string{
+						"test route 0",
+					},
 					Excludes: model.MatcherGroup{
 						Matchers: []model.Matcher{
 							{
@@ -538,6 +568,9 @@ func TestStorageImpl_Search(t *testing.T) {
 				{
 					Name:        "sub3",
 					Description: "test subscription 3",
+					Routes: []string{
+						"test route 3",
+					},
 					Includes: model.MatcherGroup{
 						Matchers: []model.Matcher{
 							{
@@ -555,6 +588,9 @@ func TestStorageImpl_Search(t *testing.T) {
 				{
 					Name:        "sub9",
 					Description: "test subscription 9",
+					Routes: []string{
+						"test route 9",
+					},
 					Includes: model.MatcherGroup{
 						Matchers: []model.Matcher{
 							{

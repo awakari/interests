@@ -12,6 +12,9 @@ func TestSubscription_Validate(t *testing.T) {
 	}{
 		"empty name": {
 			sub: Subscription{
+				Routes: []string{
+					"destination",
+				},
 				Includes: MatcherGroup{
 					Matchers: []Matcher{
 						{
@@ -30,12 +33,36 @@ func TestSubscription_Validate(t *testing.T) {
 		"empty matcher groups": {
 			sub: Subscription{
 				Name: "sub0",
+				Routes: []string{
+					"destination",
+				},
+			},
+			err: ErrInvalidSubscription,
+		},
+		"empty routes": {
+			sub: Subscription{
+				Name: "sub0",
+				Excludes: MatcherGroup{
+					Matchers: []Matcher{
+						{
+							MatcherData: MatcherData{
+								Key: "key0",
+								Pattern: Pattern{
+									Src: "pattern0",
+								},
+							},
+						},
+					},
+				},
 			},
 			err: ErrInvalidSubscription,
 		},
 		"ok": {
 			sub: Subscription{
 				Name: "sub0",
+				Routes: []string{
+					"destination",
+				},
 				Excludes: MatcherGroup{
 					Matchers: []Matcher{
 						{
@@ -53,6 +80,9 @@ func TestSubscription_Validate(t *testing.T) {
 		"dup matcher in includes group": {
 			sub: Subscription{
 				Name: "sub0",
+				Routes: []string{
+					"destination",
+				},
 				Includes: MatcherGroup{
 					Matchers: []Matcher{
 						{
@@ -79,6 +109,9 @@ func TestSubscription_Validate(t *testing.T) {
 		"dup matcher in excludes group": {
 			sub: Subscription{
 				Name: "sub0",
+				Routes: []string{
+					"destination",
+				},
 				Excludes: MatcherGroup{
 					Matchers: []Matcher{
 						{

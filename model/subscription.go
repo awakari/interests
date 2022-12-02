@@ -16,6 +16,9 @@ type (
 		// Description represents an optional human readable Subscription description.
 		Description string
 
+		// Routes represents a list of routes associated with the Subscription.
+		Routes []string
+
 		// Includes represents a MatcherGroup to include the Subscription to query results.
 		Includes MatcherGroup
 
@@ -33,6 +36,8 @@ var (
 func (sub Subscription) Validate() (err error) {
 	if len(sub.Name) == 0 {
 		err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "empty name")
+	} else if len(sub.Routes) == 0 {
+		err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "empty routes")
 	} else if len(sub.Includes.Matchers) == 0 && len(sub.Excludes.Matchers) == 0 {
 		err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "both includes and excludes matcher groups are empty")
 	} else {
