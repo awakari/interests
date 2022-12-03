@@ -7,8 +7,8 @@ COVERAGE_TMP_FILE_NAME=cover.tmp
 
 proto:
 	go install github.com/golang/protobuf/protoc-gen-go@latest
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
-	PATH=${PATH}:~/go/bin protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative api/grpc/*.proto api/grpc/**/*.proto
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
+	PATH=${PATH}:~/go/bin protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative api/grpc/*.proto
 
 vet: proto
 	go vet
@@ -25,7 +25,7 @@ build: proto
 	CGO_ENABLED=0 GOOS=linux GOARCH= GOARM= go build -o ${BINARY_FILE_NAME} main.go
 	chmod ugo+x ${BINARY_FILE_NAME}
 
-docker: build
+docker:
 	docker build -t meandros-messaging/subscriptions .
 
 run: docker

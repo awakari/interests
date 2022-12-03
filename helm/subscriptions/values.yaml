@@ -36,7 +36,7 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
-  type: NodePort
+  type: ClusterIP
   port: 8080
 
 ingress:
@@ -94,8 +94,8 @@ api:
   uri:
     matchers:
       excludes:
-        complete: "matchers-exclude-complete:8080"
-        partial: "localhost:8080"
+        complete: "matchers-excludes-complete:8080"
+        partial: "matchers-excludes-partial:8080"
       includes:
-        complete: "localhost:8080"
-        partial: "localhost:8080"
+        complete: "matchers-includes-complete:8080"
+        partial: "matchers-includes-partial:8080"

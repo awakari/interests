@@ -1,4 +1,10 @@
-FROM alpine
-COPY ./subscriptions /bin/subscriptions
-VOLUME ["/etc/subscriptions.yaml"]
-ENTRYPOINT ["/bin/subscriptions", "/etc/subscriptions.yaml"]
+FROM golang:1.19.3-alpine3.17 AS builder
+WORKDIR /go/src/subscriptions
+COPY . .
+RUN \
+    apk add protoc protobuf-dev make git && \
+    make build
+
+FROM alpine:3.17.0
+COPY --from=builder /go/src/subscriptions/subscriptions /bin/subscriptions
+ENTRYPOINT ["/bin/subscriptions"]
