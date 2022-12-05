@@ -34,7 +34,6 @@ run: docker
 		--name meandros-subscriptions \
 		-p 8080:8080 \
 		--expose 8080 \
-		--volume $(shell pwd)/config/dev.yaml:/etc/matchers.yaml \
 		meandros-messaging/subscriptions
 
 release: docker
