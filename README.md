@@ -3,6 +3,10 @@
 1. [Overview](#1-overview)<br/>
    1.1. [Purpose](#11-purpose)<br/>
    1.2. [Definitions](#12-definitions)<br/>
+   &nbsp;&nbsp;&nbsp;1.2.1. [Pattern](#121-pattern)<br/>
+   &nbsp;&nbsp;&nbsp;1.2.2. [Matchers](#122-matcher)<br/>
+   &nbsp;&nbsp;&nbsp;1.2.3. [Matcher Group](#123-matcher-group)<br/>
+   &nbsp;&nbsp;&nbsp;1.2.4. [Subscription](#124-subscription)<br/>
 2. [Configuration](#2-configuration)<br/>
 3. [Deployment](#3-deployment)<br/>
    3.1. [Prerequisites](#31-prerequisites)<br/>
@@ -40,17 +44,17 @@ matching wildcard subscriptions.
 
 See the [definition here](https://github.com/meandros-messaging/matchers#122-pattern).
 
-### 1.2.1. Matcher
+### 1.2.2. Matcher
 
 Same as [matcher](https://github.com/meandros-messaging/matchers#123-matcher) but with an additional `partial` flag.
 The `partial` flag controls whether the matcher should be used to match the sample text parts matching or complete only.
 
-### 1.2.2. Matcher Group
+### 1.2.3. Matcher Group
 
 Matcher group is just a set of matchers with an additional `all` flag. This `all` flag controls whether all matchers in
 this group should match the sample input or any is enough. 
 
-### 1.2.3. Subscription
+### 1.2.4. Subscription
 
 Subscription is a named bundle of matchers with assigned routes and human-readable description. Matchers are listed in 
 two matcher groups:
