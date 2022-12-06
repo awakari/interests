@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/meandros-messaging/subscriptions/service"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	log = logrus.WithFields(logrus.Fields{})
+	log = slog.Default()
 )
 
 func TestMain(m *testing.M) {
@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 	go func() {
 		err := Serve(svc, port)
 		if err != nil {
-			log.Fatal(err)
+			log.Error("", err)
 		}
 	}()
 	code := m.Run()

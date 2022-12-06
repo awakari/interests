@@ -1,6 +1,7 @@
 package config
 
 import (
+	"golang.org/x/exp/slog"
 	"os"
 	"strconv"
 )
@@ -16,6 +17,11 @@ type (
 		}
 		//
 		Db Db
+		//
+		Log struct {
+			//
+			Level slog.Level
+		}
 	}
 
 	Matchers struct {
@@ -59,6 +65,8 @@ const (
 	defDbName                         = "subscriptions"
 	envDbTableName                    = "DB_TABLE_NAME"
 	defDbTableName                    = "subscriptions"
+	envLogLevel                       = "LOG_LEVEL"
+	defLogLevel                       = "-4"
 )
 
 func NewConfigFromEnv() (cfg Config, err error) {
@@ -76,6 +84,13 @@ func NewConfigFromEnv() (cfg Config, err error) {
 	cfg.Db.Uri = getEnvOrDefault(envDbUri, defDbUri)
 	cfg.Db.Name = getEnvOrDefault(envDbName, defDbName)
 	cfg.Db.Table.Name = getEnvOrDefault(envDbTableName, defDbTableName)
+	logLevelStr := getEnvOrDefault(envLogLevel, defLogLevel)
+	var logLevel int64
+	logLevel, err = strconv.ParseInt(logLevelStr, 10, 16)
+	if err != nil {
+		return
+	}
+	cfg.Log.Level = slog.Level(logLevel)
 	return
 }
 

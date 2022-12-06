@@ -8,24 +8,27 @@ import (
 	"github.com/meandros-messaging/subscriptions/service"
 	"github.com/meandros-messaging/subscriptions/service/matchers"
 	"github.com/meandros-messaging/subscriptions/storage/mongo"
-	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"os"
 )
 
 func main() {
 	//
-	log := logrus.WithFields(logrus.Fields{})
-	log.Info("starting...")
-	//
+	slog.Info("starting...")
 	cfg, err := config.NewConfigFromEnv()
 	if err != nil {
-		log.Fatalf("failed to load the config: %s", err)
+		slog.Error("failed to load the config", err)
 	}
+	opts := slog.HandlerOptions{
+		Level: cfg.Log.Level,
+	}
+	log := slog.New(opts.NewTextHandler(os.Stdout))
 	//
 	db, err := mongo.NewStorage(context.TODO(), cfg.Db)
 	if err != nil {
-		log.Fatalf("failed to connect the DB: %s", err)
+		log.Error("failed to connect the DB", err)
 	}
 	//
 	matchersConnExcludesComplete, err := grpc.Dial(
@@ -33,7 +36,7 @@ func main() {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Fatalf("failed to connect the matchers service: %s", err)
+		log.Error("failed to connect the matchers service", err)
 	}
 	matchersClientExcludesComplete := grpcApiMatchers.NewServiceClient(matchersConnExcludesComplete)
 	matchersSvcExcludesComplete := matchers.NewService(matchersClientExcludesComplete)
@@ -44,7 +47,7 @@ func main() {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Fatalf("failed to connect the matchers service: %s", err)
+		log.Error("failed to connect the matchers service", err)
 	}
 	matchersClientExcludesPartial := grpcApiMatchers.NewServiceClient(matchersConnExcludesPartial)
 	matchersSvcExcludesPartial := matchers.NewService(matchersClientExcludesPartial)
@@ -55,7 +58,7 @@ func main() {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Fatalf("failed to connect the matchers service: %s", err)
+		log.Error("failed to connect the matchers service", err)
 	}
 	matchersClientIncludesComplete := grpcApiMatchers.NewServiceClient(matchersConnIncludesComplete)
 	matchersSvcIncludesComplete := matchers.NewService(matchersClientIncludesComplete)
@@ -66,7 +69,7 @@ func main() {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Fatalf("failed to connect the matchers service: %s", err)
+		log.Error("failed to connect the matchers service", err)
 	}
 	matchersClientIncludesPartial := grpcApiMatchers.NewServiceClient(matchersConnIncludesPartial)
 	matchersSvcIncludesPartial := matchers.NewService(matchersClientIncludesPartial)
@@ -82,6 +85,6 @@ func main() {
 	svc = service.NewLoggingMiddleware(svc, log)
 	log.Info("connected, starting to listen for incoming requests...")
 	if err = grpcApi.Serve(svc, cfg.Api.Port); err != nil {
-		log.Fatal(err)
+		log.Error("", err)
 	}
 }

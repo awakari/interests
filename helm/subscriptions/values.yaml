@@ -99,3 +99,6 @@ api:
       includes:
         complete: "matchers-includes-complete:8080"
         partial: "matchers-includes-partial:8080"
+log:
+  # https://pkg.go.dev/golang.org/x/exp/slog#Level
+  level: -4
