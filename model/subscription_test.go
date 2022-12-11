@@ -15,45 +15,24 @@ func TestSubscription_Validate(t *testing.T) {
 				Routes: []string{
 					"destination",
 				},
-				Includes: MatcherGroup{
-					Matchers: []Matcher{
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Rule: NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key0"), false, Pattern{}),
 			},
 			err: ErrInvalidSubscription,
 		},
-		"empty matcher groups": {
+		"empty rule group": {
 			sub: Subscription{
 				Name: "sub0",
 				Routes: []string{
 					"destination",
 				},
+				Rule: NewGroupRule(NewRule(false), GroupAnd, []Rule{}),
 			},
-			err: ErrInvalidSubscription,
+			err: ErrInvalidGroupRule,
 		},
 		"empty routes": {
 			sub: Subscription{
 				Name: "sub0",
-				Excludes: MatcherGroup{
-					Matchers: []Matcher{
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Rule: NewMetadataPatternRule(NewMetadataRule(NewRule(false), "key0"), false, Pattern{}),
 			},
 			err: ErrInvalidSubscription,
 		},
@@ -63,75 +42,111 @@ func TestSubscription_Validate(t *testing.T) {
 				Routes: []string{
 					"destination",
 				},
-				Excludes: MatcherGroup{
-					Matchers: []Matcher{
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Rule: NewMetadataPatternRule(NewMetadataRule(NewRule(false), "key0"), false, Pattern{}),
 			},
 		},
-		"dup matcher in includes group": {
+		"negation only rule": {
 			sub: Subscription{
 				Name: "sub0",
 				Routes: []string{
 					"destination",
 				},
-				Includes: MatcherGroup{
-					Matchers: []Matcher{
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Rule: NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key0"), false, Pattern{}),
 			},
 			err: ErrInvalidSubscription,
 		},
-		"dup matcher in excludes group": {
+		"non pattern neither group root rule": {
 			sub: Subscription{
 				Name: "sub0",
 				Routes: []string{
 					"destination",
 				},
-				Excludes: MatcherGroup{
-					Matchers: []Matcher{
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
+				Rule: NewMetadataRule(NewRule(true), "key0"),
+			},
+			err: ErrInvalidSubscription,
+		},
+		"valid group root rule": {
+			sub: Subscription{
+				Name: "sub0",
+				Routes: []string{
+					"destination",
 				},
+				Rule: NewGroupRule(
+					NewRule(false),
+					GroupAnd,
+					[]Rule{
+						NewMetadataPatternRule(NewMetadataRule(NewRule(false), "key0"), false, Pattern{}),
+						NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key1"), false, Pattern{}),
+					},
+				),
+			},
+		},
+		"invalid group root rule: negation": {
+			sub: Subscription{
+				Name: "sub0",
+				Routes: []string{
+					"destination",
+				},
+				Rule: NewGroupRule(
+					NewRule(true),
+					GroupAnd,
+					[]Rule{
+						NewMetadataPatternRule(NewMetadataRule(NewRule(false), "key0"), false, Pattern{}),
+						NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key1"), false, Pattern{}),
+					},
+				),
+			},
+			err: ErrInvalidSubscription,
+		},
+		"invalid group root rule: contains negation only child rules": {
+			sub: Subscription{
+				Name: "sub0",
+				Routes: []string{
+					"destination",
+				},
+				Rule: NewGroupRule(
+					NewRule(false),
+					GroupAnd,
+					[]Rule{
+						NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key0"), false, Pattern{}),
+						NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key1"), false, Pattern{}),
+					},
+				),
+			},
+			err: ErrInvalidSubscription,
+		},
+		"invalid group root rule: contains more than 2 child rules": {
+			sub: Subscription{
+				Name: "sub0",
+				Routes: []string{
+					"destination",
+				},
+				Rule: NewGroupRule(
+					NewRule(false),
+					GroupAnd,
+					[]Rule{
+						NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key0"), false, Pattern{}),
+						NewMetadataPatternRule(NewMetadataRule(NewRule(false), "key1"), false, Pattern{}),
+						NewMetadataPatternRule(NewMetadataRule(NewRule(false), "key2"), false, Pattern{}),
+					},
+				),
+			},
+			err: ErrInvalidSubscription,
+		},
+		"invalid group root rule: contains non pattern/group child rule": {
+			sub: Subscription{
+				Name: "sub0",
+				Routes: []string{
+					"destination",
+				},
+				Rule: NewGroupRule(
+					NewRule(false),
+					GroupAnd,
+					[]Rule{
+						NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key0"), false, Pattern{}),
+						NewGroupRule(),
+					},
+				),
 			},
 			err: ErrInvalidSubscription,
 		},

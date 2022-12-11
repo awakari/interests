@@ -1,0 +1,54 @@
+{
+  "subscriptions": [
+    {
+      "name": "subscription0",
+      "description": "test subscription 0",
+      "routes": ["route0"],
+      "excludes": {
+        "all": false,
+        "matchers": [
+          {
+            "partial": true,
+            "key": "subject",
+            "pattern": {
+              "src": "confidential"
+            }
+          },
+          {
+            "partial": false,
+            "key": "scope",
+            "pattern": {
+              "src": "?rivate"
+            }
+          },
+          {
+            "partial": false,
+            "key": "scope",
+            "pattern": {
+              "src": "PRIVATE"
+            }
+          }
+        ]
+      },
+      "includes": {
+        "all": true,
+        "matchers": [
+          {
+            "partial": false,
+            "key": "key0",
+            "pattern": {
+              "src": "b*r"
+            }
+          },
+          {
+            "partial": true,
+            "key": "key1",
+            "pattern": {
+              "src": "fo?"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
