@@ -5,17 +5,14 @@ subscriptions:
       - route0
       - route1
     rule:
-      ... # root rule can not have "not: true"
-
-group_rule:
-  not: false/true
-  logic: and/or/xor
-  group: {} # cannot be empty
-
-metadata_pattern_rule:
-  not: false/true
-  partial: false/true
-  key: ""
-  pattern:
-    code: ""
-    src: ""
+      type: group
+      not: false # root rule can not be an exclusion
+      logic: and # and/or/xor
+      rules:
+        - type: metadata_pattern
+          not: false
+          partial: false
+          key: location
+          pattern:
+            code: ""
+            src: ""
