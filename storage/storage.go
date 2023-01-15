@@ -3,25 +3,20 @@ package storage
 import (
 	"context"
 	"errors"
-	"github.com/meandros-messaging/subscriptions/model"
+	"github.com/awakari/subscriptions/model"
 	"io"
 )
 
 type (
 
-	// Query represents the search query to use in Storage.Find
-	Query struct {
+	// KiwiQuery represents the subscription search query by a certain model.KiwiCondition.
+	KiwiQuery struct {
 
 		// Limit defines a results page size limit.
 		Limit uint32
 
-		// InExcludes defines if it's necessary to find a model.Subscription with same model.Matcher in the "InExcludes"
-		// model.MatcherGroup
-		InExcludes bool
-
-		// Matcher represents a model.Matcher that should be present in the model.Subscription to include into the
-		// search results.
-		Matcher model.Matcher
+		// KiwiCondition is the search criteria.
+		KiwiCondition model.KiwiCondition
 	}
 
 	// Storage represents the subscriptions storage
@@ -43,8 +38,8 @@ type (
 
 		// Search returns subscriptions page where:<br/>
 		// * model.Subscription name is greater than the one specified by the cursor<br/>
-		// * subscriptions match the specified Query.
-		Search(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error)
+		// * subscriptions match the specified KiwiQuery.
+		Search(ctx context.Context, q KiwiQuery, cursor string) (page []model.Subscription, err error)
 	}
 )
 

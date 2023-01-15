@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"github.com/meandros-messaging/subscriptions/model"
+	"github.com/awakari/subscriptions/model"
 )
 
 type (

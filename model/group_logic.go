@@ -1,11 +1,17 @@
 package model
 
-type (
-	GroupLogic int
-)
+type GroupLogic int
 
 const (
-	GroupOr = iota
-	GroupXor
-	GroupAnd
+	GroupLogicOr = iota
+	GroupLogicXor
+	GroupLogicAnd
 )
+
+func (gl GroupLogic) String() string {
+	return [...]string{
+		"Or",
+		"Xor",
+		"And",
+	}[gl]
+}

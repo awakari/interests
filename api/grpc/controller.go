@@ -3,8 +3,8 @@ package grpc
 import (
 	"context"
 	"errors"
-	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/service"
+	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"

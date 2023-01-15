@@ -1,10 +1,10 @@
-package matchers
+package kiwi
 
 import (
 	"context"
 	"fmt"
-	grpcApi "github.com/meandros-messaging/subscriptions/api/grpc/matchers"
-	"github.com/meandros-messaging/subscriptions/model"
+	grpcApi "github.com/awakari/subscriptions/api/grpc/kiwi-tree"
+	"github.com/awakari/subscriptions/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"

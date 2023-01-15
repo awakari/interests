@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/service"
+	"github.com/awakari/subscriptions/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"

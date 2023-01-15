@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export REGISTRY=ghcr.io
-export ORG=meandros-messaging
+export ORG=awakari
 export COMPONENT=subscriptions
 export SLUG=${REGISTRY}/${ORG}/${COMPONENT}
 export VERSION=$(git describe --tags --abbrev=0 | cut -c 2-)

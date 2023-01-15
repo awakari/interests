@@ -1,9 +1,9 @@
-package matchers
+package kiwi
 
 import (
 	"context"
 	"errors"
-	"github.com/meandros-messaging/subscriptions/model"
+	"github.com/awakari/subscriptions/model"
 )
 
 type (

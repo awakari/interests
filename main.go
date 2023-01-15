@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	grpcApi "github.com/meandros-messaging/subscriptions/api/grpc"
-	grpcApiMatchers "github.com/meandros-messaging/subscriptions/api/grpc/matchers"
-	"github.com/meandros-messaging/subscriptions/config"
-	"github.com/meandros-messaging/subscriptions/service"
-	"github.com/meandros-messaging/subscriptions/service/matchers"
-	"github.com/meandros-messaging/subscriptions/storage/mongo"
+	grpcApi "github.com/awakari/subscriptions/api/grpc"
+	grpcApiKiwi "github.com/awakari/subscriptions/api/grpc/kiwi-tree"
+	"github.com/awakari/subscriptions/config"
+	"github.com/awakari/subscriptions/service"
+	"github.com/awakari/subscriptions/service/kiwi"
+	"github.com/awakari/subscriptions/storage/mongo"
 	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -31,56 +31,56 @@ func main() {
 		log.Error("failed to connect the DB", err)
 	}
 	//
-	matchersConnExcludesComplete, err := grpc.Dial(
-		cfg.Api.Matchers.UriExcludesComplete,
+	kiwiConnExcludesComplete, err := grpc.Dial(
+		cfg.Api.Kiwi.UriExcludesComplete,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Error("failed to connect the matchers service", err)
+		log.Error("failed to connect the kiwi service", err)
 	}
-	matchersClientExcludesComplete := grpcApiMatchers.NewServiceClient(matchersConnExcludesComplete)
-	matchersSvcExcludesComplete := matchers.NewService(matchersClientExcludesComplete)
-	matchersSvcExcludesComplete = matchers.NewLoggingMiddleware(matchersSvcExcludesComplete, log)
+	kiwiClientExcludesComplete := grpcApiKiwi.NewServiceClient(kiwiConnExcludesComplete)
+	kiwiSvcExcludesComplete := kiwi.NewService(kiwiClientExcludesComplete)
+	kiwiSvcExcludesComplete = kiwi.NewLoggingMiddleware(kiwiSvcExcludesComplete, log)
 	//
-	matchersConnExcludesPartial, err := grpc.Dial(
-		cfg.Api.Matchers.UriExcludesPartial,
+	kiwiConnExcludesPartial, err := grpc.Dial(
+		cfg.Api.Kiwi.UriExcludesPartial,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Error("failed to connect the matchers service", err)
+		log.Error("failed to connect the kiwi service", err)
 	}
-	matchersClientExcludesPartial := grpcApiMatchers.NewServiceClient(matchersConnExcludesPartial)
-	matchersSvcExcludesPartial := matchers.NewService(matchersClientExcludesPartial)
-	matchersSvcExcludesPartial = matchers.NewLoggingMiddleware(matchersSvcExcludesPartial, log)
+	kiwiClientExcludesPartial := grpcApiKiwi.NewServiceClient(kiwiConnExcludesPartial)
+	kiwiSvcExcludesPartial := kiwi.NewService(kiwiClientExcludesPartial)
+	kiwiSvcExcludesPartial = kiwi.NewLoggingMiddleware(kiwiSvcExcludesPartial, log)
 	//
-	matchersConnIncludesComplete, err := grpc.Dial(
-		cfg.Api.Matchers.UriIncludesComplete,
+	kiwiConnIncludesComplete, err := grpc.Dial(
+		cfg.Api.Kiwi.UriIncludesComplete,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Error("failed to connect the matchers service", err)
+		log.Error("failed to connect the kiwi service", err)
 	}
-	matchersClientIncludesComplete := grpcApiMatchers.NewServiceClient(matchersConnIncludesComplete)
-	matchersSvcIncludesComplete := matchers.NewService(matchersClientIncludesComplete)
-	matchersSvcIncludesComplete = matchers.NewLoggingMiddleware(matchersSvcIncludesComplete, log)
+	kiwiClientIncludesComplete := grpcApiKiwi.NewServiceClient(kiwiConnIncludesComplete)
+	kiwiSvcIncludesComplete := kiwi.NewService(kiwiClientIncludesComplete)
+	kiwiSvcIncludesComplete = kiwi.NewLoggingMiddleware(kiwiSvcIncludesComplete, log)
 	//
-	matchersConnIncludesPartial, err := grpc.Dial(
-		cfg.Api.Matchers.UriIncludesPartial,
+	kiwiConnIncludesPartial, err := grpc.Dial(
+		cfg.Api.Kiwi.UriIncludesPartial,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Error("failed to connect the matchers service", err)
+		log.Error("failed to connect the kiwi service", err)
 	}
-	matchersClientIncludesPartial := grpcApiMatchers.NewServiceClient(matchersConnIncludesPartial)
-	matchersSvcIncludesPartial := matchers.NewService(matchersClientIncludesPartial)
-	matchersSvcIncludesPartial = matchers.NewLoggingMiddleware(matchersSvcIncludesPartial, log)
+	kiwiClientIncludesPartial := grpcApiKiwi.NewServiceClient(kiwiConnIncludesPartial)
+	kiwiSvcIncludesPartial := kiwi.NewService(kiwiClientIncludesPartial)
+	kiwiSvcIncludesPartial = kiwi.NewLoggingMiddleware(kiwiSvcIncludesPartial, log)
 	//
 	svc := service.NewService(
 		db,
-		matchersSvcExcludesComplete,
-		matchersSvcExcludesPartial,
-		matchersSvcIncludesComplete,
-		matchersSvcIncludesPartial,
+		kiwiSvcExcludesComplete,
+		kiwiSvcExcludesPartial,
+		kiwiSvcIncludesComplete,
+		kiwiSvcIncludesPartial,
 	)
 	svc = service.NewLoggingMiddleware(svc, log)
 	log.Info("connected, starting to listen for incoming requests...")

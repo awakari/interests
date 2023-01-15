@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/config"
-	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/storage"
+	"github.com/awakari/subscriptions/config"
+	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/storage"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -31,32 +31,7 @@ var (
 				Index().
 				SetUnique(true),
 		},
-		// query by matcher in excludes group
-		{
-			Keys: bson.D{
-				{attrName, 1},
-				{attrExcludes + "." + attrMatchers + "." + attrPartial, 1},
-				{attrExcludes + "." + attrMatchers + "." + attrKey, 1},
-				{attrExcludes + "." + attrMatchers + "." + attrPattern + "." + attrCode, 1},
-			},
-			Options: options.
-				Index().
-				SetUnique(true).
-				SetSparse(true),
-		},
-		// query by matcher in includes group
-		{
-			Keys: bson.D{
-				{attrName, 1},
-				{attrIncludes + "." + attrMatchers + "." + attrPartial, 1},
-				{attrIncludes + "." + attrMatchers + "." + attrKey, 1},
-				{attrIncludes + "." + attrMatchers + "." + attrPattern + "." + attrCode, 1},
-			},
-			Options: options.
-				Index().
-				SetUnique(true).
-				SetSparse(true),
-		},
+		// TODO query by kiwi
 	}
 	optsSrvApi = options.ServerAPI(options.ServerAPIVersion1)
 	optsRead   = options.
@@ -105,12 +80,13 @@ func (s storageImpl) Close() error {
 }
 
 func (s storageImpl) Create(ctx context.Context, sub model.Subscription) (err error) {
-	rec := subscription{
-		Name:        sub.Name,
-		Description: sub.Description,
-		Routes:      sub.Routes,
-		Includes:    toMatcherGroupRec(sub.Includes),
-		Excludes:    toMatcherGroupRec(sub.Excludes),
+	recCondition, recKiwiConditions := encodeCondition(sub.Condition)
+	rec := subscriptionWrite{
+		Name:           sub.Name,
+		Description:    sub.Description,
+		Routes:         sub.Routes,
+		Condition:      recCondition,
+		KiwiConditions: recKiwiConditions,
 	}
 	_, err = s.coll.InsertOne(ctx, rec)
 	if mongo.IsDuplicateKeyError(err) {
@@ -119,26 +95,38 @@ func (s storageImpl) Create(ctx context.Context, sub model.Subscription) (err er
 	return
 }
 
-func toMatcherGroupRec(mg model.MatcherGroup) (rec matcherGroup) {
-	rec.All = mg.All
-	var matcherRecs []matcher
-	for _, m := range mg.Matchers {
-		matcherRec := toMatcherRec(m)
-		matcherRecs = append(matcherRecs, matcherRec)
+func encodeCondition(src model.Condition) (dst Condition, kiwiConditions []kiwiCondition) {
+	bc := ConditionBase{
+		Not: src.IsNot(),
 	}
-	rec.Matchers = matcherRecs
+	switch c := src.(type) {
+	case model.GroupCondition:
+		var group []Condition
+		for _, childSrc := range c.GetGroup() {
+			childDst, childKiwiConditions := encodeCondition(childSrc)
+			group = append(group, childDst)
+			kiwiConditions = append(kiwiConditions, childKiwiConditions...)
+		}
+		dst = groupCondition{
+			Base:  bc,
+			Group: group,
+			Logic: c.GetLogic(),
+		}
+	case model.KiwiCondition:
+		p := c.GetPattern()
+		kc := kiwiCondition{
+			Base:    bc,
+			Key:     c.GetKey(),
+			Partial: c.IsPartial(),
+			ValuePattern: pattern{
+				Code: p.Code,
+				Src:  p.Src,
+			},
+		}
+		kiwiConditions = append(kiwiConditions, kc)
+		dst = kc
+	}
 	return
-}
-
-func toMatcherRec(m model.Matcher) (rec matcher) {
-	return matcher{
-		Partial: m.Partial,
-		Key:     m.Key,
-		Pattern: pattern{
-			Code: m.Pattern.Code,
-			Src:  m.Pattern.Src,
-		},
-	}
 }
 
 func (s storageImpl) Read(ctx context.Context, name string) (sub model.Subscription, err error) {
@@ -239,7 +227,7 @@ func (s storageImpl) ListNames(ctx context.Context, limit uint32, cursor string)
 	return
 }
 
-func (s storageImpl) Search(ctx context.Context, q storage.Query, cursor string) (page []model.Subscription, err error) {
+func (s storageImpl) Search(ctx context.Context, q storage.KiwiQuery, cursor string) (page []model.Subscription, err error) {
 	dbQuery := bson.M{
 		attrName: bson.M{
 			"$gt": cursor,

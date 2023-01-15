@@ -15,24 +15,24 @@ func TestSubscription_Validate(t *testing.T) {
 				Routes: []string{
 					"destination",
 				},
-				Rule: NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key0"), false, Pattern{}),
+				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(true), "key0"), false, ""),
 			},
 			err: ErrInvalidSubscription,
 		},
-		"empty rule group": {
+		"empty condition group": {
 			sub: Subscription{
 				Name: "sub0",
 				Routes: []string{
 					"destination",
 				},
-				Rule: NewGroupRule(NewRule(false), GroupAnd, []Rule{}),
+				Condition: NewGroupCondition(NewCondition(false), GroupLogicAnd, []Condition{}),
 			},
-			err: ErrInvalidGroupRule,
+			err: ErrInvalidGroupCondition,
 		},
 		"empty routes": {
 			sub: Subscription{
-				Name: "sub0",
-				Rule: NewMetadataPatternRule(NewMetadataRule(NewRule(false), "key0"), false, Pattern{}),
+				Name:      "sub0",
+				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
 			},
 			err: ErrInvalidSubscription,
 		},
@@ -42,109 +42,92 @@ func TestSubscription_Validate(t *testing.T) {
 				Routes: []string{
 					"destination",
 				},
-				Rule: NewMetadataPatternRule(NewMetadataRule(NewRule(false), "key0"), false, Pattern{}),
+				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
 			},
 		},
-		"negation only rule": {
+		"negation only condition": {
 			sub: Subscription{
 				Name: "sub0",
 				Routes: []string{
 					"destination",
 				},
-				Rule: NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key0"), false, Pattern{}),
-			},
-			err: ErrInvalidSubscription,
-		},
-		"non pattern neither group root rule": {
-			sub: Subscription{
-				Name: "sub0",
-				Routes: []string{
-					"destination",
-				},
-				Rule: NewMetadataRule(NewRule(true), "key0"),
+				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(true), "key0"), false, ""),
 			},
 			err: ErrInvalidSubscription,
 		},
-		"valid group root rule": {
+		"non pattern neither group root condition": {
 			sub: Subscription{
 				Name: "sub0",
 				Routes: []string{
 					"destination",
 				},
-				Rule: NewGroupRule(
-					NewRule(false),
-					GroupAnd,
-					[]Rule{
-						NewMetadataPatternRule(NewMetadataRule(NewRule(false), "key0"), false, Pattern{}),
-						NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key1"), false, Pattern{}),
+				Condition: NewKeyCondition(NewCondition(true), "key0"),
+			},
+			err: ErrInvalidSubscription,
+		},
+		"valid group root condition": {
+			sub: Subscription{
+				Name: "sub0",
+				Routes: []string{
+					"destination",
+				},
+				Condition: NewGroupCondition(
+					NewCondition(false),
+					GroupLogicAnd,
+					[]Condition{
+						NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key1"), false, ""),
 					},
 				),
 			},
 		},
-		"invalid group root rule: negation": {
+		"invalid group root condition: negation": {
 			sub: Subscription{
 				Name: "sub0",
 				Routes: []string{
 					"destination",
 				},
-				Rule: NewGroupRule(
-					NewRule(true),
-					GroupAnd,
-					[]Rule{
-						NewMetadataPatternRule(NewMetadataRule(NewRule(false), "key0"), false, Pattern{}),
-						NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key1"), false, Pattern{}),
-					},
-				),
-			},
-			err: ErrInvalidSubscription,
-		},
-		"invalid group root rule: contains negation only child rules": {
-			sub: Subscription{
-				Name: "sub0",
-				Routes: []string{
-					"destination",
-				},
-				Rule: NewGroupRule(
-					NewRule(false),
-					GroupAnd,
-					[]Rule{
-						NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key0"), false, Pattern{}),
-						NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key1"), false, Pattern{}),
+				Condition: NewGroupCondition(
+					NewCondition(true),
+					GroupLogicAnd,
+					[]Condition{
+						NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key1"), false, ""),
 					},
 				),
 			},
 			err: ErrInvalidSubscription,
 		},
-		"invalid group root rule: contains more than 2 child rules": {
+		"invalid group root condition: contains negation only child rules": {
 			sub: Subscription{
 				Name: "sub0",
 				Routes: []string{
 					"destination",
 				},
-				Rule: NewGroupRule(
-					NewRule(false),
-					GroupAnd,
-					[]Rule{
-						NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key0"), false, Pattern{}),
-						NewMetadataPatternRule(NewMetadataRule(NewRule(false), "key1"), false, Pattern{}),
-						NewMetadataPatternRule(NewMetadataRule(NewRule(false), "key2"), false, Pattern{}),
+				Condition: NewGroupCondition(
+					NewCondition(false),
+					GroupLogicAnd,
+					[]Condition{
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key0"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key1"), false, ""),
 					},
 				),
 			},
 			err: ErrInvalidSubscription,
 		},
-		"invalid group root rule: contains non pattern/group child rule": {
+		"invalid group root condition: contains more than 2 child rules": {
 			sub: Subscription{
 				Name: "sub0",
 				Routes: []string{
 					"destination",
 				},
-				Rule: NewGroupRule(
-					NewRule(false),
-					GroupAnd,
-					[]Rule{
-						NewMetadataPatternRule(NewMetadataRule(NewRule(true), "key0"), false, Pattern{}),
-						NewGroupRule(),
+				Condition: NewGroupCondition(
+					NewCondition(false),
+					GroupLogicAnd,
+					[]Condition{
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key0"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(false), "key1"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(false), "key2"), false, ""),
 					},
 				),
 			},

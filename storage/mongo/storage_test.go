@@ -3,11 +3,12 @@ package mongo
 import (
 	"context"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/config"
-	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/storage"
+	"github.com/awakari/subscriptions/config"
+	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/rand"
 	"os"
 	"testing"
@@ -508,13 +509,13 @@ func TestStorageImpl_Search(t *testing.T) {
 	}
 	//
 	cases := map[string]struct {
-		q      storage.Query
+		q      storage.KiwiQuery
 		cursor string
 		page   []model.Subscription
 		err    error
 	}{
 		"1": {
-			q: storage.Query{
+			q: storage.KiwiQuery{
 				InExcludes: true,
 				Matcher: model.Matcher{
 					Partial: true,
@@ -552,7 +553,7 @@ func TestStorageImpl_Search(t *testing.T) {
 			},
 		},
 		"2": {
-			q: storage.Query{
+			q: storage.KiwiQuery{
 				Matcher: model.Matcher{
 					Partial: false,
 					MatcherData: model.MatcherData{
@@ -623,4 +624,112 @@ func TestStorageImpl_Search(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStorageImpl_SubscriptionWithRulesExperiment(t *testing.T) {
+	//
+	collName := fmt.Sprintf("subscriptions-test-%d", rand.Uint32())
+	dbCfg := config.Db{
+		Uri:  dbUri,
+		Name: "subscriptions-dev",
+	}
+	dbCfg.Table.Name = collName
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	s, err := NewStorage(ctx, dbCfg)
+	require.Nil(t, err)
+	stor := s.(storageImpl)
+	defer clear(ctx, t, stor)
+	//
+	sub := subscription{
+		Name:        "sub0",
+		Description: "subscription with rules experiment",
+		Routes:      []string{"route0"},
+		KiwiConditions: []kiwiCondition{
+			{
+				Key: "k0",
+				ValuePattern: pattern{
+					Code: []byte("v0"),
+					Src:  "v0",
+				},
+			},
+			{
+				Partial: true,
+				Key:     "k1",
+				ValuePattern: pattern{
+					Code: []byte("v1"),
+					Src:  "v1",
+				},
+			},
+			{
+				Partial: true,
+				Key:     "k2",
+				ValuePattern: pattern{
+					Code: []byte("v2"),
+					Src:  "v2",
+				},
+			},
+		},
+		Condition: groupCondition{
+			Logic: model.GroupLogicOr,
+			Group: []Condition{
+				kiwiCondition{
+					Key: "k0",
+					ValuePattern: pattern{
+						Code: []byte("v0"),
+						Src:  "v0",
+					},
+				},
+				groupCondition{
+					Base: ConditionBase{
+						Not: true,
+					},
+					Logic: model.GroupLogicAnd,
+					Group: []Condition{
+						kiwiCondition{
+							Partial: true,
+							Key:     "k1",
+							ValuePattern: pattern{
+								Code: []byte("v1"),
+								Src:  "v1",
+							},
+						},
+						kiwiCondition{
+							Partial: true,
+							Key:     "k2",
+							ValuePattern: pattern{
+								Code: []byte("v2"),
+								Src:  "v2",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	result, err := stor.coll.InsertOne(ctx, sub)
+	assert.Nil(t, err)
+	assert.NotZero(t, result.InsertedID)
+	cursor, err := stor.coll.Find(ctx, bson.D{
+		{
+			Key:   "metadata_conditions.partial",
+			Value: true,
+		},
+		{
+			Key:   "metadata_conditions.key",
+			Value: "k2",
+		},
+		{
+			Key:   "metadata_conditions.value_pattern.code",
+			Value: []byte("v2"),
+		},
+	})
+	assert.Nil(t, err)
+	defer cursor.Close(ctx)
+	var results []subscriptionRaw
+	err = cursor.All(ctx, &results)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(results))
+	r := decodeSubscriptionSearchResult(results[0])
+	fmt.Printf("%v", r)
 }

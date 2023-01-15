@@ -13,7 +13,7 @@ type (
 			//
 			Port uint16
 			//
-			Matchers Matchers
+			Kiwi Kiwi
 		}
 		//
 		Db Db
@@ -24,7 +24,7 @@ type (
 		}
 	}
 
-	Matchers struct {
+	Kiwi struct {
 		//
 		UriExcludesComplete string
 		//
@@ -77,10 +77,10 @@ func NewConfigFromEnv() (cfg Config, err error) {
 		return
 	}
 	cfg.Api.Port = uint16(apiPort)
-	cfg.Api.Matchers.UriExcludesComplete = getEnvOrDefault(envApiMatchersUriExcludesComplete, defApiMatchersUriExcludesComplete)
-	cfg.Api.Matchers.UriExcludesPartial = getEnvOrDefault(envApiMatchersUriExcludesPartial, defApiMatchersUriExcludesPartial)
-	cfg.Api.Matchers.UriIncludesComplete = getEnvOrDefault(envApiMatchersUriIncludesComplete, defApiMatchersUriIncludesComplete)
-	cfg.Api.Matchers.UriIncludesPartial = getEnvOrDefault(envApiMatchersUriIncludesPartial, defApiMatchersUriIncludesPartial)
+	cfg.Api.Kiwi.UriExcludesComplete = getEnvOrDefault(envApiMatchersUriExcludesComplete, defApiMatchersUriExcludesComplete)
+	cfg.Api.Kiwi.UriExcludesPartial = getEnvOrDefault(envApiMatchersUriExcludesPartial, defApiMatchersUriExcludesPartial)
+	cfg.Api.Kiwi.UriIncludesComplete = getEnvOrDefault(envApiMatchersUriIncludesComplete, defApiMatchersUriIncludesComplete)
+	cfg.Api.Kiwi.UriIncludesPartial = getEnvOrDefault(envApiMatchersUriIncludesPartial, defApiMatchersUriIncludesPartial)
 	cfg.Db.Uri = getEnvOrDefault(envDbUri, defDbUri)
 	cfg.Db.Name = getEnvOrDefault(envDbName, defDbName)
 	cfg.Db.Table.Name = getEnvOrDefault(envDbTableName, defDbTableName)

@@ -19,8 +19,8 @@ type (
 		// Routes represents a list of routes associated with the Subscription.
 		Routes []string
 
-		// Rule represents the certain criteria to select the Subscription.
-		Rule Rule
+		// Condition represents the certain criteria to select the Subscription.
+		Condition Condition
 	}
 )
 
@@ -37,61 +37,37 @@ func (sub Subscription) Validate() (err error) {
 	if len(sub.Routes) == 0 {
 		return fmt.Errorf("%w: %s", ErrInvalidSubscription, "empty routes")
 	}
-	if sub.Rule.IsNot() {
-		return fmt.Errorf("%w: %s", ErrInvalidSubscription, "root rule negation")
+	if sub.Condition.IsNot() {
+		return fmt.Errorf("%w: %s", ErrInvalidSubscription, "root condition negation")
 	}
-	switch r := sub.Rule.(type) {
-	case GroupRule:
-		err = validateRootGroupRule(r)
-	case MetadataPatternRule:
+	switch c := sub.Condition.(type) {
+	case GroupCondition:
+		err = validateRootGroupCondition(c)
+	case KiwiCondition:
 	default:
-		return fmt.Errorf("%w: %s", ErrInvalidSubscription, "root rule is not a group neither metadata pattern rule")
+		return fmt.Errorf("%w: %s", ErrInvalidSubscription, "root condition is not a group neither metadata pattern condition")
 	}
 	return
 }
 
-func validateRootGroupRule(gr GroupRule) (err error) {
-	err = gr.Validate()
+func validateRootGroupCondition(gc GroupCondition) (err error) {
+	err = gc.Validate()
 	if err == nil {
-		group := gr.GetGroup()
-		if len(group) < 3 {
+		group := gc.GetGroup()
+		if len(group) > 1 {
 			includesFound := false
-			for _, r := range group {
-				if !r.IsNot() {
+			for _, c := range group {
+				if !c.IsNot() {
 					includesFound = true
 				}
-				err = validateChildRule(r)
-				if err != nil {
-					break
-				}
+				break
 			}
 			if !includesFound {
-				err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "there should be at least 1 includes group in the root rule group")
+				err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "there should be at least 1 includes group in the root condition group")
 			}
 		} else {
-			err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "there should be 1 or 2 child rules in the root rule group")
+			err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "there should be 1 or 2 child conditions in the root condition group")
 		}
-	}
-	return
-}
-
-func validateChildRule(r Rule) (err error) {
-	switch rr := r.(type) {
-	case GroupRule:
-		err = rr.Validate()
-		if err == nil {
-			group := rr.GetGroup()
-			for _, childRule := range group {
-				_, ok := childRule.(MetadataPatternRule)
-				if !ok {
-					err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "a child rule group may contain only metadata pattern rules")
-					break
-				}
-			}
-		}
-	case MetadataPatternRule:
-	default:
-		return fmt.Errorf("%w: %s", ErrInvalidSubscription, "child rule is not a group neither metadata pattern rule")
 	}
 	return
 }

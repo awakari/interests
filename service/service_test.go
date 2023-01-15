@@ -3,9 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/service/matchers"
-	"github.com/meandros-messaging/subscriptions/storage"
+	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"

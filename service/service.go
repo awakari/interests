@@ -4,66 +4,62 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/service/matchers"
-	"github.com/meandros-messaging/subscriptions/storage"
+	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/service/kiwi"
+	"github.com/awakari/subscriptions/storage"
 	"golang.org/x/sync/errgroup"
 )
 
-type (
-	// Service is a model.Subscription CRUDL service.
-	Service interface {
+// Service is a model.Subscription CRUDL service.
+type Service interface {
 
-		// Create an empty model.Subscription with the specified name and description.
-		// Returns ErrConflict if a Subscription with the same name already present in the underlying storage.
-		// Returns model.ErrInvalidSubscription if the specified CreateRequest is invalid.
-		Create(ctx context.Context, name string, req CreateRequest) (err error)
+	// Create an empty model.Subscription with the specified name and description.
+	// Returns ErrConflict if a Subscription with the same name already present in the underlying storage.
+	// Returns model.ErrInvalidSubscription if the specified CreateRequest is invalid.
+	Create(ctx context.Context, name string, req CreateRequest) (err error)
 
-		// Read the specified model.Subscription.
-		// Returns ErrNotFound if Subscription is missing in the underlying storage.
-		Read(ctx context.Context, name string) (sub model.Subscription, err error)
+	// Read the specified model.Subscription.
+	// Returns ErrNotFound if Subscription is missing in the underlying storage.
+	Read(ctx context.Context, name string) (sub model.Subscription, err error)
 
-		// Delete a model.Subscription and all associated model.Matcher those not in use by any other model.Subscription.
-		// Returns ErrNotFound if model.Subscription with the specified name is missing in the underlying storage.
-		Delete(ctx context.Context, name string) (err error)
+	// Delete a model.Subscription and all associated model.Matcher those not in use by any other model.Subscription.
+	// Returns ErrNotFound if model.Subscription with the specified name is missing in the underlying storage.
+	Delete(ctx context.Context, name string) (err error)
 
-		// ListNames returns all subscription names starting from the specified cursor.
-		ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error)
+	// ListNames returns all subscription names starting from the specified cursor.
+	ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error)
 
-		// Search returns subscriptions page where:<br/>
-		// * model.Subscription name is greater than the one specified by the cursor<br/>
-		// * subscriptions match the specified Query.
-		Search(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error)
-	}
+	// KiwiSearch returns subscriptions page where:<br/>
+	// * model.Subscription name is greater than the one specified by the cursor<br/>
+	// * subscriptions match the specified Query.
+	KiwiSearch(ctx context.Context, q KiwiQuery, cursor string) (page []model.Subscription, err error)
+}
 
-	CreateRequest struct {
-		Description string
-		Routes      []string
-		Includes    model.MatcherGroup
-		Excludes    model.MatcherGroup
-	}
+type CreateRequest struct {
+	Description string
+	Routes      []string
+	Condition   model.Condition
+}
 
-	// Query represents the search query to use in Service.Search
-	Query struct {
+// KiwiQuery is the Subscription search query by a certain KiwiCondition.
+type KiwiQuery struct {
 
-		// Limit defines a results page size limit.
-		Limit uint32
+	// Limit defines a results page size limit.
+	Limit uint32
 
-		// InExcludes defines if it's necessary to find a model.Subscription with same model.Matcher in the "InExcludes"
-		// model.MatcherGroup
-		InExcludes bool
+	// KiwiCondition is the Subscription search criteria.
+	KiwiCondition model.KiwiCondition
 
-		// Matcher represents a model.Matcher that should be present in the model.Subscription to include into the
-		// search results.
-		Matcher model.Matcher
-	}
+	// Cursor is the last Subscription.Name from the previous KiwiQuery result.
+	Cursor string
+}
 
-	service struct {
+type service struct {
 		stor                     storage.Storage
-		excludesCompleteMatchers matchers.Service
-		excludesPartialMatchers  matchers.Service
-		includesCompleteMatchers matchers.Service
-		includesPartialMatchers  matchers.Service
+		excludesCompleteMatchers kiwi.Service
+		excludesPartialMatchers  kiwi.Service
+		includesCompleteMatchers kiwi.Service
+		includesPartialMatchers  kiwi.Service
 	}
 )
 
@@ -87,10 +83,10 @@ var (
 
 func NewService(
 	stor storage.Storage,
-	excludesCompleteMatchers matchers.Service,
-	excludesPartialMatchers matchers.Service,
-	includesCompleteMatchers matchers.Service,
-	includesPartialMatchers matchers.Service,
+	excludesCompleteMatchers kiwi.Service,
+	excludesPartialMatchers kiwi.Service,
+	includesCompleteMatchers kiwi.Service,
+	includesPartialMatchers kiwi.Service,
 ) Service {
 	return service{
 		stor:                     stor,
@@ -146,7 +142,7 @@ func (svc service) createMatchers(
 	return
 }
 
-func (svc service) selectMatchersService(inExcludes bool, partial bool) (matchersSvc matchers.Service) {
+func (svc service) selectMatchersService(inExcludes bool, partial bool) (matchersSvc kiwi.Service) {
 	if inExcludes {
 		if partial {
 			matchersSvc = svc.excludesPartialMatchers
@@ -202,7 +198,7 @@ func (svc service) clearUnusedMatchers(ctx context.Context, ms []model.Matcher, 
 }
 
 func (svc service) deleteMatcherIfUnused(ctx context.Context, m model.Matcher, inExcludes bool) (err error) {
-	q := storage.Query{
+	q := storage.KiwiQuery{
 		Limit:      1,
 		InExcludes: inExcludes,
 		Matcher:    m,
@@ -247,7 +243,7 @@ func (svc service) ListNames(ctx context.Context, limit uint32, cursor string) (
 }
 
 func (svc service) Search(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error) {
-	storageQuery := storage.Query{
+	storageQuery := storage.KiwiQuery{
 		Limit:      q.Limit,
 		InExcludes: q.InExcludes,
 		Matcher:    q.Matcher,
@@ -270,9 +266,9 @@ func translateError(srcErr error) (dstErr error) {
 			dstErr = fmt.Errorf("%w: %s", ErrNotFound, srcErr)
 		case errors.Is(srcErr, storage.ErrInternal):
 			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)
-		case errors.Is(srcErr, matchers.ErrShouldRetry):
+		case errors.Is(srcErr, kiwi.ErrShouldRetry):
 			dstErr = fmt.Errorf("%w: %s", ErrShouldRetry, srcErr)
-		case errors.Is(srcErr, matchers.ErrInternal):
+		case errors.Is(srcErr, kiwi.ErrInternal):
 			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)
 		case errors.Is(srcErr, model.ErrInvalidSubscription):
 			dstErr = srcErr

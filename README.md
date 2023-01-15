@@ -35,18 +35,18 @@
 ## 1.1. Purpose
 
 The main function is to find all subscriptions by a linked wildcard. Wildcard may be found by the sample text input 
-using [matchers](https://github.com/meandros-messaging/matchers) service, hence, it makes possible to resolve all 
+using [matchers](https://github.com/awakari/matchers) service, hence, it makes possible to resolve all 
 matching wildcard subscriptions.
 
 ## 1.2. Definitions
 
 ### 1.2.1. Pattern
 
-See the [definition here](https://github.com/meandros-messaging/matchers#122-pattern).
+See the [definition here](https://github.com/awakari/matchers#122-pattern).
 
 ### 1.2.2. Matcher
 
-Same as [matcher](https://github.com/meandros-messaging/matchers#123-matcher) but with an additional `partial` flag.
+Same as [matcher](https://github.com/awakari/matchers#123-matcher) but with an additional `partial` flag.
 The `partial` flag controls whether the matcher should be used to match the sample text parts matching or complete only.
 
 ### 1.2.3. Matcher Group
@@ -72,10 +72,10 @@ The service is configurable using the environment variables:
 | DB_URI                             | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                                    |
 | DB_NAME                            | `subscriptions`                                        | DB name to store the data                                                                            |
 | DB_TABLE_NAME                      | `subscriptions`                                        | DB table name to store the tree data                                                                 |
-| API_MATCHERS_URI_EXCLUDES_COMPLETE | `matchers-excludes-complete:8080`                      | Excluding complete [matchers](https://github.com/meandros-messaging/matchers) dependency service URI |
-| API_MATCHERS_URI_EXCLUDES_PARTIAL  | `matchers-excludes-partial:8080`                       | Excluding partial [matchers](https://github.com/meandros-messaging/matchers) dependency service URI  |
-| API_MATCHERS_URI_INCLUDES_COMPLETE | `matchers-includes-complete:8080`                      | Including complete [matchers](https://github.com/meandros-messaging/matchers) dependency service URI |
-| API_MATCHERS_URI_INCLUDES_PARTIAL  | `matchers-includes-partial:8080`                       | Including partial [matchers](https://github.com/meandros-messaging/matchers) dependency service URI  |
+| API_MATCHERS_URI_EXCLUDES_COMPLETE | `matchers-excludes-complete:8080`                      | Excluding complete [matchers](https://github.com/awakari/matchers) dependency service URI |
+| API_MATCHERS_URI_EXCLUDES_PARTIAL  | `matchers-excludes-partial:8080`                       | Excluding partial [matchers](https://github.com/awakari/matchers) dependency service URI  |
+| API_MATCHERS_URI_INCLUDES_COMPLETE | `matchers-includes-complete:8080`                      | Including complete [matchers](https://github.com/awakari/matchers) dependency service URI |
+| API_MATCHERS_URI_INCLUDES_PARTIAL  | `matchers-includes-partial:8080`                       | Including partial [matchers](https://github.com/awakari/matchers) dependency service URI  |
 
 # 3. Deployment
 
@@ -88,7 +88,7 @@ It's possible to obtain a free cluster for testing purposes using [Atlas](https:
 
 Preconditions:
 1. Build patterns executive using ```make build```
-2. Run the [patterns](https://github.com/meandros-messaging/matchers) dependency services (x4: includes/excludes, complete/partial)
+2. Run the [patterns](https://github.com/awakari/matchers) dependency services (x4: includes/excludes, complete/partial)
 
 Then run the command:
 ```shell
@@ -169,7 +169,7 @@ Example data:
 - name: subscription0
   description: Anything related to orders that are not in Helsinki
   routes:
-  - devnull
+  - /dev/null
   includes:
     all: false
     matchers:
@@ -239,7 +239,7 @@ Example data:
 
 | Attribute | Type          | Description                                                                                            |
 |-----------|---------------|--------------------------------------------------------------------------------------------------------|
-| code      | Array of byte | Unique pattern path in the [patterns tree](https://github.com/meandros-messaging/patterns#52-approach) |
+| code      | Array of byte | Unique pattern path in the [patterns tree](https://github.com/awakari/patterns#52-approach) |
 | regex     | String        | A regular expression to finally filter the resolved subscription candidates                            |
 
 ### 5.2.2. Results Pagination

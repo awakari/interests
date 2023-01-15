@@ -6,37 +6,37 @@ import (
 )
 
 func TestMetadataRule_IsNot(t *testing.T) {
-	r1 := NewRule(false)
-	r2 := NewRule(true)
-	mdr1 := NewMetadataRule(r1, "")
-	mdr2 := NewMetadataRule(r2, "")
+	r1 := NewCondition(false)
+	r2 := NewCondition(true)
+	mdr1 := NewKeyCondition(r1, "")
+	mdr2 := NewKeyCondition(r2, "")
 	assert.False(t, mdr1.IsNot())
 	assert.True(t, mdr2.IsNot())
 }
 
 func TestMetadataRule_GetKey(t *testing.T) {
-	r1 := NewRule(false)
-	mdr1 := NewMetadataRule(r1, "metadata key")
+	r1 := NewCondition(false)
+	mdr1 := NewKeyCondition(r1, "metadata key")
 	assert.Equal(t, "metadata key", mdr1.GetKey())
 }
 
 func TestMetadataRule_Equal(t *testing.T) {
-	r1 := NewRule(false)
-	r2 := NewRule(true)
-	mdr1 := NewMetadataRule(r1, "key1")
+	r1 := NewCondition(false)
+	r2 := NewCondition(true)
+	mdr1 := NewKeyCondition(r1, "key1")
 	cases := map[string]struct {
-		in    MetadataRule
+		in    KeyCondition
 		equal bool
 	}{
 		"equals": {
 			in:    mdr1,
 			equal: true,
 		},
-		"different base rule": {
-			in: NewMetadataRule(r2, "key1"),
+		"different base condition": {
+			in: NewKeyCondition(r2, "key1"),
 		},
 		"different key": {
-			in: NewMetadataRule(r1, "key2"),
+			in: NewKeyCondition(r1, "key2"),
 		},
 	}
 	for k, c := range cases {

@@ -1,11 +1,11 @@
-package matchers
+package kiwi
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/api/grpc/matchers"
-	"github.com/meandros-messaging/subscriptions/model"
+	"github.com/awakari/subscriptions/api/grpc/kiwi-tree"
+	"github.com/awakari/subscriptions/model"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -37,7 +37,7 @@ type (
 	}
 
 	service struct {
-		client matchers.ServiceClient
+		client kiwi.ServiceClient
 	}
 )
 
@@ -56,18 +56,18 @@ var (
 	ErrShouldRetry = errors.New("retry the operation")
 )
 
-func NewService(client matchers.ServiceClient) Service {
+func NewService(client kiwi.ServiceClient) Service {
 	return service{
 		client: client,
 	}
 }
 
 func (svc service) Create(ctx context.Context, k string, patternSrc string) (m model.MatcherData, err error) {
-	req := &matchers.CreateRequest{
+	req := &kiwi.CreateRequest{
 		Key:        k,
 		PatternSrc: patternSrc,
 	}
-	var resp *matchers.MatcherData
+	var resp *kiwi.CreateResponse
 	resp, err = svc.client.Create(ctx, req)
 	if err != nil {
 		err = decodeError(err)
@@ -77,7 +77,7 @@ func (svc service) Create(ctx context.Context, k string, patternSrc string) (m m
 			Src:  patternSrc,
 		}
 		m = model.MatcherData{
-			Key:     resp.Key,
+			Key:     k,
 			Pattern: p,
 		}
 	}
@@ -85,7 +85,7 @@ func (svc service) Create(ctx context.Context, k string, patternSrc string) (m m
 }
 
 func (svc service) LockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
-	req := &matchers.LockCreateRequest{
+	req := &kiwi.LockCreateRequest{
 		PatternCode: patternCode,
 	}
 	_, err = svc.client.LockCreate(ctx, req)
@@ -96,7 +96,7 @@ func (svc service) LockCreate(ctx context.Context, patternCode model.PatternCode
 }
 
 func (svc service) UnlockCreate(ctx context.Context, patternCode model.PatternCode) (err error) {
-	req := &matchers.UnlockCreateRequest{
+	req := &kiwi.UnlockCreateRequest{
 		PatternCode: patternCode,
 	}
 	_, err = svc.client.UnlockCreate(ctx, req)
@@ -107,11 +107,9 @@ func (svc service) UnlockCreate(ctx context.Context, patternCode model.PatternCo
 }
 
 func (svc service) Delete(ctx context.Context, m model.MatcherData) (err error) {
-	req := &matchers.DeleteRequest{
-		Matcher: &matchers.MatcherData{
-			Key:         m.Key,
-			PatternCode: m.Pattern.Code,
-		},
+	req := &kiwi.DeleteRequest{
+		Key:         m.Key,
+		PatternCode: m.Pattern.Code,
 	}
 	_, err = svc.client.Delete(ctx, req)
 	if err != nil {

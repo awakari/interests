@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/util"
+	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/util"
 	"golang.org/x/exp/slices"
 )
 
@@ -72,7 +72,7 @@ func (s storageMock) ListNames(ctx context.Context, limit uint32, cursor string)
 	return
 }
 
-func (s storageMock) Search(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error) {
+func (s storageMock) Search(ctx context.Context, q KiwiQuery, cursor string) (page []model.Subscription, err error) {
 	var mg model.MatcherGroup
 	sortedNames := util.SortedKeys(s.storage)
 	for _, subName := range sortedNames {
