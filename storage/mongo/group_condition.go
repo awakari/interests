@@ -21,7 +21,7 @@ func decodeGroupCondition(baseCond ConditionBase, rawGroup bson.A, rawData bson.
 	gc.Logic = model.GroupLogic(rawData[groupConditionAttrLogic].(int32))
 	for _, rawChild := range rawGroup {
 		var child Condition
-		child, err = decodeCondition(rawChild.(bson.M))
+		child, err = decodeRawCondition(rawChild.(bson.M))
 		gc.Group = append(gc.Group, child)
 	}
 	return

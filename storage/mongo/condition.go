@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"fmt"
+	"github.com/awakari/subscriptions/model"
 	"github.com/awakari/subscriptions/storage"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -18,7 +19,40 @@ const conditionAttrNot = "not"
 
 var _ Condition = (*ConditionBase)(nil)
 
-func decodeCondition(raw bson.M) (result Condition, err error) {
+func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwi) {
+	bc := ConditionBase{
+		Not: src.IsNot(),
+	}
+	switch c := src.(type) {
+	case model.GroupCondition:
+		var group []Condition
+		for _, childSrc := range c.GetGroup() {
+			childDst, childKiwis := encodeCondition(childSrc)
+			group = append(group, childDst)
+			kiwis = append(kiwis, childKiwis...)
+		}
+		dst = groupCondition{
+			Base:  bc,
+			Group: group,
+			Logic: c.GetLogic(),
+		}
+	case model.KiwiCondition:
+		k := kiwi{
+			Key:     c.GetKey(),
+			Pattern: c.GetPattern(),
+		}
+		kc := kiwiCondition{
+			kiwi:    k,
+			Base:    bc,
+			Partial: c.IsPartial(),
+		}
+		kiwis = append(kiwis, k)
+		dst = kc
+	}
+	return
+}
+
+func decodeRawCondition(raw bson.M) (result Condition, err error) {
 	base, isBase := raw[conditionAttrBase]
 	fmt.Printf("%v", base)
 	if !isBase {
@@ -39,4 +73,29 @@ func decodeCondition(raw bson.M) (result Condition, err error) {
 		}
 	}
 	return
+}
+
+func decodeCondition(src Condition) (dst model.Condition) {
+	switch c := src.(type) {
+	case groupCondition:
+		var children []model.Condition
+		for _, childCond := range c.Group {
+			children = append(children, decodeCondition(childCond))
+		}
+		dst = model.NewGroupCondition(
+			model.NewCondition(c.Base.Not),
+			c.Logic,
+			children,
+		)
+	case kiwiCondition:
+		dst = model.NewKiwiCondition(
+			model.NewKeyCondition(
+				model.NewCondition(c.Base.Not),
+				c.Key,
+			),
+			c.Partial,
+			c.Pattern,
+		)
+	}
+	return dst
 }

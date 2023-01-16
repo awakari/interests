@@ -37,7 +37,7 @@ var (
 	optsRead   = options.
 			FindOne().
 			SetShowRecordID(false)
-	listNamesProjection = bson.D{
+	namesProjection = bson.D{
 		{
 			attrName,
 			1,
@@ -80,51 +80,17 @@ func (s storageImpl) Close() error {
 }
 
 func (s storageImpl) Create(ctx context.Context, sub model.Subscription) (err error) {
-	recCondition, recKiwiConditions := encodeCondition(sub.Condition)
+	recCondition, recKiwis := encodeCondition(sub.Condition)
 	rec := subscriptionWrite{
-		Name:           sub.Name,
-		Description:    sub.Description,
-		Routes:         sub.Routes,
-		Condition:      recCondition,
-		KiwiConditions: recKiwiConditions,
+		Name:        sub.Name,
+		Description: sub.Description,
+		Routes:      sub.Routes,
+		Condition:   recCondition,
+		Kiwis:       recKiwis,
 	}
 	_, err = s.coll.InsertOne(ctx, rec)
 	if mongo.IsDuplicateKeyError(err) {
 		err = fmt.Errorf("%w: %s", storage.ErrConflict, err)
-	}
-	return
-}
-
-func encodeCondition(src model.Condition) (dst Condition, kiwiConditions []kiwiCondition) {
-	bc := ConditionBase{
-		Not: src.IsNot(),
-	}
-	switch c := src.(type) {
-	case model.GroupCondition:
-		var group []Condition
-		for _, childSrc := range c.GetGroup() {
-			childDst, childKiwiConditions := encodeCondition(childSrc)
-			group = append(group, childDst)
-			kiwiConditions = append(kiwiConditions, childKiwiConditions...)
-		}
-		dst = groupCondition{
-			Base:  bc,
-			Group: group,
-			Logic: c.GetLogic(),
-		}
-	case model.KiwiCondition:
-		p := c.GetPattern()
-		kc := kiwiCondition{
-			Base:    bc,
-			Key:     c.GetKey(),
-			Partial: c.IsPartial(),
-			ValuePattern: pattern{
-				Code: p.Code,
-				Src:  p.Src,
-			},
-		}
-		kiwiConditions = append(kiwiConditions, kc)
-		dst = kc
 	}
 	return
 }
@@ -153,35 +119,8 @@ func decodeSingleResult(name string, result *mongo.SingleResult) (sub model.Subs
 		if err != nil {
 			err = fmt.Errorf("%w: failed to decode, name=%s, %s", storage.ErrInternal, name, err)
 		} else {
-			decodeSubscription(rec, &sub)
+			err = rec.decodeSubscription(&sub)
 		}
-	}
-	return
-}
-
-func decodeSubscription(rec subscription, sub *model.Subscription) {
-	sub.Name = rec.Name
-	sub.Description = rec.Description
-	sub.Routes = rec.Routes
-	sub.Excludes.All = rec.Excludes.All
-	sub.Excludes.Matchers = decodeMatchers(rec.Excludes.Matchers)
-	sub.Includes.All = rec.Includes.All
-	sub.Includes.Matchers = decodeMatchers(rec.Includes.Matchers)
-}
-
-func decodeMatchers(matcherRecs []matcher) (matchers []model.Matcher) {
-	for _, matcherRec := range matcherRecs {
-		m := model.Matcher{
-			MatcherData: model.MatcherData{
-				Key: matcherRec.Key,
-				Pattern: model.Pattern{
-					Code: matcherRec.Pattern.Code,
-					Src:  matcherRec.Pattern.Src,
-				},
-			},
-			Partial: matcherRec.Partial,
-		}
-		matchers = append(matchers, m)
 	}
 	return
 }
@@ -205,9 +144,9 @@ func (s storageImpl) ListNames(ctx context.Context, limit uint32, cursor string)
 	opts := options.
 		Find().
 		SetLimit(int64(limit)).
-		SetProjection(listNamesProjection).
+		SetProjection(namesProjection).
 		SetShowRecordID(false).
-		SetSort(listNamesProjection)
+		SetSort(namesProjection)
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, q, opts)
 	if err != nil {
@@ -227,26 +166,19 @@ func (s storageImpl) ListNames(ctx context.Context, limit uint32, cursor string)
 	return
 }
 
-func (s storageImpl) Search(ctx context.Context, q storage.KiwiQuery, cursor string) (page []model.Subscription, err error) {
+func (s storageImpl) SearchByKiwi(ctx context.Context, q model.KiwiQuery, cursor string) (page []model.Subscription, err error) {
 	dbQuery := bson.M{
 		attrName: bson.M{
 			"$gt": cursor,
 		},
+		attrKiwis + "." + kiwiAttrKey:     q.Key,
+		attrKiwis + "." + kiwiAttrPattern: q.Pattern,
 	}
-	var attrMatcherGroup string
-	if q.InExcludes {
-		attrMatcherGroup = attrExcludes
-	} else {
-		attrMatcherGroup = attrIncludes
-	}
-	dbQuery[attrMatcherGroup+"."+attrMatchers+"."+attrPartial] = q.Matcher.Partial
-	dbQuery[attrMatcherGroup+"."+attrMatchers+"."+attrKey] = q.Matcher.Key
-	dbQuery[attrMatcherGroup+"."+attrMatchers+"."+attrPattern+"."+attrCode] = q.Matcher.Pattern.Code
 	opts := options.
 		Find().
 		SetLimit(int64(q.Limit)).
 		SetShowRecordID(false).
-		SetSort(listNamesProjection)
+		SetSort(namesProjection)
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, dbQuery, opts)
 	if err != nil {
@@ -260,7 +192,11 @@ func (s storageImpl) Search(ctx context.Context, q storage.KiwiQuery, cursor str
 		} else {
 			for _, rec := range recs {
 				var sub model.Subscription
-				decodeSubscription(rec, &sub)
+				err = rec.decodeSubscription(&sub)
+				if err != nil {
+					err = fmt.Errorf("%w: failed to decode subscription record %v: %s", storage.ErrInternal, rec, err)
+					break
+				}
 				page = append(page, sub)
 			}
 		}

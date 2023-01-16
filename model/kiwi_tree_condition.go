@@ -9,8 +9,15 @@ type kiwiTreeCondition struct {
 	kiwiCondition
 }
 
-func NewKiwiTreeCondition(kc kiwiCondition) KiwiTreeCondition {
+func NewKiwiTreeCondition(kc KiwiCondition) KiwiTreeCondition {
 	return kiwiTreeCondition{
-		kc,
+		kiwiCondition{
+			KeyCondition: NewKeyCondition(
+				NewCondition(kc.IsNot()),
+				kc.GetKey(),
+			),
+			Partial: kc.IsPartial(),
+			Pattern: kc.GetPattern(),
+		},
 	}
 }

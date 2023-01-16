@@ -6,7 +6,7 @@ import (
 	grpcApiKiwi "github.com/awakari/subscriptions/api/grpc/kiwi-tree"
 	"github.com/awakari/subscriptions/config"
 	"github.com/awakari/subscriptions/service"
-	"github.com/awakari/subscriptions/service/kiwi"
+	"github.com/awakari/subscriptions/service/kiwi-tree"
 	"github.com/awakari/subscriptions/storage/mongo"
 	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
@@ -39,8 +39,8 @@ func main() {
 		log.Error("failed to connect the kiwi service", err)
 	}
 	kiwiClientExcludesComplete := grpcApiKiwi.NewServiceClient(kiwiConnExcludesComplete)
-	kiwiSvcExcludesComplete := kiwi.NewService(kiwiClientExcludesComplete)
-	kiwiSvcExcludesComplete = kiwi.NewLoggingMiddleware(kiwiSvcExcludesComplete, log)
+	kiwiSvcExcludesComplete := kiwiTree.NewService(kiwiClientExcludesComplete)
+	kiwiSvcExcludesComplete = kiwiTree.NewLoggingMiddleware(kiwiSvcExcludesComplete, log)
 	//
 	kiwiConnExcludesPartial, err := grpc.Dial(
 		cfg.Api.Kiwi.UriExcludesPartial,
@@ -50,8 +50,8 @@ func main() {
 		log.Error("failed to connect the kiwi service", err)
 	}
 	kiwiClientExcludesPartial := grpcApiKiwi.NewServiceClient(kiwiConnExcludesPartial)
-	kiwiSvcExcludesPartial := kiwi.NewService(kiwiClientExcludesPartial)
-	kiwiSvcExcludesPartial = kiwi.NewLoggingMiddleware(kiwiSvcExcludesPartial, log)
+	kiwiSvcExcludesPartial := kiwiTree.NewService(kiwiClientExcludesPartial)
+	kiwiSvcExcludesPartial = kiwiTree.NewLoggingMiddleware(kiwiSvcExcludesPartial, log)
 	//
 	kiwiConnIncludesComplete, err := grpc.Dial(
 		cfg.Api.Kiwi.UriIncludesComplete,
@@ -61,8 +61,8 @@ func main() {
 		log.Error("failed to connect the kiwi service", err)
 	}
 	kiwiClientIncludesComplete := grpcApiKiwi.NewServiceClient(kiwiConnIncludesComplete)
-	kiwiSvcIncludesComplete := kiwi.NewService(kiwiClientIncludesComplete)
-	kiwiSvcIncludesComplete = kiwi.NewLoggingMiddleware(kiwiSvcIncludesComplete, log)
+	kiwiSvcIncludesComplete := kiwiTree.NewService(kiwiClientIncludesComplete)
+	kiwiSvcIncludesComplete = kiwiTree.NewLoggingMiddleware(kiwiSvcIncludesComplete, log)
 	//
 	kiwiConnIncludesPartial, err := grpc.Dial(
 		cfg.Api.Kiwi.UriIncludesPartial,
@@ -72,8 +72,8 @@ func main() {
 		log.Error("failed to connect the kiwi service", err)
 	}
 	kiwiClientIncludesPartial := grpcApiKiwi.NewServiceClient(kiwiConnIncludesPartial)
-	kiwiSvcIncludesPartial := kiwi.NewService(kiwiClientIncludesPartial)
-	kiwiSvcIncludesPartial = kiwi.NewLoggingMiddleware(kiwiSvcIncludesPartial, log)
+	kiwiSvcIncludesPartial := kiwiTree.NewService(kiwiClientIncludesPartial)
+	kiwiSvcIncludesPartial = kiwiTree.NewLoggingMiddleware(kiwiSvcIncludesPartial, log)
 	//
 	svc := service.NewService(
 		db,

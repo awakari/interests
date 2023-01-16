@@ -39,34 +39,28 @@ func (sm serviceMock) Read(ctx context.Context, name string) (sub model.Subscrip
 			Routes: []string{
 				"destination",
 			},
-			Includes: model.MatcherGroup{
-				All: true,
-				Matchers: []model.Matcher{
-					{
-						Partial: true,
-						MatcherData: model.MatcherData{
-							Key: "key0",
-							Pattern: model.Pattern{
-								Code: []byte("pattern0"),
-								Src:  "pattern0",
-							},
-						},
-					},
+			Condition: model.NewGroupCondition(
+				model.NewCondition(false),
+				model.GroupLogicAnd,
+				[]model.Condition{
+					model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(false),
+							"key0",
+						),
+						true,
+						"pattern0",
+					),
+					model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(true),
+							"key1",
+						),
+						false,
+						"pattern1",
+					),
 				},
-			},
-			Excludes: model.MatcherGroup{
-				Matchers: []model.Matcher{
-					{
-						MatcherData: model.MatcherData{
-							Key: "key1",
-							Pattern: model.Pattern{
-								Code: []byte("pattern1"),
-								Src:  "pattern1",
-							},
-						},
-					},
-				},
-			},
+			),
 		}
 	}
 	return
@@ -93,7 +87,7 @@ func (sm serviceMock) ListNames(ctx context.Context, limit uint32, cursor string
 	return
 }
 
-func (sm serviceMock) Search(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error) {
+func (sm serviceMock) SearchByKiwi(ctx context.Context, q model.KiwiQuery, cursor string) (page []model.Subscription, err error) {
 	if cursor == "" {
 		page = []model.Subscription{
 			{

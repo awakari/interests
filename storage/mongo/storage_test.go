@@ -46,7 +46,7 @@ func TestStorageImpl_Create(t *testing.T) {
 	collName := fmt.Sprintf("subscriptions-test-%d", rand.Uint32())
 	dbCfg := config.Db{
 		Uri:  dbUri,
-		Name: "subscriptions-dev",
+		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -61,21 +61,14 @@ func TestStorageImpl_Create(t *testing.T) {
 		Routes: []string{
 			"test route 0",
 		},
-		Includes: model.MatcherGroup{
-			All: true,
-			Matchers: []model.Matcher{
-				{
-					Partial: true,
-					MatcherData: model.MatcherData{
-						Key: "key0",
-						Pattern: model.Pattern{
-							Code: []byte("pattern0"),
-							Src:  "pattern0",
-						},
-					},
-				},
-			},
-		},
+		Condition: model.NewKiwiCondition(
+			model.NewKeyCondition(
+				model.NewCondition(false),
+				"key0",
+			),
+			true,
+			"pattern0",
+		),
 	})
 	assert.Nil(t, err)
 	//
@@ -509,13 +502,13 @@ func TestStorageImpl_Search(t *testing.T) {
 	}
 	//
 	cases := map[string]struct {
-		q      storage.KiwiQuery
+		q      model.KiwiQuery
 		cursor string
 		page   []model.Subscription
 		err    error
 	}{
 		"1": {
-			q: storage.KiwiQuery{
+			q: model.KiwiQuery{
 				InExcludes: true,
 				Matcher: model.Matcher{
 					Partial: true,
@@ -553,7 +546,7 @@ func TestStorageImpl_Search(t *testing.T) {
 			},
 		},
 		"2": {
-			q: storage.KiwiQuery{
+			q: model.KiwiQuery{
 				Matcher: model.Matcher{
 					Partial: false,
 					MatcherData: model.MatcherData{
@@ -612,7 +605,7 @@ func TestStorageImpl_Search(t *testing.T) {
 	//
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			p, err := s.Search(ctx, c.q, c.cursor)
+			p, err := s.SearchByKiwi(ctx, c.q, c.cursor)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, len(c.page), len(p))
@@ -670,7 +663,7 @@ func TestStorageImpl_SubscriptionWithRulesExperiment(t *testing.T) {
 				},
 			},
 		},
-		Condition: groupCondition{
+		RawCondition: groupCondition{
 			Logic: model.GroupLogicOr,
 			Group: []Condition{
 				kiwiCondition{
@@ -726,7 +719,7 @@ func TestStorageImpl_SubscriptionWithRulesExperiment(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	defer cursor.Close(ctx)
-	var results []subscriptionRaw
+	var results []subscription
 	err = cursor.All(ctx, &results)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(results))

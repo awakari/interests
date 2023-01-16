@@ -1,10 +1,9 @@
-package kiwi
+package kiwiTree
 
 import (
 	"context"
 	"fmt"
 	grpcApi "github.com/awakari/subscriptions/api/grpc/kiwi-tree"
-	"github.com/awakari/subscriptions/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -15,45 +14,33 @@ func TestService_Create(t *testing.T) {
 	client := grpcApi.NewClientMock()
 	svc := NewService(client)
 	cases := []struct {
-		key        string
-		patternSrc string
-		m          model.MatcherData
-		err        error
+		key     string
+		pattern string
+		err     error
 	}{
 		{
-			key:        "foo",
-			patternSrc: "bar",
-			m: model.MatcherData{
-				Key: "foo",
-				Pattern: model.Pattern{
-					Code: []byte("bar"),
-					Src:  "bar",
-				},
-			},
+			key:     "foo",
+			pattern: "bar",
 		},
 		{
 			key: "fail",
 			err: ErrInternal,
 		},
 		{
-			patternSrc: "locked",
-			err:        ErrShouldRetry,
+			pattern: "locked",
+			err:     ErrShouldRetry,
 		},
 		{
-			patternSrc: "invalid",
-			err:        ErrInvalidPatternSrc,
+			pattern: "invalid",
+			err:     ErrInvalidPatternSrc,
 		},
 	}
 	for _, c := range cases {
-		t.Run(fmt.Sprintf("%s: %s", c.key, c.patternSrc), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s: %s", c.key, c.pattern), func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			m, err := svc.Create(ctx, c.key, c.patternSrc)
-			if c.err != nil {
-				assert.ErrorIs(t, err, c.err)
-			} else {
-				assert.Equal(t, c.m, m)
-			}
+			err := svc.Create(ctx, c.key, c.pattern)
+			assert.ErrorIs(t, err, c.err)
 		})
 	}
 }
@@ -62,38 +49,25 @@ func TestService_Delete(t *testing.T) {
 	client := grpcApi.NewClientMock()
 	svc := NewService(client)
 	cases := []struct {
-		key        string
-		patternSrc string
-		m          model.MatcherData
-		err        error
+		key     string
+		pattern string
+		err     error
 	}{
+		{},
 		{
-			m: model.MatcherData{
-				Key: "foo",
-				Pattern: model.Pattern{
-					Code: []byte("bar"),
-					Src:  "bar",
-				},
-			},
-		},
-		{
-			m: model.MatcherData{
-				Key: "missing",
-			},
+			key: "missing",
 			err: ErrNotFound,
 		},
 		{
-			m: model.MatcherData{
-				Key: "fail",
-			},
+			key: "fail",
 			err: ErrInternal,
 		},
 	}
 	for _, c := range cases {
-		t.Run(c.m.Key+": "+c.m.Pattern.String(), func(t *testing.T) {
+		t.Run(c.key, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			err := svc.Delete(ctx, c.m)
+			err := svc.Delete(ctx, c.key, "")
 			assert.ErrorIs(t, err, c.err)
 		})
 	}
@@ -106,13 +80,13 @@ func TestService_LockCreate(t *testing.T) {
 	//
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	_, err := svc.Create(ctx, "subject", "orders")
+	err := svc.Create(ctx, "subject", "orders")
 	require.Nil(t, err)
-	err = svc.LockCreate(ctx, []byte("orders"))
+	err = svc.LockCreate(ctx, "subject", "orders")
 	assert.Nil(t, err)
-	err = svc.LockCreate(ctx, []byte("missing"))
+	err = svc.LockCreate(ctx, "subject", "missing")
 	assert.ErrorIs(t, err, ErrNotFound)
-	err = svc.LockCreate(ctx, []byte("fail"))
+	err = svc.LockCreate(ctx, "fail", "fail")
 	assert.ErrorIs(t, err, ErrInternal)
 }
 
@@ -123,8 +97,8 @@ func TestService_UnlockCreate(t *testing.T) {
 	//
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	err := svc.UnlockCreate(ctx, []byte("orders"))
+	err := svc.UnlockCreate(ctx, "key0", "orders")
 	assert.Nil(t, err)
-	err = svc.UnlockCreate(ctx, []byte("fail"))
+	err = svc.UnlockCreate(ctx, "key0", "fail")
 	assert.ErrorIs(t, err, ErrInternal)
 }

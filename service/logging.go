@@ -49,9 +49,9 @@ func (lm loggingMiddleware) ListNames(ctx context.Context, limit uint32, cursor 
 	return lm.svc.ListNames(ctx, limit, cursor)
 }
 
-func (lm loggingMiddleware) Search(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error) {
+func (lm loggingMiddleware) SearchByKiwi(ctx context.Context, q model.KiwiQuery, cursor string) (page []model.Subscription, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Search(%v, %v): %s", q, cursor, err))
+		lm.log.Debug(fmt.Sprintf("SearchByKiwi(%v, %v): %s", q, cursor, err))
 	}()
-	return lm.svc.Search(ctx, q, cursor)
+	return lm.svc.SearchByKiwi(ctx, q, cursor)
 }
