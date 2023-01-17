@@ -15,8 +15,8 @@ type subscriptionWrite struct {
 	Condition Condition `bson:"condition"`
 
 	// Kiwis contains the list of copies of all key-pattern pairs. The Kiwis field is necessary to support the
-	// subscriptions search by a "kiwi".
-	Kiwis []kiwi `bson:"kiwis"`
+	// subscriptions search by a "Kiwi".
+	Kiwis []Kiwi `bson:"kiwis"`
 }
 
 // intermediate search result that contains the condition not decoded yet

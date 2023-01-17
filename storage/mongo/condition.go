@@ -19,7 +19,7 @@ const conditionAttrNot = "not"
 
 var _ Condition = (*ConditionBase)(nil)
 
-func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwi) {
+func encodeCondition(src model.Condition) (dst Condition, kiwis []Kiwi) {
 	bc := ConditionBase{
 		Not: src.IsNot(),
 	}
@@ -34,15 +34,15 @@ func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwi) {
 		dst = groupCondition{
 			Base:  bc,
 			Group: group,
-			Logic: c.GetLogic(),
+			Logic: int32(c.GetLogic()),
 		}
 	case model.KiwiCondition:
-		k := kiwi{
+		k := Kiwi{
 			Key:     c.GetKey(),
 			Pattern: c.GetPattern(),
 		}
 		kc := kiwiCondition{
-			kiwi:    k,
+			Kiwi:    k,
 			Base:    bc,
 			Partial: c.IsPartial(),
 		}
@@ -54,7 +54,6 @@ func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwi) {
 
 func decodeRawCondition(raw bson.M) (result Condition, err error) {
 	base, isBase := raw[conditionAttrBase]
-	fmt.Printf("%v", base)
 	if !isBase {
 		err = fmt.Errorf("%w: value is not a condition instance: %v", storage.ErrInternal, raw)
 	} else {
@@ -62,13 +61,13 @@ func decodeRawCondition(raw bson.M) (result Condition, err error) {
 		baseCond := ConditionBase{Not: not}
 		group, isGroup := raw[groupConditionAttrGroup].(bson.A)
 		if isGroup {
-			result, err = decodeGroupCondition(baseCond, group, raw)
+			result, err = decodeRawGroupCondition(baseCond, group, raw)
 		} else {
-			key, present := raw[kiwiConditionAttrKey]
+			rawKiwi, present := raw[kiwiConditionAttrKiwi]
 			if !present {
-				err = fmt.Errorf("%w: value doesn't contain neither \"group\" attribute nor \"key\": %v", storage.ErrInternal, raw)
+				err = fmt.Errorf("%w: value doesn't contain neither \"group\" nor \"kiwi\" attribute: %v", storage.ErrInternal, raw)
 			} else {
-				result, err = decodeKiwiCondition(baseCond, key, raw)
+				result, err = decodeKiwiCondition(baseCond, rawKiwi, raw)
 			}
 		}
 	}
@@ -82,20 +81,12 @@ func decodeCondition(src Condition) (dst model.Condition) {
 		for _, childCond := range c.Group {
 			children = append(children, decodeCondition(childCond))
 		}
-		dst = model.NewGroupCondition(
-			model.NewCondition(c.Base.Not),
-			c.Logic,
-			children,
-		)
+		dstBase := model.NewCondition(c.Base.Not)
+		dst = model.NewGroupCondition(dstBase, model.GroupLogic(c.Logic), children)
 	case kiwiCondition:
-		dst = model.NewKiwiCondition(
-			model.NewKeyCondition(
-				model.NewCondition(c.Base.Not),
-				c.Key,
-			),
-			c.Partial,
-			c.Pattern,
-		)
+		dstBase := model.NewCondition(c.Base.Not)
+		dstKey := model.NewKeyCondition(dstBase, c.Kiwi.Key)
+		dst = model.NewKiwiCondition(dstKey, c.Partial, c.Kiwi.Pattern)
 	}
 	return dst
 }

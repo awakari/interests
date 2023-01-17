@@ -31,7 +31,7 @@ var (
 				Index().
 				SetUnique(true),
 		},
-		// TODO query by kiwi
+		// TODO query by Kiwi
 	}
 	optsSrvApi = options.ServerAPI(options.ServerAPIVersion1)
 	optsRead   = options.

@@ -1,25 +1,34 @@
 package mongo
 
 import (
+	"fmt"
+	"github.com/awakari/subscriptions/storage"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 type kiwiCondition struct {
-	kiwi
 	Base    ConditionBase `bson:"base"`
+	Kiwi    Kiwi          `bson:"kiwi"`
 	Partial bool          `bson:"partial"`
 }
 
-const kiwiConditionAttrKey = "key"
+const kiwiConditionAttrKiwi = "kiwi"
 const kiwiConditionAttrPartial = "partial"
-const kiwiConditionAttrPattern = "pattern"
 
 var _ Condition = (*kiwiCondition)(nil)
 
-func decodeKiwiCondition(baseCond ConditionBase, key any, raw bson.M) (kc kiwiCondition, err error) {
+func decodeKiwiCondition(baseCond ConditionBase, rawKiwi any, raw bson.M) (kc kiwiCondition, err error) {
 	kc.Base = baseCond
-	kc.Key = key.(string)
-	kc.Partial = raw[kiwiConditionAttrPartial].(bool)
-	kc.Pattern = raw[kiwiConditionAttrPattern].(string)
+	var ok bool
+	kc.Partial, ok = raw[kiwiConditionAttrPartial].(bool)
+	var rawKiwiRec bson.M
+	if ok {
+		rawKiwiRec, ok = rawKiwi.(bson.M)
+	}
+	if ok {
+		kc.Kiwi, err = decodeRawKiwi(rawKiwiRec)
+	} else {
+		err = fmt.Errorf("%w: failed to decode the kiwi condition %v", storage.ErrInternal, raw)
+	}
 	return
 }
