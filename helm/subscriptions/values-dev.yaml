@@ -1,4 +1,0 @@
-# Database related configuration.
-db:
-  # Database connection URI.
-  uri: mongodb+srv://akurilov:Yh8yXqDNOPnfILI2@dev0.n5hqdgn.mongodb.net/?retryWrites=true&w=majority
