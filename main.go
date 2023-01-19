@@ -31,56 +31,32 @@ func main() {
 		log.Error("failed to connect the DB", err)
 	}
 	//
-	kiwiConnExcludesComplete, err := grpc.Dial(
-		cfg.Api.Kiwi.UriExcludesComplete,
+	kiwiTreeConnComplete, err := grpc.Dial(
+		cfg.Api.KiwiTree.CompleteUri,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Error("failed to connect the kiwi service", err)
+		log.Error("failed to connect the kiwiTree service", err)
 	}
-	kiwiClientExcludesComplete := grpcApiKiwi.NewServiceClient(kiwiConnExcludesComplete)
-	kiwiSvcExcludesComplete := kiwiTree.NewService(kiwiClientExcludesComplete)
-	kiwiSvcExcludesComplete = kiwiTree.NewLoggingMiddleware(kiwiSvcExcludesComplete, log)
+	kiwiTreeClientComplete := grpcApiKiwi.NewServiceClient(kiwiTreeConnComplete)
+	kiwiTreeSvcComplete := kiwiTree.NewService(kiwiTreeClientComplete)
+	kiwiTreeSvcComplete = kiwiTree.NewLoggingMiddleware(kiwiTreeSvcComplete, log)
 	//
-	kiwiConnExcludesPartial, err := grpc.Dial(
-		cfg.Api.Kiwi.UriExcludesPartial,
+	kiwiTreeConnPartial, err := grpc.Dial(
+		cfg.Api.KiwiTree.PartialUri,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Error("failed to connect the kiwi service", err)
+		log.Error("failed to connect the kiwiTree service", err)
 	}
-	kiwiClientExcludesPartial := grpcApiKiwi.NewServiceClient(kiwiConnExcludesPartial)
-	kiwiSvcExcludesPartial := kiwiTree.NewService(kiwiClientExcludesPartial)
-	kiwiSvcExcludesPartial = kiwiTree.NewLoggingMiddleware(kiwiSvcExcludesPartial, log)
-	//
-	kiwiConnIncludesComplete, err := grpc.Dial(
-		cfg.Api.Kiwi.UriIncludesComplete,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		log.Error("failed to connect the kiwi service", err)
-	}
-	kiwiClientIncludesComplete := grpcApiKiwi.NewServiceClient(kiwiConnIncludesComplete)
-	kiwiSvcIncludesComplete := kiwiTree.NewService(kiwiClientIncludesComplete)
-	kiwiSvcIncludesComplete = kiwiTree.NewLoggingMiddleware(kiwiSvcIncludesComplete, log)
-	//
-	kiwiConnIncludesPartial, err := grpc.Dial(
-		cfg.Api.Kiwi.UriIncludesPartial,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		log.Error("failed to connect the kiwi service", err)
-	}
-	kiwiClientIncludesPartial := grpcApiKiwi.NewServiceClient(kiwiConnIncludesPartial)
-	kiwiSvcIncludesPartial := kiwiTree.NewService(kiwiClientIncludesPartial)
-	kiwiSvcIncludesPartial = kiwiTree.NewLoggingMiddleware(kiwiSvcIncludesPartial, log)
+	kiwiTreeClientPartial := grpcApiKiwi.NewServiceClient(kiwiTreeConnPartial)
+	kiwiTreeSvcPartial := kiwiTree.NewService(kiwiTreeClientPartial)
+	kiwiTreeSvcPartial = kiwiTree.NewLoggingMiddleware(kiwiTreeSvcPartial, log)
 	//
 	svc := service.NewService(
 		db,
-		kiwiSvcExcludesComplete,
-		kiwiSvcExcludesPartial,
-		kiwiSvcIncludesComplete,
-		kiwiSvcIncludesPartial,
+		kiwiTreeSvcComplete,
+		kiwiTreeSvcPartial,
 	)
 	svc = service.NewLoggingMiddleware(svc, log)
 	log.Info("connected, starting to listen for incoming requests...")
