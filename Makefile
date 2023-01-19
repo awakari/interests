@@ -36,6 +36,9 @@ run: docker
 		--expose 8080 \
 		awakari/subscriptions
 
+staging: docker
+	./scripts/staging.sh
+
 release: docker
 	./scripts/release.sh
 
