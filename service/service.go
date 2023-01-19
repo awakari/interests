@@ -16,7 +16,7 @@ type Service interface {
 	// Create an empty model.Subscription with the specified name and description.
 	// Returns ErrConflict if a Subscription with the same name already present in the underlying storage.
 	// Returns model.ErrInvalidSubscription if the specified CreateRequest is invalid.
-	Create(ctx context.Context, name string, req CreateRequest) (err error)
+	Create(ctx context.Context, sub model.Subscription) (err error)
 
 	// Read the specified model.Subscription.
 	// Returns ErrNotFound if Subscription is missing in the underlying storage.
@@ -35,16 +35,10 @@ type Service interface {
 	SearchByKiwi(ctx context.Context, q model.KiwiQuery, cursor string) (page []model.Subscription, err error)
 }
 
-// CreateRequest represents the information necessary to create and store a model.Subscription.
-type CreateRequest struct {
-	Description string
-	Routes      []string
-	Condition   model.Condition
-}
-
 type service struct {
-	stor        storage.Storage
-	kiwiTreeSvc kiwiTree.Service
+	stor                storage.Storage
+	kiwiCompleteTreeSvc kiwiTree.Service
+	kiwiPartialTreeSvc  kiwiTree.Service
 }
 
 var (
@@ -67,23 +61,20 @@ var (
 
 func NewService(
 	stor storage.Storage,
-	kiwiTreeSvc kiwiTree.Service,
+	kiwiCompleteTreeSvc kiwiTree.Service,
+	kiwiPartialTreeSvc kiwiTree.Service,
 ) Service {
 	return service{
-		stor:        stor,
-		kiwiTreeSvc: kiwiTreeSvc,
+		stor:                stor,
+		kiwiCompleteTreeSvc: kiwiCompleteTreeSvc,
+		kiwiPartialTreeSvc:  kiwiPartialTreeSvc,
 	}
 }
 
-func (svc service) Create(ctx context.Context, name string, req CreateRequest) (err error) {
-	var sub model.Subscription
-	sub.Name = name
-	sub.Description = req.Description
-	sub.Routes = req.Routes
-	sub.Condition = req.Condition
+func (svc service) Create(ctx context.Context, sub model.Subscription) (err error) {
 	err = sub.Validate()
 	if err == nil {
-		err = svc.createCondition(ctx, req.Condition)
+		err = svc.createCondition(ctx, sub.Condition)
 		if err == nil {
 			err = svc.stor.Create(ctx, sub)
 		}
@@ -102,9 +93,19 @@ func (svc service) createCondition(ctx context.Context, cond model.Condition) (e
 			}
 		}
 	case model.KiwiTreeCondition:
-		err = svc.kiwiTreeSvc.Create(ctx, c.GetKey(), c.GetPattern())
+		kiwiTreeSvc := svc.selectKiwiTreeService(c)
+		err = kiwiTreeSvc.Create(ctx, c.GetKey(), c.GetPattern())
 	default:
 		err = fmt.Errorf("%w: unsupported condition type: %s", model.ErrInvalidSubscription, reflect.TypeOf(cond))
+	}
+	return
+}
+
+func (svc service) selectKiwiTreeService(ktc model.KiwiTreeCondition) (kiwiTreeSvc kiwiTree.Service) {
+	if ktc.IsPartial() {
+		kiwiTreeSvc = svc.kiwiPartialTreeSvc
+	} else {
+		kiwiTreeSvc = svc.kiwiCompleteTreeSvc
 	}
 	return
 }
@@ -156,17 +157,18 @@ func (svc service) clearUnusedKiwiTreeCondition(ctx context.Context, ktc model.K
 		Pattern: p,
 	}
 	var subs []model.Subscription
-	err = svc.kiwiTreeSvc.LockCreate(ctx, k, p)
+	kiwiTreeSvc := svc.selectKiwiTreeService(ktc)
+	err = kiwiTreeSvc.LockCreate(ctx, k, p)
 	if err == nil {
 		defer func() {
-			_ = svc.kiwiTreeSvc.UnlockCreate(ctx, k, p)
+			_ = kiwiTreeSvc.UnlockCreate(ctx, k, p)
 		}()
 		// find any subscription that is also using this kiwi condition
 		subs, err = svc.stor.SearchByKiwi(ctx, q, "")
 		if err == nil {
 			if len(subs) == 0 {
 				// no other subscriptions found, let's delete the kiwi condition from the tree
-				err = svc.kiwiTreeSvc.Delete(ctx, k, p)
+				err = kiwiTreeSvc.Delete(ctx, k, p)
 			}
 		}
 	}

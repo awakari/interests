@@ -22,10 +22,8 @@ func Test_decodeGroupCondition(t *testing.T) {
 						"base": bson.M{
 							"not": true,
 						},
-						"kiwi": bson.M{
-							"key":     "k0",
-							"pattern": "p0",
-						},
+						"key":     "k0",
+						"pattern": "p0",
 						"partial": false,
 					},
 					bson.M{
@@ -37,20 +35,16 @@ func Test_decodeGroupCondition(t *testing.T) {
 								"base": bson.M{
 									"not": false,
 								},
-								"kiwi": bson.M{
-									"key":     "k1",
-									"pattern": "p1",
-								},
+								"key":     "k1",
+								"pattern": "p1",
 								"partial": true,
 							},
 							bson.M{
 								"base": bson.M{
 									"not": false,
 								},
-								"kiwi": bson.M{
-									"key":     "k2",
-									"pattern": "p2",
-								},
+								"key":     "k2",
+								"pattern": "p2",
 								"partial": false,
 							},
 						},
@@ -65,10 +59,8 @@ func Test_decodeGroupCondition(t *testing.T) {
 				},
 				Group: []Condition{
 					kiwiCondition{
-						Kiwi: Kiwi{
-							Key:     "k0",
-							Pattern: "p0",
-						},
+						Key:     "k0",
+						Pattern: "p0",
 						Base: ConditionBase{
 							Not: true,
 						},
@@ -80,20 +72,16 @@ func Test_decodeGroupCondition(t *testing.T) {
 						},
 						Group: []Condition{
 							kiwiCondition{
-								Kiwi: Kiwi{
-									Key:     "k1",
-									Pattern: "p1",
-								},
+								Key:     "k1",
+								Pattern: "p1",
 								Base: ConditionBase{
 									Not: false,
 								},
 								Partial: true,
 							},
 							kiwiCondition{
-								Kiwi: Kiwi{
-									Key:     "k2",
-									Pattern: "p2",
-								},
+								Key:     "k2",
+								Pattern: "p2",
 								Base: ConditionBase{
 									Not: false,
 								},

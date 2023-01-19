@@ -12,7 +12,7 @@ func Test_encodeCondition(t *testing.T) {
 	cases := map[string]struct {
 		src   model.Condition
 		dst   Condition
-		kiwis []Kiwi
+		kiwis []kiwiCondition
 	}{
 		"single Kiwi condition": {
 			src: model.NewKiwiTreeCondition(
@@ -26,19 +26,21 @@ func Test_encodeCondition(t *testing.T) {
 				),
 			),
 			dst: kiwiCondition{
-				Kiwi: Kiwi{
-					Key:     "key0",
-					Pattern: "pattern0",
-				},
+				Key:     "key0",
+				Pattern: "pattern0",
 				Base: ConditionBase{
 					Not: true,
 				},
 				Partial: true,
 			},
-			kiwis: []Kiwi{
+			kiwis: []kiwiCondition{
 				{
 					Key:     "key0",
 					Pattern: "pattern0",
+					Base: ConditionBase{
+						Not: true,
+					},
+					Partial: true,
 				},
 			},
 		},
@@ -75,20 +77,16 @@ func Test_encodeCondition(t *testing.T) {
 				},
 				Group: []Condition{
 					kiwiCondition{
-						Kiwi: Kiwi{
-							Key:     "key0",
-							Pattern: "pattern0",
-						},
+						Key:     "key0",
+						Pattern: "pattern0",
 						Base: ConditionBase{
 							Not: true,
 						},
 						Partial: true,
 					},
 					kiwiCondition{
-						Kiwi: Kiwi{
-							Key:     "key1",
-							Pattern: "pattern1",
-						},
+						Key:     "key1",
+						Pattern: "pattern1",
 						Base: ConditionBase{
 							Not: false,
 						},
@@ -97,14 +95,22 @@ func Test_encodeCondition(t *testing.T) {
 				},
 				Logic: model.GroupLogicOr,
 			},
-			kiwis: []Kiwi{
+			kiwis: []kiwiCondition{
 				{
 					Key:     "key0",
 					Pattern: "pattern0",
+					Base: ConditionBase{
+						Not: true,
+					},
+					Partial: true,
 				},
 				{
 					Key:     "key1",
 					Pattern: "pattern1",
+					Base: ConditionBase{
+						Not: false,
+					},
+					Partial: false,
 				},
 			},
 		},
@@ -149,17 +155,13 @@ func Test_decodeRawCondition(t *testing.T) {
 				"base": bson.M{
 					"not": false,
 				},
-				"kiwi": bson.M{
-					"key":     "k0",
-					"pattern": "p0",
-				},
+				"key":     "k0",
+				"pattern": "p0",
 				"partial": false,
 			},
 			out: kiwiCondition{
-				Kiwi: Kiwi{
-					Key:     "k0",
-					Pattern: "p0",
-				},
+				Key:     "k0",
+				Pattern: "p0",
 				Base: ConditionBase{
 					Not: false,
 				},
@@ -187,10 +189,8 @@ func Test_decodeRawCondition(t *testing.T) {
 						"base": bson.M{
 							"not": true,
 						},
-						"kiwi": bson.M{
-							"key":     "k0",
-							"pattern": "p0",
-						},
+						"key":     "k0",
+						"pattern": "p0",
 						"partial": false,
 					},
 					bson.M{
@@ -202,20 +202,16 @@ func Test_decodeRawCondition(t *testing.T) {
 								"base": bson.M{
 									"not": false,
 								},
-								"kiwi": bson.M{
-									"key":     "k1",
-									"pattern": "p1",
-								},
+								"key":     "k1",
+								"pattern": "p1",
 								"partial": true,
 							},
 							bson.M{
 								"base": bson.M{
 									"not": false,
 								},
-								"kiwi": bson.M{
-									"key":     "k2",
-									"pattern": "p2",
-								},
+								"key":     "k2",
+								"pattern": "p2",
 								"partial": false,
 							},
 						},
@@ -230,10 +226,8 @@ func Test_decodeRawCondition(t *testing.T) {
 				},
 				Group: []Condition{
 					kiwiCondition{
-						Kiwi: Kiwi{
-							Key:     "k0",
-							Pattern: "p0",
-						},
+						Key:     "k0",
+						Pattern: "p0",
 						Base: ConditionBase{
 							Not: true,
 						},
@@ -245,20 +239,16 @@ func Test_decodeRawCondition(t *testing.T) {
 						},
 						Group: []Condition{
 							kiwiCondition{
-								Kiwi: Kiwi{
-									Key:     "k1",
-									Pattern: "p1",
-								},
+								Key:     "k1",
+								Pattern: "p1",
 								Base: ConditionBase{
 									Not: false,
 								},
 								Partial: true,
 							},
 							kiwiCondition{
-								Kiwi: Kiwi{
-									Key:     "k2",
-									Pattern: "p2",
-								},
+								Key:     "k2",
+								Pattern: "p2",
 								Base: ConditionBase{
 									Not: false,
 								},
@@ -277,7 +267,9 @@ func Test_decodeRawCondition(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			out, err := decodeRawCondition(c.raw)
 			assert.ErrorIs(t, err, c.err)
-			assert.Equal(t, c.out, out)
+			if c.err == nil {
+				assert.Equal(t, c.out, out)
+			}
 		})
 	}
 }
@@ -297,10 +289,8 @@ func Test_decodeCondition(t *testing.T) {
 				"pattern0",
 			),
 			src: kiwiCondition{
-				Kiwi: Kiwi{
-					Key:     "key0",
-					Pattern: "pattern0",
-				},
+				Key:     "key0",
+				Pattern: "pattern0",
 				Base: ConditionBase{
 					Not: true,
 				},
@@ -336,20 +326,16 @@ func Test_decodeCondition(t *testing.T) {
 				},
 				Group: []Condition{
 					kiwiCondition{
-						Kiwi: Kiwi{
-							Key:     "key0",
-							Pattern: "pattern0",
-						},
+						Key:     "key0",
+						Pattern: "pattern0",
 						Base: ConditionBase{
 							Not: true,
 						},
 						Partial: true,
 					},
 					kiwiCondition{
-						Kiwi: Kiwi{
-							Key:     "key1",
-							Pattern: "pattern1",
-						},
+						Key:     "key1",
+						Pattern: "pattern1",
 						Base: ConditionBase{
 							Not: false,
 						},

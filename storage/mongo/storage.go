@@ -25,13 +25,40 @@ var (
 		// name should be unique
 		{
 			Keys: bson.D{
-				{attrName, 1},
+				{
+					Key:   attrName,
+					Value: 1,
+				},
 			},
 			Options: options.
 				Index().
 				SetUnique(true),
 		},
-		// TODO query by Kiwi
+		// query by name and kiwi
+		{
+			Keys: bson.D{
+				{
+					Key:   attrName,
+					Value: 1,
+				},
+				{
+					Key:   attrKiwis + "." + kiwiConditionAttrKey,
+					Value: 1,
+				},
+				{
+					Key:   attrKiwis + "." + kiwiConditionAttrPattern,
+					Value: 1,
+				},
+				{
+					Key:   attrKiwis + "." + kiwiConditionAttrPartial,
+					Value: 1,
+				},
+			},
+			Options: options.
+				Index().
+				SetUnique(false).
+				SetSparse(true),
+		},
 	}
 	optsSrvApi = options.ServerAPI(options.ServerAPIVersion1)
 	optsRead   = options.
@@ -39,8 +66,22 @@ var (
 			SetShowRecordID(false)
 	namesProjection = bson.D{
 		{
-			attrName,
-			1,
+			Key:   attrName,
+			Value: 1,
+		},
+	}
+	searchProjection = bson.D{
+		{
+			Key:   attrName,
+			Value: 1,
+		},
+		{
+			Key:   attrRoutes,
+			Value: 1,
+		},
+		{
+			Key:   attrCondition,
+			Value: 1,
 		},
 	}
 )
@@ -171,12 +212,14 @@ func (s storageImpl) SearchByKiwi(ctx context.Context, q model.KiwiQuery, cursor
 		attrName: bson.M{
 			"$gt": cursor,
 		},
-		attrKiwis + "." + kiwiAttrKey:     q.Key,
-		attrKiwis + "." + kiwiAttrPattern: q.Pattern,
+		attrKiwis + "." + kiwiConditionAttrKey:     q.Key,
+		attrKiwis + "." + kiwiConditionAttrPattern: q.Pattern,
+		attrKiwis + "." + kiwiConditionAttrPartial: q.Partial,
 	}
 	opts := options.
 		Find().
 		SetLimit(int64(q.Limit)).
+		SetProjection(searchProjection).
 		SetShowRecordID(false).
 		SetSort(namesProjection)
 	var cur *mongo.Cursor

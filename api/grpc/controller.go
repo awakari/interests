@@ -23,28 +23,20 @@ func NewServiceController(svc service.Service) ServiceServer {
 }
 
 func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (resp *emptypb.Empty, err error) {
-	var excludes model.MatcherGroup
-	if req.Excludes != nil {
-		excludes = model.MatcherGroup{
-			All:      req.Excludes.All,
-			Matchers: decodeMatchers(req.Excludes.Matchers),
+	resp = &emptypb.Empty{}
+	var cond model.Condition
+	cond, err = decodeCondition(req.Condition)
+	if err == nil {
+		sub := model.Subscription{
+			Name:        req.Name,
+			Description: req.Description,
+			Routes:      req.Routes,
+			Condition:   cond,
 		}
+		err = sc.svc.Create(ctx, sub)
+		err = encodeError(err)
 	}
-	var includes model.MatcherGroup
-	if req.Includes != nil {
-		includes = model.MatcherGroup{
-			All:      req.Includes.All,
-			Matchers: decodeMatchers(req.Includes.Matchers),
-		}
-	}
-	createReq := service.CreateRequest{
-		Description: req.Description,
-		Routes:      req.Routes,
-		Includes:    includes,
-		Excludes:    excludes,
-	}
-	err = sc.svc.Create(ctx, req.Name, createReq)
-	return &emptypb.Empty{}, encodeError(err)
+	return
 }
 
 func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *Subscription, err error) {
@@ -53,7 +45,7 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *S
 	if err != nil {
 		err = encodeError(err)
 	} else {
-		resp = encodeSubscription(sub)
+		resp, err = encodeSubscription(sub)
 	}
 	return
 }
@@ -76,19 +68,27 @@ func (sc serviceController) ListNames(ctx context.Context, req *ListNamesRequest
 	return
 }
 
-func (sc serviceController) Search(ctx context.Context, req *SearchRequest) (resp *SearchResponse, err error) {
+func (sc serviceController) SearchByKiwi(ctx context.Context, req *SearchByKiwiRequest) (resp *SearchResponse, err error) {
 	var page []model.Subscription
-	m := decodeMatcher(req.Matcher)
-	q := service.Query{
-		Limit:      req.Limit,
-		InExcludes: req.InExcludes,
-		Matcher:    m,
+	q := model.KiwiQuery{
+		Limit:   req.Limit,
+		Key:     req.Key,
+		Pattern: req.Pattern,
+		Partial: req.Partial,
 	}
-	page, err = sc.svc.Search(ctx, q, req.Cursor)
+	page, err = sc.svc.SearchByKiwi(ctx, q, req.Cursor)
 	if err != nil {
 		err = encodeError(err)
 	} else {
-		respSubs := encodeSubscriptions(page)
+		var respSubs []*Subscription
+		var respSub *Subscription
+		for _, sub := range page {
+			respSub, err = encodeSubscription(sub)
+			if err != nil {
+				break
+			}
+			respSubs = append(respSubs, respSub)
+		}
 		resp = &SearchResponse{
 			Page: respSubs,
 		}
@@ -96,66 +96,95 @@ func (sc serviceController) Search(ctx context.Context, req *SearchRequest) (res
 	return
 }
 
-func decodeMatchers(reqMatchers []*Matcher) (matchers []model.Matcher) {
-	for _, reqMatcher := range reqMatchers {
-		m := decodeMatcher(reqMatcher)
-		matchers = append(matchers, m)
-	}
-	return
-}
-
-func decodeMatcher(reqMatcher *Matcher) (m model.Matcher) {
-	if reqMatcher != nil {
-		var p model.Pattern
-		if reqMatcher.Pattern != nil {
-			p.Code = reqMatcher.Pattern.Code
-			p.Src = reqMatcher.Pattern.Src
+func decodeCondition(src *InputCondition) (dst model.Condition, err error) {
+	gc, ktc := src.GetGroupCondition(), src.GetKiwiTreeCondition()
+	switch {
+	case gc != nil:
+		var group []model.Condition
+		var childDst model.Condition
+		for _, childSrc := range gc.Group {
+			childDst, err = decodeCondition(childSrc)
+			if err != nil {
+				break
+			}
+			group = append(group, childDst)
 		}
-		m.Partial = reqMatcher.Partial
-		m.Key = reqMatcher.Key
-		m.Pattern = p
+		if err == nil {
+			gcBase := gc.GetBase()
+			dst = model.NewGroupCondition(
+				model.NewCondition(gcBase.GetBase().GetNot()),
+				model.GroupLogic(gcBase.GetLogic()),
+				group,
+			)
+		}
+	case ktc != nil:
+		dst = model.NewKiwiTreeCondition(
+			model.NewKiwiCondition(
+				model.NewKeyCondition(
+					model.NewCondition(ktc.GetBase().GetBase().GetBase().GetNot()),
+					ktc.GetBase().GetBase().GetKey(),
+				),
+				ktc.GetBase().GetPartial(),
+				ktc.GetBase().GetPattern(),
+			),
+		)
+	default:
+		err = status.Error(codes.InvalidArgument, "unsupported condition type")
 	}
 	return
 }
 
-func encodeSubscriptions(subs []model.Subscription) (resp []*Subscription) {
-	for _, sub := range subs {
-		respSub := encodeSubscription(sub)
-		resp = append(resp, respSub)
+func encodeSubscription(src model.Subscription) (dst *Subscription, err error) {
+	var dstCond *OutputCondition
+	dstCond, err = encodeCondition(src.Condition)
+	dst = &Subscription{
+		Name:        src.Name,
+		Description: src.Description,
+		Routes:      src.Routes,
+		Condition:   dstCond,
 	}
 	return
 }
 
-func encodeSubscription(sub model.Subscription) (resp *Subscription) {
-	resp = &Subscription{
-		Name:        sub.Name,
-		Description: sub.Description,
-		Routes:      sub.Routes,
-		Excludes:    encodeMatcherGroup(sub.Excludes),
-		Includes:    encodeMatcherGroup(sub.Includes),
-	}
-	return
-}
-
-func encodeMatcherGroup(mg model.MatcherGroup) (resp *MatcherGroup) {
-	resp = &MatcherGroup{
-		All:      mg.All,
-		Matchers: encodeMatchers(mg.Matchers),
-	}
-	return
-}
-
-func encodeMatchers(matchers []model.Matcher) (resp []*Matcher) {
-	for _, m := range matchers {
-		respMatcher := &Matcher{
-			Partial: m.Partial,
-			Key:     m.Key,
-			Pattern: &Pattern{
-				Code: m.Pattern.Code,
-				Src:  m.Pattern.Src,
+func encodeCondition(src model.Condition) (dst *OutputCondition, err error) {
+	dst = &OutputCondition{}
+	switch c := src.(type) {
+	case model.GroupCondition:
+		var dstGroup []*OutputCondition
+		var childDst *OutputCondition
+		for _, childSrc := range c.GetGroup() {
+			childDst, err = encodeCondition(childSrc)
+			if err != nil {
+				break
+			}
+			dstGroup = append(dstGroup, childDst)
+		}
+		if err == nil {
+			dst.Condition = &OutputCondition_GroupCondition{
+				GroupCondition: &GroupOutputCondition{
+					Base: &GroupConditionBase{
+						Base: &ConditionBase{
+							Not: src.IsNot(),
+						},
+						Logic: GroupLogic(c.GetLogic()),
+					},
+					Group: dstGroup,
+				},
+			}
+		}
+	case model.KiwiCondition:
+		dst.Condition = &OutputCondition_KiwiCondition{
+			KiwiCondition: &KiwiCondition{
+				Base: &KeyCondition{
+					Base: &ConditionBase{
+						Not: c.IsNot(),
+					},
+					Key: c.GetKey(),
+				},
+				Pattern: c.GetPattern(),
+				Partial: c.IsPartial(),
 			},
 		}
-		resp = append(resp, respMatcher)
 	}
 	return
 }

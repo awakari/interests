@@ -21,11 +21,11 @@ func NewLoggingMiddleware(svc Service, log *slog.Logger) Service {
 	}
 }
 
-func (lm loggingMiddleware) Create(ctx context.Context, name string, req CreateRequest) (err error) {
+func (lm loggingMiddleware) Create(ctx context.Context, sub model.Subscription) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Create(%s, %v): %s", name, req, err))
+		lm.log.Debug(fmt.Sprintf("Create(%v): %s", sub, err))
 	}()
-	return lm.svc.Create(ctx, name, req)
+	return lm.svc.Create(ctx, sub)
 }
 
 func (lm loggingMiddleware) Read(ctx context.Context, name string) (sub model.Subscription, err error) {

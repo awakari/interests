@@ -14,7 +14,8 @@ func NewServiceMock() Service {
 	return serviceMock{}
 }
 
-func (sm serviceMock) Create(ctx context.Context, name string, req CreateRequest) (err error) {
+func (sm serviceMock) Create(ctx context.Context, sub model.Subscription) (err error) {
+	name := sub.Name
 	if name == "fail" {
 		err = ErrInternal
 	} else if name == "invalid" {

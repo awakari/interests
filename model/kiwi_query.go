@@ -9,6 +9,9 @@ type KiwiQuery struct {
 	// Key represents the subscription matching criteria: where any model.KiwiCondition has the equal Key.
 	Key string
 
-	// Pattern represents the model.Subscription matching criteria: where any model.KiwiCondition has the equal Pattern.
+	// Pattern represents the subscription matching criteria: where any model.KiwiCondition has the equal Pattern.
 	Pattern string
+
+	// Partial represents the subscription matching criteria: where any model.KiwiCondition has the equal Partial value.
+	Partial bool
 }

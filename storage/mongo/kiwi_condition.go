@@ -8,27 +8,29 @@ import (
 
 type kiwiCondition struct {
 	Base    ConditionBase `bson:"base"`
-	Kiwi    Kiwi          `bson:"kiwi"`
 	Partial bool          `bson:"partial"`
+	Key     string        `bson:"key"`
+	Pattern string        `bson:"pattern"`
 }
 
-const kiwiConditionAttrKiwi = "kiwi"
 const kiwiConditionAttrPartial = "partial"
+const kiwiConditionAttrKey = "key"
+const kiwiConditionAttrPattern = "pattern"
 
 var _ Condition = (*kiwiCondition)(nil)
 
-func decodeKiwiCondition(baseCond ConditionBase, rawKiwi any, raw bson.M) (kc kiwiCondition, err error) {
+func decodeKiwiCondition(baseCond ConditionBase, raw bson.M) (kc kiwiCondition, err error) {
 	kc.Base = baseCond
 	var ok bool
 	kc.Partial, ok = raw[kiwiConditionAttrPartial].(bool)
-	var rawKiwiRec bson.M
 	if ok {
-		rawKiwiRec, ok = rawKiwi.(bson.M)
+		kc.Key, ok = raw[kiwiConditionAttrKey].(string)
 	}
 	if ok {
-		kc.Kiwi, err = decodeRawKiwi(rawKiwiRec)
-	} else {
-		err = fmt.Errorf("%w: failed to decode the kiwi condition %v", storage.ErrInternal, raw)
+		kc.Pattern, ok = raw[kiwiConditionAttrPattern].(string)
+	}
+	if !ok {
+		err = fmt.Errorf("%w: failed to decode kiwi %v", storage.ErrInternal, raw)
 	}
 	return
 }

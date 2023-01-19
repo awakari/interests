@@ -19,7 +19,7 @@ const conditionAttrNot = "not"
 
 var _ Condition = (*ConditionBase)(nil)
 
-func encodeCondition(src model.Condition) (dst Condition, kiwis []Kiwi) {
+func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwiCondition) {
 	bc := ConditionBase{
 		Not: src.IsNot(),
 	}
@@ -37,16 +37,13 @@ func encodeCondition(src model.Condition) (dst Condition, kiwis []Kiwi) {
 			Logic: int32(c.GetLogic()),
 		}
 	case model.KiwiCondition:
-		k := Kiwi{
+		kc := kiwiCondition{
+			Base:    bc,
+			Partial: c.IsPartial(),
 			Key:     c.GetKey(),
 			Pattern: c.GetPattern(),
 		}
-		kc := kiwiCondition{
-			Kiwi:    k,
-			Base:    bc,
-			Partial: c.IsPartial(),
-		}
-		kiwis = append(kiwis, k)
+		kiwis = append(kiwis, kc)
 		dst = kc
 	}
 	return
@@ -63,12 +60,7 @@ func decodeRawCondition(raw bson.M) (result Condition, err error) {
 		if isGroup {
 			result, err = decodeRawGroupCondition(baseCond, group, raw)
 		} else {
-			rawKiwi, present := raw[kiwiConditionAttrKiwi]
-			if !present {
-				err = fmt.Errorf("%w: value doesn't contain neither \"group\" nor \"kiwi\" attribute: %v", storage.ErrInternal, raw)
-			} else {
-				result, err = decodeKiwiCondition(baseCond, rawKiwi, raw)
-			}
+			result, err = decodeKiwiCondition(baseCond, raw)
 		}
 	}
 	return
@@ -85,8 +77,8 @@ func decodeCondition(src Condition) (dst model.Condition) {
 		dst = model.NewGroupCondition(dstBase, model.GroupLogic(c.Logic), children)
 	case kiwiCondition:
 		dstBase := model.NewCondition(c.Base.Not)
-		dstKey := model.NewKeyCondition(dstBase, c.Kiwi.Key)
-		dst = model.NewKiwiCondition(dstKey, c.Partial, c.Kiwi.Pattern)
+		dstKey := model.NewKeyCondition(dstBase, c.Key)
+		dst = model.NewKiwiCondition(dstKey, c.Partial, c.Pattern)
 	}
 	return dst
 }

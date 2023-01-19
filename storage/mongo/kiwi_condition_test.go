@@ -20,16 +20,12 @@ func Test_decodeKiwiCondition(t *testing.T) {
 			},
 			raw: bson.M{
 				kiwiConditionAttrPartial: true,
-				kiwiConditionAttrKiwi: bson.M{
-					kiwiAttrKey:     "key0",
-					kiwiAttrPattern: "pattern0",
-				},
+				kiwiConditionAttrKey:     "key0",
+				kiwiConditionAttrPattern: "pattern0",
 			},
 			out: kiwiCondition{
-				Kiwi: Kiwi{
-					Key:     "key0",
-					Pattern: "pattern0",
-				},
+				Key:     "key0",
+				Pattern: "pattern0",
 				Base: ConditionBase{
 					Not: true,
 				},
@@ -40,10 +36,8 @@ func Test_decodeKiwiCondition(t *testing.T) {
 			base: ConditionBase{},
 			raw: bson.M{
 				kiwiConditionAttrPartial: 1,
-				kiwiConditionAttrKiwi: bson.M{
-					kiwiAttrKey:     "key0",
-					kiwiAttrPattern: "pattern0",
-				},
+				kiwiConditionAttrKey:     "key0",
+				kiwiConditionAttrPattern: "pattern0",
 			},
 			err: storage.ErrInternal,
 		},
@@ -54,11 +48,22 @@ func Test_decodeKiwiCondition(t *testing.T) {
 			},
 			err: storage.ErrInternal,
 		},
+		"fails due to nil": {
+			base: ConditionBase{
+				Not: true,
+			},
+			raw: bson.M{
+				kiwiConditionAttrPartial: nil,
+				kiwiConditionAttrKey:     "key0",
+				kiwiConditionAttrPattern: "pattern0",
+			},
+			err: storage.ErrInternal,
+		},
 	}
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			out, err := decodeKiwiCondition(c.base, c.raw[kiwiConditionAttrKiwi], c.raw)
+			out, err := decodeKiwiCondition(c.base, c.raw)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.out, out)

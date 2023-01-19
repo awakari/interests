@@ -17,12 +17,12 @@ func TestService_Create(t *testing.T) {
 	storMem := make(map[string]model.Subscription)
 	stor := storage.NewStorageMock(storMem)
 	kiwiTreeSvc := kiwiTree.NewServiceMock()
-	svc := NewService(stor, kiwiTreeSvc)
+	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	require.Nil(
 		t, svc.Create(
 			nil,
-			"subscription 4",
-			CreateRequest{
+			model.Subscription{
+				Name:        "subscription 4",
 				Description: "pre existing",
 				Routes: []string{
 					"route 4",
@@ -42,20 +42,18 @@ func TestService_Create(t *testing.T) {
 	)
 	//
 	cases := map[string]struct {
-		name string
-		req  CreateRequest
-		err  error
+		req model.Subscription
+		err error
 	}{
 		"empty": {
-			name: "subscription 0",
-			req: CreateRequest{
+			req: model.Subscription{
+				Name:        "subscription 0",
 				Description: "my subscription",
 			},
 			err: model.ErrInvalidSubscription,
 		},
 		"empty name": {
-			name: "",
-			req: CreateRequest{
+			req: model.Subscription{
 				Description: "my subscription",
 				Routes: []string{
 					"route",
@@ -74,8 +72,8 @@ func TestService_Create(t *testing.T) {
 			err: model.ErrInvalidSubscription,
 		},
 		"locked": {
-			name: "subscription 1",
-			req: CreateRequest{
+			req: model.Subscription{
+				Name:        "subscription 1",
 				Description: "my subscription",
 				Routes: []string{
 					"route 1",
@@ -94,8 +92,8 @@ func TestService_Create(t *testing.T) {
 			err: ErrShouldRetry,
 		},
 		"fail": {
-			name: "subscription 2",
-			req: CreateRequest{
+			req: model.Subscription{
+				Name:        "subscription 2",
 				Description: "my subscription",
 				Routes: []string{
 					"route 2",
@@ -114,8 +112,8 @@ func TestService_Create(t *testing.T) {
 			err: ErrInternal,
 		},
 		"ok": {
-			name: "subscription 3",
-			req: CreateRequest{
+			req: model.Subscription{
+				Name:        "subscription 3",
 				Description: "my subscription",
 				Routes: []string{
 					"route 3",
@@ -133,8 +131,8 @@ func TestService_Create(t *testing.T) {
 			},
 		},
 		"conflict": {
-			name: "subscription 4",
-			req: CreateRequest{
+			req: model.Subscription{
+				Name: "subscription 4",
 				Routes: []string{
 					"route 4",
 				},
@@ -157,7 +155,7 @@ func TestService_Create(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			err := svc.Create(ctx, c.name, c.req)
+			err := svc.Create(ctx, c.req)
 			if c.err == nil {
 				assert.Nil(t, err)
 			} else {
@@ -172,12 +170,12 @@ func TestService_Read(t *testing.T) {
 	storMem := make(map[string]model.Subscription)
 	stor := storage.NewStorageMock(storMem)
 	kiwiTreeSvc := kiwiTree.NewServiceMock()
-	svc := NewService(stor, kiwiTreeSvc)
+	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	require.Nil(
 		t, svc.Create(
 			nil,
-			"subscription 1",
-			CreateRequest{
+			model.Subscription{
+				Name:        "subscription 1",
 				Description: "pre existing",
 				Routes: []string{
 					"route 1",
@@ -244,12 +242,12 @@ func TestService_Delete(t *testing.T) {
 	storMem := make(map[string]model.Subscription)
 	stor := storage.NewStorageMock(storMem)
 	kiwiTreeSvc := kiwiTree.NewServiceMock()
-	svc := NewService(stor, kiwiTreeSvc)
+	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	require.Nil(
 		t, svc.Create(
 			nil,
-			"subscription 1",
-			CreateRequest{
+			model.Subscription{
+				Name:        "subscription 1",
 				Description: "pre existing",
 				Routes: []string{
 					"route 1",
@@ -286,8 +284,8 @@ func TestService_Delete(t *testing.T) {
 	require.Nil(
 		t, svc.Create(
 			nil,
-			"subscription 2",
-			CreateRequest{
+			model.Subscription{
+				Name:        "subscription 2",
 				Description: "fails to clean up kiwis",
 				Routes: []string{
 					"route 2",
@@ -357,13 +355,14 @@ func TestService_ListNames(t *testing.T) {
 	storMem := make(map[string]model.Subscription)
 	stor := storage.NewStorageMock(storMem)
 	kiwiTreeSvc := kiwiTree.NewServiceMock()
-	svc := NewService(stor, kiwiTreeSvc)
+	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	//
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	//
 	for i := 0; i < 5; i++ {
-		req := CreateRequest{
+		req := model.Subscription{
+			Name:        fmt.Sprintf("sub%d", i),
 			Description: "my subscription",
 			Routes: []string{
 				"route",
@@ -380,7 +379,7 @@ func TestService_ListNames(t *testing.T) {
 			),
 		}
 
-		require.Nil(t, svc.Create(ctx, fmt.Sprintf("sub%d", i), req))
+		require.Nil(t, svc.Create(ctx, req))
 	}
 	//
 	cases := map[string]struct {
@@ -424,12 +423,13 @@ func TestService_Search(t *testing.T) {
 	storMem := make(map[string]model.Subscription)
 	stor := storage.NewStorageMock(storMem)
 	kiwiTreeSvc := kiwiTree.NewServiceMock()
-	svc := NewService(stor, kiwiTreeSvc)
+	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	//
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	for i := 0; i < 100; i++ {
-		req := CreateRequest{
+		req := model.Subscription{
+			Name: fmt.Sprintf("sub%d", i),
 			Routes: []string{
 				"route 4",
 			},
@@ -444,7 +444,7 @@ func TestService_Search(t *testing.T) {
 				),
 			),
 		}
-		require.Nil(t, svc.Create(ctx, fmt.Sprintf("sub%d", i), req))
+		require.Nil(t, svc.Create(ctx, req))
 	}
 	//
 	cases := map[string]struct {
