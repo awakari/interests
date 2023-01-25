@@ -92,13 +92,10 @@ db:
 # Matchers
 api:
   uri:
-    matchers:
-      excludes:
-        complete: "matchers-excludes-complete:8080"
-        partial: "matchers-excludes-partial:8080"
-      includes:
-        complete: "matchers-includes-complete:8080"
-        partial: "matchers-includes-partial:8080"
+    kiwi:
+      tree:
+        complete: "kiwi-tree-complete:8080"
+        partial: "kiwi-tree-partial:8080"
 log:
   # https://pkg.go.dev/golang.org/x/exp/slog#Level
   level: -4

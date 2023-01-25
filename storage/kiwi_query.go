@@ -1,4 +1,4 @@
-package model
+package storage
 
 // KiwiQuery is the model.Subscription search query by a certain key/pattern ("kiwi") condition pair.
 type KiwiQuery struct {

@@ -207,7 +207,7 @@ func (s storageImpl) ListNames(ctx context.Context, limit uint32, cursor string)
 	return
 }
 
-func (s storageImpl) SearchByKiwi(ctx context.Context, q model.KiwiQuery, cursor string) (page []model.Subscription, err error) {
+func (s storageImpl) SearchByKiwi(ctx context.Context, q storage.KiwiQuery, cursor string) (page []model.Subscription, err error) {
 	dbQuery := bson.M{
 		attrName: bson.M{
 			"$gt": cursor,

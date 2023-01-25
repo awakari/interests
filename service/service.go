@@ -29,10 +29,10 @@ type Service interface {
 	// ListNames returns all subscription names starting from the specified cursor.
 	ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error)
 
-	// SearchByKiwi returns subscriptions page where:<br/>
-	// * model.Subscription name is greater than the one specified by the cursor<br/>
-	// * subscriptions match the specified model.KiwiQuery.
-	SearchByKiwi(ctx context.Context, q model.KiwiQuery, cursor string) (page []model.Subscription, err error)
+	// SearchByCondition returns model.Subscription page where:<br/>
+	// * name is greater than the specified cursor<br/>
+	// * contains a model.Condition specified by the query.
+	SearchByCondition(ctx context.Context, q model.ConditionQuery, cursor string) (page []model.Subscription, err error)
 }
 
 type service struct {
@@ -57,6 +57,9 @@ var (
 
 	// ErrCleanKiwis indicates unused kiwis cleanup failure upon a subscription deletion.
 	ErrCleanKiwis = errors.New("kiwis cleanup failure, may cause kiwis garbage")
+
+	// ErrInvalidQuery indicates the search query is invalid.
+	ErrInvalidQuery = errors.New("invalid search query")
 )
 
 func NewService(
@@ -151,7 +154,7 @@ func (svc service) clearUnusedCondition(ctx context.Context, cond model.Conditio
 func (svc service) clearUnusedKiwiTreeCondition(ctx context.Context, ktc model.KiwiTreeCondition) (err error) {
 	k := ktc.GetKey()
 	p := ktc.GetPattern()
-	q := model.KiwiQuery{
+	q := storage.KiwiQuery{
 		Limit:   1,
 		Key:     k,
 		Pattern: p,
@@ -183,8 +186,19 @@ func (svc service) ListNames(ctx context.Context, limit uint32, cursor string) (
 	return
 }
 
-func (svc service) SearchByKiwi(ctx context.Context, q model.KiwiQuery, cursor string) (page []model.Subscription, err error) {
-	page, err = svc.stor.SearchByKiwi(ctx, q, cursor)
+func (svc service) SearchByCondition(ctx context.Context, q model.ConditionQuery, cursor string) (page []model.Subscription, err error) {
+	switch c := q.Condition.(type) {
+	case model.KiwiCondition:
+		kiwiQuery := storage.KiwiQuery{
+			Limit:   q.Limit,
+			Key:     c.GetKey(),
+			Pattern: c.GetPattern(),
+			Partial: c.IsPartial(),
+		}
+		page, err = svc.stor.SearchByKiwi(ctx, kiwiQuery, cursor)
+	default:
+		err = fmt.Errorf("%w: unsupported condition type: %s", ErrInvalidQuery, reflect.TypeOf(c))
+	}
 	if err != nil {
 		err = translateError(err)
 	}
@@ -217,6 +231,8 @@ func translateError(srcErr error) (dstErr error) {
 		case errors.Is(srcErr, ErrShouldRetry):
 			dstErr = srcErr
 		case errors.Is(srcErr, ErrCleanKiwis):
+			dstErr = srcErr
+		case errors.Is(srcErr, ErrInvalidQuery):
 			dstErr = srcErr
 		default:
 			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)

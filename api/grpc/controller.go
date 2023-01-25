@@ -68,30 +68,33 @@ func (sc serviceController) ListNames(ctx context.Context, req *ListNamesRequest
 	return
 }
 
-func (sc serviceController) SearchByKiwi(ctx context.Context, req *SearchByKiwiRequest) (resp *SearchResponse, err error) {
-	var page []model.Subscription
-	q := model.KiwiQuery{
-		Limit:   req.Limit,
-		Key:     req.Key,
-		Pattern: req.Pattern,
-		Partial: req.Partial,
+func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchByConditionRequest) (resp *SearchResponse, err error) {
+	resp = &SearchResponse{
+		Page: []*Subscription{},
 	}
-	page, err = sc.svc.SearchByKiwi(ctx, q, req.Cursor)
-	if err != nil {
-		err = encodeError(err)
-	} else {
-		var respSubs []*Subscription
-		var respSub *Subscription
+	kc := req.GetKiwiCondition()
+	switch {
+	case kc != nil:
+		q := model.ConditionQuery{
+			Limit: req.Limit,
+			Condition: model.NewKiwiCondition(
+				model.NewKeyCondition(
+					model.NewCondition(kc.Base.Base.Not),
+					kc.Base.Key,
+				),
+				kc.Partial,
+				kc.Pattern,
+			),
+		}
+		var page []model.Subscription
+		var encodedSub *Subscription
+		page, err = sc.svc.SearchByCondition(ctx, q, req.Cursor)
 		for _, sub := range page {
-			respSub, err = encodeSubscription(sub)
-			if err != nil {
-				break
-			}
-			respSubs = append(respSubs, respSub)
+			encodedSub, err = encodeSubscription(sub)
+			resp.Page = append(resp.Page, encodedSub)
 		}
-		resp = &SearchResponse{
-			Page: respSubs,
-		}
+	default:
+		err = status.Error(codes.InvalidArgument, "unsupported condition type")
 	}
 	return
 }

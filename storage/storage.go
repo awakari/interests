@@ -29,7 +29,7 @@ type (
 		// SearchByKiwi returns subscriptions page where:<br/>
 		// * model.Subscription name is greater than the one specified by the cursor<br/>
 		// * subscriptions match the specified model.KiwiQuery.
-		SearchByKiwi(ctx context.Context, q model.KiwiQuery, cursor string) (page []model.Subscription, err error)
+		SearchByKiwi(ctx context.Context, q KiwiQuery, cursor string) (page []model.Subscription, err error)
 	}
 )
 

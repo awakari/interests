@@ -454,13 +454,13 @@ func TestStorageImpl_Search(t *testing.T) {
 	}
 	//
 	cases := map[string]struct {
-		q      model.KiwiQuery
+		q      storage.KiwiQuery
 		cursor string
 		page   []model.Subscription
 		err    error
 	}{
 		"1": {
-			q: model.KiwiQuery{
+			q: storage.KiwiQuery{
 				Limit:   100,
 				Key:     "key1",
 				Pattern: "pattern1",
@@ -484,7 +484,7 @@ func TestStorageImpl_Search(t *testing.T) {
 			},
 		},
 		"2": {
-			q: model.KiwiQuery{
+			q: storage.KiwiQuery{
 				Limit:   100,
 				Key:     "key0",
 				Pattern: "pattern0",

@@ -11,7 +11,7 @@ service Service {
   rpc Read(ReadRequest) returns (Subscription);
   rpc Delete(DeleteRequest) returns (google.protobuf.Empty);
   rpc ListNames(ListNamesRequest) returns (ListNamesResponse);
-  rpc SearchByKiwi(SearchByKiwiRequest) returns (SearchResponse);
+  rpc SearchByCondition(SearchByConditionRequest) returns (SearchResponse);
 }
 
 message CreateRequest {
@@ -38,12 +38,12 @@ message ListNamesResponse {
   repeated string names = 1;
 }
 
-message SearchByKiwiRequest {
+message SearchByConditionRequest {
   string cursor = 1;
   uint32 limit = 2;
-  string key = 3;
-  string pattern = 4;
-  bool partial = 5;
+  oneof condition {
+    KiwiCondition kiwiCondition = 3;
+  }
 }
 
 message SearchResponse {

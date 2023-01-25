@@ -71,7 +71,7 @@ func (s storageMock) ListNames(ctx context.Context, limit uint32, cursor string)
 	return
 }
 
-func (s storageMock) SearchByKiwi(ctx context.Context, q model.KiwiQuery, cursor string) (page []model.Subscription, err error) {
+func (s storageMock) SearchByKiwi(ctx context.Context, q KiwiQuery, cursor string) (page []model.Subscription, err error) {
 	sortedNames := util.SortedKeys(s.storage)
 	for _, subName := range sortedNames {
 		sub := s.storage[subName]

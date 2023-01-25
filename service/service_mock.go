@@ -88,7 +88,7 @@ func (sm serviceMock) ListNames(ctx context.Context, limit uint32, cursor string
 	return
 }
 
-func (sm serviceMock) SearchByKiwi(ctx context.Context, q model.KiwiQuery, cursor string) (page []model.Subscription, err error) {
+func (sm serviceMock) SearchByCondition(ctx context.Context, q model.ConditionQuery, cursor string) (page []model.Subscription, err error) {
 	if cursor == "" {
 		page = []model.Subscription{
 			{

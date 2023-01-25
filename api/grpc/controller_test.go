@@ -366,14 +366,22 @@ func TestServiceController_Search(t *testing.T) {
 	client := NewServiceClient(conn)
 	//
 	cases := map[string]struct {
-		err   error
-		count int
+		condition isSearchByConditionRequest_Condition
+		err       error
+		count     int
 	}{
 		"": {
+			condition: &SearchByConditionRequest_KiwiCondition{
+				KiwiCondition: &KiwiCondition{
+					Base: &KeyCondition{
+						Base: &ConditionBase{},
+					},
+				},
+			},
 			count: 2,
 		},
 		"fail": {
-			err: status.Error(codes.Internal, "internal failure"),
+			err: status.Error(codes.InvalidArgument, "unsupported condition type"),
 		},
 	}
 	//
@@ -381,7 +389,13 @@ func TestServiceController_Search(t *testing.T) {
 	defer cancel()
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			resp, err := client.SearchByKiwi(ctx, &SearchByKiwiRequest{Cursor: k})
+			resp, err := client.SearchByCondition(
+				ctx,
+				&SearchByConditionRequest{
+					Condition: c.condition,
+					Cursor:    k,
+				},
+			)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.count, len(resp.Page))

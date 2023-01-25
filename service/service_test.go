@@ -448,16 +448,22 @@ func TestService_Search(t *testing.T) {
 	}
 	//
 	cases := map[string]struct {
-		query  model.KiwiQuery
+		query  model.ConditionQuery
 		cursor string
 		page   []model.Subscription
 		err    error
 	}{
 		"key0/pattern0 -> 3 subs": {
-			query: model.KiwiQuery{
-				Limit:   10,
-				Key:     "key0",
-				Pattern: "pattern0",
+			query: model.ConditionQuery{
+				Limit: 10,
+				Condition: model.NewKiwiCondition(
+					model.NewKeyCondition(
+						model.NewCondition(false),
+						"key0",
+					),
+					false,
+					"pattern0",
+				),
 			},
 			page: []model.Subscription{
 				{
@@ -543,10 +549,16 @@ func TestService_Search(t *testing.T) {
 			},
 		},
 		"key1/pattern1, limit=2": {
-			query: model.KiwiQuery{
-				Limit:   2,
-				Key:     "key1",
-				Pattern: "pattern1",
+			query: model.ConditionQuery{
+				Limit: 2,
+				Condition: model.NewKiwiCondition(
+					model.NewKeyCondition(
+						model.NewCondition(false),
+						"key1",
+					),
+					false,
+					"pattern1",
+				),
 			},
 			page: []model.Subscription{
 				{
@@ -584,10 +596,16 @@ func TestService_Search(t *testing.T) {
 			},
 		},
 		"key1/pattern1, cursor=sub21": {
-			query: model.KiwiQuery{
-				Limit:   3,
-				Key:     "key1",
-				Pattern: "pattern1",
+			query: model.ConditionQuery{
+				Limit: 3,
+				Condition: model.NewKiwiCondition(
+					model.NewKeyCondition(
+						model.NewCondition(false),
+						"key1",
+					),
+					false,
+					"pattern1",
+				),
 			},
 			cursor: "sub21",
 			page: []model.Subscription{
@@ -641,13 +659,41 @@ func TestService_Search(t *testing.T) {
 				},
 			},
 		},
+		"fail on group condition query": {
+			query: model.ConditionQuery{
+				Limit: 3,
+				Condition: model.NewGroupCondition(
+					model.NewCondition(false),
+					model.GroupLogicAnd,
+					[]model.Condition{},
+				),
+			},
+			err: ErrInvalidQuery,
+		},
+		"fail on base condition query": {
+			query: model.ConditionQuery{
+				Limit:     3,
+				Condition: model.NewCondition(false),
+			},
+			err: ErrInvalidQuery,
+		},
+		"fail on key condition query": {
+			query: model.ConditionQuery{
+				Limit: 3,
+				Condition: model.NewKeyCondition(
+					model.NewCondition(false),
+					"key0",
+				),
+			},
+			err: ErrInvalidQuery,
+		},
 	}
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			page, err := svc.SearchByKiwi(ctx, c.query, c.cursor)
+			page, err := svc.SearchByCondition(ctx, c.query, c.cursor)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, len(c.page), len(page))
