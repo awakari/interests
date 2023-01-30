@@ -89,7 +89,7 @@ db:
   table:
     # Database table name to use.
     name: subscriptions
-# Matchers
+# Dependency services
 api:
   uri:
     kiwi:

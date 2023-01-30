@@ -11,7 +11,7 @@ import (
 
 type (
 
-	// Service represents the matchers service.
+	// Service represents the kiwi-tree service.
 	Service interface {
 
 		// Create creates a new key/pattern pair and registers it. Repeating the same Create call yields the same state.

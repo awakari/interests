@@ -14,7 +14,7 @@ type (
 )
 
 const (
-	pkgName = "matchers"
+	pkgName = "kiwiTree"
 )
 
 func NewLoggingMiddleware(svc Service, log *slog.Logger) Service {

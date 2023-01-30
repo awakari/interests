@@ -93,14 +93,14 @@ A subscription also has unique name and human-readable description.
 
 The service is configurable using the environment variables:
 
-| Variable                           | Example value                                          | Description                                                                      |
-|------------------------------------|--------------------------------------------------------|----------------------------------------------------------------------------------|
-| API_PORT                           | `8080`                                                 | gRPC API port                                                                    |
-| DB_URI                             | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                |
-| DB_NAME                            | `subscriptions`                                        | DB name to store the data                                                        |
-| DB_TABLE_NAME                      | `subscriptions`                                        | DB table name to store the data                                                  |
-| API_KIWI_TREE_COMPLETE_URI         | `kiwi-tree-complete:8080`                              | Complete [matchers](https://github.com/awakari/kiwi-tree) dependency service URI |
-| API_KIWI_TREE_PARTIAL_URI          | `kiwi-tree-partial:8080`                               | Partial [matchers](https://github.com/awakari/kiwi-tree) dependency service URI  |
+| Variable                           | Example value                                          | Description                                                                       |
+|------------------------------------|--------------------------------------------------------|-----------------------------------------------------------------------------------|
+| API_PORT                           | `8080`                                                 | gRPC API port                                                                     |
+| DB_URI                             | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                 |
+| DB_NAME                            | `subscriptions`                                        | DB name to store the data                                                         |
+| DB_TABLE_NAME                      | `subscriptions`                                        | DB table name to store the data                                                   |
+| API_KIWI_TREE_COMPLETE_URI         | `kiwi-tree-complete:8080`                              | Complete [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI |
+| API_KIWI_TREE_PARTIAL_URI          | `kiwi-tree-partial:8080`                               | Partial [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI  |
 
 # 3. Deployment
 
@@ -162,16 +162,75 @@ where
 
 The service provides basic gRPC interface to perform the operation on subscriptions.
 
+## 4.1. Create
+
 Example:
 ```shell
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{ "cursor": "last-from-prev-results-page", "limit": 100, "condition": { "kiwiCondition": { "base": { "base": { "not": false }, "key": "key0" }, "pattern": "pattern*", "partial": false } } }' \
+  -d '{"name": "sub0", "description": "my subscription", "routes": ["route0"], "condition": {"kiwiTreeCondition": {"base": { "base": {"base": {"not" :false}, "key": "key0"}, "pattern": "pattern*", "partial": false}}}}' \
+  localhost:8080 \
+  subscriptions.Service/Create
+```
+
+Yet another example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/service.proto \
+  -d '{"name": "sub1", "description": "my subscription", "routes": ["route1"], "condition": {"groupCondition": {"group": [{"kiwiTreeCondition": {"base": {"base": {"base": {"not": false}, "key": "key0"}, "pattern": "pattern?", "partial": false}}}, {"kiwiTreeCondition": {"base": {"base": {"base": {"not": true}, "key": "key1"}, "pattern": "pattern1", "partial": true}}}]}}}' \
+  localhost:8080 \
+  subscriptions.Service/Create
+```
+
+## 4.2. Read
+
+Example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/service.proto \
+  -d '{"name": "sub0"}' \
+  localhost:8080 \
+  subscriptions.Service/Read
+```
+
+## 4.3. Delete
+
+Example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/service.proto \
+  -d '{"name": "sub1"}' \
+  localhost:8080 \
+  subscriptions.Service/Read
+```
+
+## 4.4. List
+
+Example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/service.proto \
+  -d '{"limit": 100}' \
+  localhost:8080 \
+  subscriptions.Service/ListNames
+```
+
+## 4.5. Search
+
+Example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/service.proto \
+  -d '{"limit": 100, "kiwiCondition": {"base": {"base": {"not": false}, "key": "key0"}, "pattern": "pattern*", "partial": false}}' \
   localhost:8080 \
   subscriptions.Service/SearchByCondition
 ```
-
 
 # 5. Design
 
