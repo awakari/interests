@@ -22,6 +22,8 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
+          # repo-token is necessary to avoid the rate limit issue
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: "3.x"
 
       - name: Build
