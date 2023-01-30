@@ -1,7 +1,6 @@
 #!/bin/bash
 
 export SLUG=ghcr.io/awakari/subscriptions
-export VERSION=$(git describe --tags --abbrev=0 | cut -c 2-)
-echo "Releasing version: $VERSION"
+export VERSION=latest
 docker tag awakari/subscriptions "${SLUG}":"${VERSION}"
 docker push "${SLUG}":"${VERSION}"

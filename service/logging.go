@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/model"
+	"github.com/awakari/subscriptions/model"
 	"golang.org/x/exp/slog"
 )
 
@@ -21,11 +21,11 @@ func NewLoggingMiddleware(svc Service, log *slog.Logger) Service {
 	}
 }
 
-func (lm loggingMiddleware) Create(ctx context.Context, name string, req CreateRequest) (err error) {
+func (lm loggingMiddleware) Create(ctx context.Context, sub model.Subscription) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Create(%s, %v): %s", name, req, err))
+		lm.log.Debug(fmt.Sprintf("Create(%v): %s", sub, err))
 	}()
-	return lm.svc.Create(ctx, name, req)
+	return lm.svc.Create(ctx, sub)
 }
 
 func (lm loggingMiddleware) Read(ctx context.Context, name string) (sub model.Subscription, err error) {
@@ -49,9 +49,9 @@ func (lm loggingMiddleware) ListNames(ctx context.Context, limit uint32, cursor 
 	return lm.svc.ListNames(ctx, limit, cursor)
 }
 
-func (lm loggingMiddleware) Search(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error) {
+func (lm loggingMiddleware) SearchByCondition(ctx context.Context, q model.ConditionQuery, cursor string) (page []model.Subscription, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Search(%v, %v): %s", q, cursor, err))
+		lm.log.Debug(fmt.Sprintf("SearchByCondition(%v, %v): %s", q, cursor, err))
 	}()
-	return lm.svc.Search(ctx, q, cursor)
+	return lm.svc.SearchByCondition(ctx, q, cursor)
 }

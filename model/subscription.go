@@ -19,11 +19,8 @@ type (
 		// Routes represents a list of routes associated with the Subscription.
 		Routes []string
 
-		// Includes represents a MatcherGroup to include the Subscription to query results.
-		Includes MatcherGroup
-
-		// Excludes represents a MatcherGroup to exclude the Subscription from the query results.
-		Excludes MatcherGroup
+		// Condition represents the certain criteria to select the Subscription.
+		Condition Condition
 	}
 )
 
@@ -35,20 +32,41 @@ var (
 
 func (sub Subscription) Validate() (err error) {
 	if len(sub.Name) == 0 {
-		err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "empty name")
-	} else if len(sub.Routes) == 0 {
-		err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "empty routes")
-	} else if len(sub.Includes.Matchers) == 0 && len(sub.Excludes.Matchers) == 0 {
-		err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "both includes and excludes matcher groups are empty")
-	} else {
-		err = sub.Includes.Validate()
-		if err != nil {
-			err = fmt.Errorf("%w: includes: %s", ErrInvalidSubscription, err)
-		} else {
-			err = sub.Excludes.Validate()
-			if err != nil {
-				err = fmt.Errorf("%w: excludes: %s", ErrInvalidSubscription, err)
+		return fmt.Errorf("%w: %s", ErrInvalidSubscription, "empty name")
+	}
+	if len(sub.Routes) == 0 {
+		return fmt.Errorf("%w: %s", ErrInvalidSubscription, "empty routes")
+	}
+	if sub.Condition.IsNot() {
+		return fmt.Errorf("%w: %s", ErrInvalidSubscription, "root condition negation")
+	}
+	switch c := sub.Condition.(type) {
+	case GroupCondition:
+		err = validateRootGroupCondition(c)
+	case KiwiCondition:
+	default:
+		return fmt.Errorf("%w: %s", ErrInvalidSubscription, "root condition is not a group neither metadata pattern condition")
+	}
+	return
+}
+
+func validateRootGroupCondition(gc GroupCondition) (err error) {
+	err = gc.Validate()
+	if err == nil {
+		group := gc.GetGroup()
+		if len(group) > 1 {
+			includesFound := false
+			for _, c := range group {
+				if !c.IsNot() {
+					includesFound = true
+				}
+				break
 			}
+			if !includesFound {
+				err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "there should be at least 1 includes group in the root condition group")
+			}
+		} else {
+			err = fmt.Errorf("%w: %s", ErrInvalidSubscription, "there should be 1 or 2 child conditions in the root condition group")
 		}
 	}
 	return

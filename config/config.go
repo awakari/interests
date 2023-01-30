@@ -13,7 +13,7 @@ type (
 			//
 			Port uint16
 			//
-			Matchers Matchers
+			KiwiTree KiwiTree
 		}
 		//
 		Db Db
@@ -24,15 +24,11 @@ type (
 		}
 	}
 
-	Matchers struct {
+	KiwiTree struct {
 		//
-		UriExcludesComplete string
+		CompleteUri string
 		//
-		UriExcludesPartial string
-		//
-		UriIncludesComplete string
-		//
-		UriIncludesPartial string
+		PartialUri string
 	}
 
 	Db struct {
@@ -49,24 +45,20 @@ type (
 )
 
 const (
-	envApiPort                        = "API_PORT"
-	defApiPort                        = "8080"
-	envApiMatchersUriExcludesComplete = "API_MATCHERS_URI_EXCLUDES_COMPLETE"
-	defApiMatchersUriExcludesComplete = "matchers-excludes-complete:8080"
-	envApiMatchersUriExcludesPartial  = "API_MATCHERS_URI_EXCLUDES_PARTIAL"
-	defApiMatchersUriExcludesPartial  = "matchers-excludes-partial:8080"
-	envApiMatchersUriIncludesComplete = "API_MATCHERS_URI_INCLUDES_COMPLETE"
-	defApiMatchersUriIncludesComplete = "matchers-includes-complete:8080"
-	envApiMatchersUriIncludesPartial  = "API_MATCHERS_URI_INCLUDES_PARTIAL"
-	defApiMatchersUriIncludesPartial  = "matchers-includes-partial:8080"
-	envDbUri                          = "DB_URI"
-	defDbUri                          = "mongodb+srv://localhost/?retryWrites=true&w=majority"
-	envDbName                         = "DB_NAME"
-	defDbName                         = "subscriptions"
-	envDbTableName                    = "DB_TABLE_NAME"
-	defDbTableName                    = "subscriptions"
-	envLogLevel                       = "LOG_LEVEL"
-	defLogLevel                       = "-4"
+	envApiPort                = "API_PORT"
+	defApiPort                = "8080"
+	envApiKiwiTreeCompleteUri = "API_KIWI_TREE_COMPLETE_URI"
+	defApiKiwiTreeCompleteUri = "kiwi-tree-complete:8080"
+	envApiKiwiTreePartialUri  = "API_KIWI_TREE_PARTIAL_URI"
+	defApiKiwiTreePartialUri  = "kiwi-tree-partial:8080"
+	envDbUri                  = "DB_URI"
+	defDbUri                  = "mongodb+srv://localhost/?retryWrites=true&w=majority"
+	envDbName                 = "DB_NAME"
+	defDbName                 = "subscriptions"
+	envDbTableName            = "DB_TABLE_NAME"
+	defDbTableName            = "subscriptions"
+	envLogLevel               = "LOG_LEVEL"
+	defLogLevel               = "-4"
 )
 
 func NewConfigFromEnv() (cfg Config, err error) {
@@ -77,10 +69,8 @@ func NewConfigFromEnv() (cfg Config, err error) {
 		return
 	}
 	cfg.Api.Port = uint16(apiPort)
-	cfg.Api.Matchers.UriExcludesComplete = getEnvOrDefault(envApiMatchersUriExcludesComplete, defApiMatchersUriExcludesComplete)
-	cfg.Api.Matchers.UriExcludesPartial = getEnvOrDefault(envApiMatchersUriExcludesPartial, defApiMatchersUriExcludesPartial)
-	cfg.Api.Matchers.UriIncludesComplete = getEnvOrDefault(envApiMatchersUriIncludesComplete, defApiMatchersUriIncludesComplete)
-	cfg.Api.Matchers.UriIncludesPartial = getEnvOrDefault(envApiMatchersUriIncludesPartial, defApiMatchersUriIncludesPartial)
+	cfg.Api.KiwiTree.CompleteUri = getEnvOrDefault(envApiKiwiTreeCompleteUri, defApiKiwiTreeCompleteUri)
+	cfg.Api.KiwiTree.PartialUri = getEnvOrDefault(envApiKiwiTreePartialUri, defApiKiwiTreePartialUri)
 	cfg.Db.Uri = getEnvOrDefault(envDbUri, defDbUri)
 	cfg.Db.Name = getEnvOrDefault(envDbName, defDbName)
 	cfg.Db.Table.Name = getEnvOrDefault(envDbTableName, defDbTableName)

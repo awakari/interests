@@ -15,45 +15,24 @@ func TestSubscription_Validate(t *testing.T) {
 				Routes: []string{
 					"destination",
 				},
-				Includes: MatcherGroup{
-					Matchers: []Matcher{
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(true), "key0"), false, ""),
 			},
 			err: ErrInvalidSubscription,
 		},
-		"empty matcher groups": {
+		"empty condition group": {
 			sub: Subscription{
 				Name: "sub0",
 				Routes: []string{
 					"destination",
 				},
+				Condition: NewGroupCondition(NewCondition(false), GroupLogicAnd, []Condition{}),
 			},
-			err: ErrInvalidSubscription,
+			err: ErrInvalidGroupCondition,
 		},
 		"empty routes": {
 			sub: Subscription{
-				Name: "sub0",
-				Excludes: MatcherGroup{
-					Matchers: []Matcher{
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Name:      "sub0",
+				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
 			},
 			err: ErrInvalidSubscription,
 		},
@@ -63,75 +42,94 @@ func TestSubscription_Validate(t *testing.T) {
 				Routes: []string{
 					"destination",
 				},
-				Excludes: MatcherGroup{
-					Matchers: []Matcher{
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
 			},
 		},
-		"dup matcher in includes group": {
+		"negation only condition": {
 			sub: Subscription{
 				Name: "sub0",
 				Routes: []string{
 					"destination",
 				},
-				Includes: MatcherGroup{
-					Matchers: []Matcher{
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(true), "key0"), false, ""),
 			},
 			err: ErrInvalidSubscription,
 		},
-		"dup matcher in excludes group": {
+		"non pattern neither group root condition": {
 			sub: Subscription{
 				Name: "sub0",
 				Routes: []string{
 					"destination",
 				},
-				Excludes: MatcherGroup{
-					Matchers: []Matcher{
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-						{
-							MatcherData: MatcherData{
-								Key: "key0",
-								Pattern: Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
+				Condition: NewKeyCondition(NewCondition(true), "key0"),
+			},
+			err: ErrInvalidSubscription,
+		},
+		"valid group root condition": {
+			sub: Subscription{
+				Name: "sub0",
+				Routes: []string{
+					"destination",
 				},
+				Condition: NewGroupCondition(
+					NewCondition(false),
+					GroupLogicAnd,
+					[]Condition{
+						NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key1"), false, ""),
+					},
+				),
+			},
+		},
+		"invalid group root condition: negation": {
+			sub: Subscription{
+				Name: "sub0",
+				Routes: []string{
+					"destination",
+				},
+				Condition: NewGroupCondition(
+					NewCondition(true),
+					GroupLogicAnd,
+					[]Condition{
+						NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key1"), false, ""),
+					},
+				),
+			},
+			err: ErrInvalidSubscription,
+		},
+		"invalid group root condition: contains negation only child rules": {
+			sub: Subscription{
+				Name: "sub0",
+				Routes: []string{
+					"destination",
+				},
+				Condition: NewGroupCondition(
+					NewCondition(false),
+					GroupLogicAnd,
+					[]Condition{
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key0"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key1"), false, ""),
+					},
+				),
+			},
+			err: ErrInvalidSubscription,
+		},
+		"invalid group root condition: contains more than 2 child rules": {
+			sub: Subscription{
+				Name: "sub0",
+				Routes: []string{
+					"destination",
+				},
+				Condition: NewGroupCondition(
+					NewCondition(false),
+					GroupLogicAnd,
+					[]Condition{
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key0"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(false), "key1"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(false), "key2"), false, ""),
+					},
+				),
 			},
 			err: ErrInvalidSubscription,
 		},

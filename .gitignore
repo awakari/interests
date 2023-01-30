@@ -22,6 +22,5 @@ vendor/
 **/*.krop
 api/grpc/*-request.json
 
-config/dev.yaml
-ghcr_io_pat.txt
 helm/subscriptions/values-dev.yaml
+ghcr_io_pat.txt

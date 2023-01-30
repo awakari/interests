@@ -1,13 +1,13 @@
-name: Release
+name: Staging
 
 on:
   push:
-    tags:
-      - v[0-9]+.[0-9]+.[0-9]+
+    branches:
+      - "master"
 
 jobs:
 
-  release:
+  staging:
     runs-on: ubuntu-latest
     steps:
 
@@ -20,5 +20,5 @@ jobs:
           username: ${{ secrets.REGISTRY_USER }}
           password: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
 
-      - name: Release
-        run: make release
+      - name: Staging
+        run: make staging

@@ -3,10 +3,14 @@
 1. [Overview](#1-overview)<br/>
    1.1. [Purpose](#11-purpose)<br/>
    1.2. [Definitions](#12-definitions)<br/>
-   &nbsp;&nbsp;&nbsp;1.2.1. [Pattern](#121-pattern)<br/>
-   &nbsp;&nbsp;&nbsp;1.2.2. [Matchers](#122-matcher)<br/>
-   &nbsp;&nbsp;&nbsp;1.2.3. [Matcher Group](#123-matcher-group)<br/>
-   &nbsp;&nbsp;&nbsp;1.2.4. [Subscription](#124-subscription)<br/>
+   &nbsp;&nbsp;&nbsp;1.2.1. [Route](#121-route)<br/>
+   &nbsp;&nbsp;&nbsp;1.2.2. [Condition](#122-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.2.1. [Group Condition](#1221-group-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.2.2. [Key Condition](#1222-key-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.2.3. [Kiwi Condition](#1223-kiwi-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.2.4. [Kiwi Tree Condition](#1224-kiwi-tree-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.2.5. [Kiwi Bird Condition](#1225-kiwi-bird-condition)<br/>
+   &nbsp;&nbsp;&nbsp;1.2.3. [Subscription](#123-subscription)<br/>
 2. [Configuration](#2-configuration)<br/>
 3. [Deployment](#3-deployment)<br/>
    3.1. [Prerequisites](#31-prerequisites)<br/>
@@ -19,6 +23,9 @@
    5.1. [Requirements](#51-requirements)<br/>
    5.2. [Approach](#52-approach)<br/>
    &nbsp;&nbsp;&nbsp;5.2.1. [Data Schema](#521-data-schema)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.1. [Subscription](#5211-subscription)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.2. [Group Condition](#5212-group-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.3. [Kiwi Condition](#5213-kiwi-condition)<br/>
    &nbsp;&nbsp;&nbsp;5.2.2 [Results Pagination](#522-results-pagination)<br/>
    5.3. [Limitations](#53-limitations)<br/>
 6. [Contributing](#6-contributing)<br/>
@@ -32,50 +39,68 @@
 
 # 1. Overview
 
+Subscriptions storage service.
+
 ## 1.1. Purpose
 
-The main function is to find all subscriptions by a linked wildcard. Wildcard may be found by the sample text input 
-using [matchers](https://github.com/meandros-messaging/matchers) service, hence, it makes possible to resolve all 
-matching wildcard subscriptions.
+The main function of the service is to find all subscriptions by a condition. For example, a message metadata is 
+matching a certain pattern. Then it's necessary to find all subscriptions those have this pattern in the corresponding 
+condition.
 
 ## 1.2. Definitions
 
-### 1.2.1. Pattern
+### 1.2.1. Route
 
-See the [definition here](https://github.com/meandros-messaging/matchers#122-pattern).
+A route is a free-form string describing a delivery destination for a message matching the corresponding subscription.
+Good example is topic or subject where a matching message should be sent.
 
-### 1.2.2. Matcher
+### 1.2.2. Condition
 
-Same as [matcher](https://github.com/meandros-messaging/matchers#123-matcher) but with an additional `partial` flag.
-The `partial` flag controls whether the matcher should be used to match the sample text parts matching or complete only.
+A condition represents a message matching criteria. The common property for any type of condition is negation flag 
+(`Not`). When it's set to `true` the condition is treated as a negation.
 
-### 1.2.3. Matcher Group
+#### 1.2.2.1. Group Condition
 
-Matcher group is just a set of matchers with an additional `all` flag. This `all` flag controls whether all matchers in
-this group should match the sample input or any is enough. 
+A group condition represents a group of child conditions coupled with a certain logic: `And`, `Or`, `Xor`.
 
-### 1.2.4. Subscription
+#### 1.2.2.2. Key Condition
 
-Subscription is a named bundle of matchers with assigned routes and human-readable description. Matchers are listed in 
-two matcher groups:
-* `Includes`: matchers those should match the input data, all or any (matcher group attribute), completely or partially (matcher attribute).
-* `Excludes`: matchers those should not match the input data, all or any, completely or partially.
-These two matcher groups control whether the entire subscription matches the input data or not.
+A key condition is an abstract condition specifying a key that should match the message metadata key.
+
+#### 1.2.2.3. Kiwi Condition
+
+A kiwi (Key-Input WIldcard) condition is a key condition containing the metadata value pattern. Also, kiwi condition has
+a `partial` attribute to represent whether a value part is allowed to match the pattern.
+
+#### 1.2.2.4. Kiwi Tree Condition
+
+A [kiwi-tree](https://github.com/awakari/kiwi-tree) specific condition implementation of a kiwi condition.
+It comes with additional [limitations](https://github.com/awakari/kiwi-tree#53-limitations) on the 
+[pattern syntax](https://github.com/awakari/kiwi-tree#122-pattern) but allows resolving a condition by a key/value pair 
+in a O(log(N)) time.
+
+#### 1.2.2.5. Kiwi Bird Condition
+
+A [kiwi-tree](https://github.com/awakari/kiwi-tree) specific condition implementation of a kiwi condition. It should 
+come without any limitation on the pattern syntax but will resolve a condition in O(N) time. Not implemented yet. 
+
+### 1.2.3. Subscription
+
+Subscriptions is an entity linking the [condition](#122-condition) with the [route](#121-route)s. 
+A subscription also has unique name and human-readable description.
 
 # 2. Configuration
 
 The service is configurable using the environment variables:
 
-| Variable                           | Example value                                          | Description                                                                                          |
-|------------------------------------|--------------------------------------------------------|------------------------------------------------------------------------------------------------------|
-| API_PORT                           | `8080`                                                 | gRPC API port                                                                                        |
-| DB_URI                             | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                                    |
-| DB_NAME                            | `subscriptions`                                        | DB name to store the data                                                                            |
-| DB_TABLE_NAME                      | `subscriptions`                                        | DB table name to store the tree data                                                                 |
-| API_MATCHERS_URI_EXCLUDES_COMPLETE | `matchers-excludes-complete:8080`                      | Excluding complete [matchers](https://github.com/meandros-messaging/matchers) dependency service URI |
-| API_MATCHERS_URI_EXCLUDES_PARTIAL  | `matchers-excludes-partial:8080`                       | Excluding partial [matchers](https://github.com/meandros-messaging/matchers) dependency service URI  |
-| API_MATCHERS_URI_INCLUDES_COMPLETE | `matchers-includes-complete:8080`                      | Including complete [matchers](https://github.com/meandros-messaging/matchers) dependency service URI |
-| API_MATCHERS_URI_INCLUDES_PARTIAL  | `matchers-includes-partial:8080`                       | Including partial [matchers](https://github.com/meandros-messaging/matchers) dependency service URI  |
+| Variable                           | Example value                                          | Description                                                                       |
+|------------------------------------|--------------------------------------------------------|-----------------------------------------------------------------------------------|
+| API_PORT                           | `8080`                                                 | gRPC API port                                                                     |
+| DB_URI                             | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                 |
+| DB_NAME                            | `subscriptions`                                        | DB name to store the data                                                         |
+| DB_TABLE_NAME                      | `subscriptions`                                        | DB table name to store the data                                                   |
+| API_KIWI_TREE_COMPLETE_URI         | `kiwi-tree-complete:8080`                              | Complete [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI |
+| API_KIWI_TREE_PARTIAL_URI          | `kiwi-tree-partial:8080`                               | Partial [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI  |
 
 # 3. Deployment
 
@@ -88,24 +113,22 @@ It's possible to obtain a free cluster for testing purposes using [Atlas](https:
 
 Preconditions:
 1. Build patterns executive using ```make build```
-2. Run the [patterns](https://github.com/meandros-messaging/matchers) dependency services (x4: includes/excludes, complete/partial)
+2. Run the [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency services (x2: complete/partial)
 
 Then run the command:
 ```shell
-API_PORT=8081 \
-DB_URI=mongodb+srv://localhost/?retryWrites=true&w=majority \
+API_PORT=8080 \
+DB_URI=mongodb+srv://localhost/\?retryWrites=true\&w=majority \
 DB_NAME=subscriptions \
 DB_TABLE_NAME=subscriptions \
-API_MATCHERS_URI_EXCLUDES_COMPLETE=http://localhost:8081 \
-API_MATCHERS_URI_EXCLUDES_PARTIAL=http://localhost:8082 \
-API_MATCHERS_URI_INCLUDES_COMPLETE=http://localhost:8083 \
-API_MATCHERS_URI_INCLUDES_PARTIAL=http://localhost:8084 \
+API_KIWI_TREE_COMPLETE_URI=http://localhost:8081 \
+API_KIWI_TREE_PARTIAL_URI=http://localhost:8082 \
 ./subscriptions
 ```
 
 ## 3.3. Docker
 
-TODO: run the matchers (x4) and subscriptions in the same network
+TODO: run the kiwi-tree (x2) and subscriptions in the same network
 
 alternatively, it's possible to build and run the new docker image in place using the command:
 (note that the command below requires all env vars to be set in the file `env.txt`)
@@ -138,13 +161,76 @@ where
 # 4. Usage
 
 The service provides basic gRPC interface to perform the operation on subscriptions.
-There's a [Kreya](https://kreya.app/) gRPC client application that can be used for the testing purpose.
 
-TODO: screenshot
+## 4.1. Create
 
-The service provides few basic operations on subscriptions.
+Example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/service.proto \
+  -d '{"name": "sub0", "description": "my subscription", "routes": ["route0"], "condition": {"kiwiTreeCondition": {"base": { "base": {"base": {"not" :false}, "key": "key0"}, "pattern": "pattern*", "partial": false}}}}' \
+  localhost:8080 \
+  subscriptions.Service/Create
+```
 
-TODO: operations subsections
+Yet another example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/service.proto \
+  -d '{"name": "sub1", "description": "my subscription", "routes": ["route1"], "condition": {"groupCondition": {"group": [{"kiwiTreeCondition": {"base": {"base": {"base": {"not": false}, "key": "key0"}, "pattern": "pattern?", "partial": false}}}, {"kiwiTreeCondition": {"base": {"base": {"base": {"not": true}, "key": "key1"}, "pattern": "pattern1", "partial": true}}}]}}}' \
+  localhost:8080 \
+  subscriptions.Service/Create
+```
+
+## 4.2. Read
+
+Example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/service.proto \
+  -d '{"name": "sub0"}' \
+  localhost:8080 \
+  subscriptions.Service/Read
+```
+
+## 4.3. Delete
+
+Example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/service.proto \
+  -d '{"name": "sub1"}' \
+  localhost:8080 \
+  subscriptions.Service/Read
+```
+
+## 4.4. List
+
+Example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/service.proto \
+  -d '{"limit": 100}' \
+  localhost:8080 \
+  subscriptions.Service/ListNames
+```
+
+## 4.5. Search
+
+Example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/service.proto \
+  -d '{"limit": 100, "kiwiCondition": {"base": {"base": {"not": false}, "key": "key0"}, "pattern": "pattern*", "partial": false}}' \
+  localhost:8080 \
+  subscriptions.Service/SearchByCondition
+```
 
 # 5. Design
 
@@ -154,7 +240,7 @@ TODO: operations subsections
 |-------|------------------|-------------------------------------------------------------------------------------|
 | REQ-1 | Basic matching   | Resolve subscriptions matching the input value                                      |
 | REQ-2 | Logic            | Support subscription logics for the multiple key-value matches (*and*, *or*, *not*) |
-| REQ-3 | Partial matching | Split input metadata values to lexemes and match against each lexeme                |
+| REQ-3 | Partial matching | Support partial (value might be split to lexemes) value matching                    |
 | REQ-4 | Pagination       | Support query results pagination                                                    |
 
 ## 5.2. Approach
@@ -169,78 +255,49 @@ Example data:
 - name: subscription0
   description: Anything related to orders that are not in Helsinki
   routes:
-  - devnull
-  includes:
-    all: false
-    matchers:
-    - key: subject
-      pattern:
-        code: orders
-        regex: orders
-      partial: true
-  excludes:
-    all: false
-    matchers:
-    - key: location
-      pattern:
-        code: Helsinki
-        regex: Helsinki 
-      partial: false
-```
-
-```yaml
-- name: subscription1
-  description: Messages that have both high priority and reply-to address of John Doe
-  routes:
-  - john_doe
-  - important
-  includes:
-    all: true
-    matchers:
-    - key: reply-to
-      pattern: 
-        code: john.doe@email.com
-        regex: john.doe@email.com
-      partial: false
-    - key: priority
-      pattern: 
-        code: high
-        regex: high
-      partial: false
-  excludes: {}
+  - /dev/null
+  condition:
+    base:
+      not: false
+    logic: "And"
+    group:
+      - base:
+          not: false
+        partial: true
+        key: "subject"
+        pattern: "orders"
+      - base:
+          not: true
+        partial: false
+        key: "location"
+        pattern: "Helsinki"
 ```
 
 #### 5.2.1.1. Subscription
 
-| Attribute   | Type                                 | Description                                                  |
-|-------------|--------------------------------------|--------------------------------------------------------------|
-| name        | String                               | Unique subscription name                                     |
-| description | String                               | Human readable subscription description                      |
-| routes      | Array of String                      | Destination routes to use for the matching messages delivery |
-| includes    | [Matcher Group](#5212-matcher-group) | Matchers to include the subscription to query results        |
-| excludes    | [Matcher Group](#5212-matcher-group) | Matchers to exclude the subscription from the query results  |
+| Attribute   | Type                                       | Description                                                  |
+|-------------|--------------------------------------------|--------------------------------------------------------------|
+| name        | String                                     | Unique subscription name                                     |
+| description | String                                     | Human readable subscription description                      |
+| routes      | Array of String                            | Destination routes to use for the matching messages delivery |
+| condition   | Condition (currently may be Group or Kiwi) | Message matching criteria                                    |
 
-#### 5.2.1.2. Matcher Group
+#### 5.2.1.2. Group Condition
 
-| Attribute | Type                              | Description                                                                         |
-|-----------|-----------------------------------|-------------------------------------------------------------------------------------|
-| all       | Boolean                           | Defines whether **all** matchers in the group should match or **any** is sufficient |
-| matchers  | Array of [Matcher](#5213-matcher) | Set of matchers in the group                                                        |
+| Attribute | Type                      | Description                                                    |
+|-----------|---------------------------|----------------------------------------------------------------|
+| not       | Boolean                   | Defines whether the conditions should act as a negation or not |
+| logic     | Enum of `And`/`Or`/`Xor`  | Defines the grouping logic for the child conditions            |
+| group     | Array of child conditions | Set of conditions in the group                                 |
 
-#### 5.2.1.3. Matcher
+#### 5.2.1.3. Kiwi Condition
 
-| Attribute | Type                     | Description                                                                                                   |
-|-----------|--------------------------|---------------------------------------------------------------------------------------------------------------|
-| key       | String                   | Metadata key                                                                                                  |
-| pattern   | [Pattern](#5214-pattern) | Metadata value matching pattern                                                                               |
-| partial   | Boolean                  | If `true`, then allowed match any lexeme in a tokenized metadata value. Otherwise, entire value should match. |
-
-#### 5.2.1.4. Pattern
-
-| Attribute | Type          | Description                                                                                            |
-|-----------|---------------|--------------------------------------------------------------------------------------------------------|
-| code      | Array of byte | Unique pattern path in the [patterns tree](https://github.com/meandros-messaging/patterns#52-approach) |
-| regex     | String        | A regular expression to finally filter the resolved subscription candidates                            |
+| Attribute | Type    | Description                                                                                                   |
+|-----------|---------|---------------------------------------------------------------------------------------------------------------|
+| not       | Boolean | Defines whether the conditions should act as a negation or not                                                |
+| key       | String  | Metadata key                                                                                                  |
+| pattern   | String  | Metadata value matching pattern                                                                               |
+| partial   | Boolean | If `true`, then allowed match any lexeme in a tokenized metadata value. Otherwise, entire value should match. |
 
 ### 5.2.2. Results Pagination
 
@@ -248,9 +305,9 @@ The limit and cursor search parameters are used to support the results' paginati
 
 ## 5.3. Limitations
 
-| #     | Summary                        | Description                                                                                                                                   |
-|-------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| LIM-1 | Excluding only is not allowed  | A subscription should have at least 1 in `includes` matcher group. Otherwise the subscription never matches anything in practice.             |
+| #     | Summary                        | Description                                                                                                            |
+|-------|--------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| LIM-1 | Excluding only is not allowed  | A subscription should not have root negation condition. Otherwise the subscription never matches anything in practice. |
 
 # 6. Contributing
 
@@ -271,7 +328,7 @@ TODO
 ```shell
 make build
 ```
-Generates the sources from proto files, compiles and creates the `patterns` executable.
+Generates the sources from proto files, compiles and creates the `subscriptions` executable.
 
 ## 6.4. Testing
 

@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/config"
-	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/storage"
+	"github.com/awakari/subscriptions/config"
+	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/storage"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -25,36 +25,38 @@ var (
 		// name should be unique
 		{
 			Keys: bson.D{
-				{attrName, 1},
+				{
+					Key:   attrName,
+					Value: 1,
+				},
 			},
 			Options: options.
 				Index().
 				SetUnique(true),
 		},
-		// query by matcher in excludes group
+		// query by name and kiwi
 		{
 			Keys: bson.D{
-				{attrName, 1},
-				{attrExcludes + "." + attrMatchers + "." + attrPartial, 1},
-				{attrExcludes + "." + attrMatchers + "." + attrKey, 1},
-				{attrExcludes + "." + attrMatchers + "." + attrPattern + "." + attrCode, 1},
+				{
+					Key:   attrName,
+					Value: 1,
+				},
+				{
+					Key:   attrKiwis + "." + kiwiConditionAttrKey,
+					Value: 1,
+				},
+				{
+					Key:   attrKiwis + "." + kiwiConditionAttrPattern,
+					Value: 1,
+				},
+				{
+					Key:   attrKiwis + "." + kiwiConditionAttrPartial,
+					Value: 1,
+				},
 			},
 			Options: options.
 				Index().
-				SetUnique(true).
-				SetSparse(true),
-		},
-		// query by matcher in includes group
-		{
-			Keys: bson.D{
-				{attrName, 1},
-				{attrIncludes + "." + attrMatchers + "." + attrPartial, 1},
-				{attrIncludes + "." + attrMatchers + "." + attrKey, 1},
-				{attrIncludes + "." + attrMatchers + "." + attrPattern + "." + attrCode, 1},
-			},
-			Options: options.
-				Index().
-				SetUnique(true).
+				SetUnique(false).
 				SetSparse(true),
 		},
 	}
@@ -62,10 +64,24 @@ var (
 	optsRead   = options.
 			FindOne().
 			SetShowRecordID(false)
-	listNamesProjection = bson.D{
+	namesProjection = bson.D{
 		{
-			attrName,
-			1,
+			Key:   attrName,
+			Value: 1,
+		},
+	}
+	searchProjection = bson.D{
+		{
+			Key:   attrName,
+			Value: 1,
+		},
+		{
+			Key:   attrRoutes,
+			Value: 1,
+		},
+		{
+			Key:   attrCondition,
+			Value: 1,
 		},
 	}
 )
@@ -105,40 +121,19 @@ func (s storageImpl) Close() error {
 }
 
 func (s storageImpl) Create(ctx context.Context, sub model.Subscription) (err error) {
-	rec := subscription{
+	recCondition, recKiwis := encodeCondition(sub.Condition)
+	rec := subscriptionWrite{
 		Name:        sub.Name,
 		Description: sub.Description,
 		Routes:      sub.Routes,
-		Includes:    toMatcherGroupRec(sub.Includes),
-		Excludes:    toMatcherGroupRec(sub.Excludes),
+		Condition:   recCondition,
+		Kiwis:       recKiwis,
 	}
 	_, err = s.coll.InsertOne(ctx, rec)
 	if mongo.IsDuplicateKeyError(err) {
 		err = fmt.Errorf("%w: %s", storage.ErrConflict, err)
 	}
 	return
-}
-
-func toMatcherGroupRec(mg model.MatcherGroup) (rec matcherGroup) {
-	rec.All = mg.All
-	var matcherRecs []matcher
-	for _, m := range mg.Matchers {
-		matcherRec := toMatcherRec(m)
-		matcherRecs = append(matcherRecs, matcherRec)
-	}
-	rec.Matchers = matcherRecs
-	return
-}
-
-func toMatcherRec(m model.Matcher) (rec matcher) {
-	return matcher{
-		Partial: m.Partial,
-		Key:     m.Key,
-		Pattern: pattern{
-			Code: m.Pattern.Code,
-			Src:  m.Pattern.Src,
-		},
-	}
 }
 
 func (s storageImpl) Read(ctx context.Context, name string) (sub model.Subscription, err error) {
@@ -165,35 +160,8 @@ func decodeSingleResult(name string, result *mongo.SingleResult) (sub model.Subs
 		if err != nil {
 			err = fmt.Errorf("%w: failed to decode, name=%s, %s", storage.ErrInternal, name, err)
 		} else {
-			decodeSubscription(rec, &sub)
+			err = rec.decodeSubscription(&sub)
 		}
-	}
-	return
-}
-
-func decodeSubscription(rec subscription, sub *model.Subscription) {
-	sub.Name = rec.Name
-	sub.Description = rec.Description
-	sub.Routes = rec.Routes
-	sub.Excludes.All = rec.Excludes.All
-	sub.Excludes.Matchers = decodeMatchers(rec.Excludes.Matchers)
-	sub.Includes.All = rec.Includes.All
-	sub.Includes.Matchers = decodeMatchers(rec.Includes.Matchers)
-}
-
-func decodeMatchers(matcherRecs []matcher) (matchers []model.Matcher) {
-	for _, matcherRec := range matcherRecs {
-		m := model.Matcher{
-			MatcherData: model.MatcherData{
-				Key: matcherRec.Key,
-				Pattern: model.Pattern{
-					Code: matcherRec.Pattern.Code,
-					Src:  matcherRec.Pattern.Src,
-				},
-			},
-			Partial: matcherRec.Partial,
-		}
-		matchers = append(matchers, m)
 	}
 	return
 }
@@ -217,9 +185,9 @@ func (s storageImpl) ListNames(ctx context.Context, limit uint32, cursor string)
 	opts := options.
 		Find().
 		SetLimit(int64(limit)).
-		SetProjection(listNamesProjection).
+		SetProjection(namesProjection).
 		SetShowRecordID(false).
-		SetSort(listNamesProjection)
+		SetSort(namesProjection)
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, q, opts)
 	if err != nil {
@@ -239,26 +207,21 @@ func (s storageImpl) ListNames(ctx context.Context, limit uint32, cursor string)
 	return
 }
 
-func (s storageImpl) Search(ctx context.Context, q storage.Query, cursor string) (page []model.Subscription, err error) {
+func (s storageImpl) SearchByKiwi(ctx context.Context, q storage.KiwiQuery, cursor string) (page []model.Subscription, err error) {
 	dbQuery := bson.M{
 		attrName: bson.M{
 			"$gt": cursor,
 		},
+		attrKiwis + "." + kiwiConditionAttrKey:     q.Key,
+		attrKiwis + "." + kiwiConditionAttrPattern: q.Pattern,
+		attrKiwis + "." + kiwiConditionAttrPartial: q.Partial,
 	}
-	var attrMatcherGroup string
-	if q.InExcludes {
-		attrMatcherGroup = attrExcludes
-	} else {
-		attrMatcherGroup = attrIncludes
-	}
-	dbQuery[attrMatcherGroup+"."+attrMatchers+"."+attrPartial] = q.Matcher.Partial
-	dbQuery[attrMatcherGroup+"."+attrMatchers+"."+attrKey] = q.Matcher.Key
-	dbQuery[attrMatcherGroup+"."+attrMatchers+"."+attrPattern+"."+attrCode] = q.Matcher.Pattern.Code
 	opts := options.
 		Find().
 		SetLimit(int64(q.Limit)).
+		SetProjection(searchProjection).
 		SetShowRecordID(false).
-		SetSort(listNamesProjection)
+		SetSort(namesProjection)
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, dbQuery, opts)
 	if err != nil {
@@ -272,7 +235,11 @@ func (s storageImpl) Search(ctx context.Context, q storage.Query, cursor string)
 		} else {
 			for _, rec := range recs {
 				var sub model.Subscription
-				decodeSubscription(rec, &sub)
+				err = rec.decodeSubscription(&sub)
+				if err != nil {
+					err = fmt.Errorf("%w: failed to decode subscription record %v: %s", storage.ErrInternal, rec, err)
+					break
+				}
 				page = append(page, sub)
 			}
 		}

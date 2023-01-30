@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/service/matchers"
-	"github.com/meandros-messaging/subscriptions/storage"
+	"github.com/awakari/subscriptions/model"
+	kiwiTree "github.com/awakari/subscriptions/service/kiwi-tree"
+	"github.com/awakari/subscriptions/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -16,153 +16,136 @@ func TestService_Create(t *testing.T) {
 	//
 	storMem := make(map[string]model.Subscription)
 	stor := storage.NewStorageMock(storMem)
-	excCompleteMatchersSvc := matchers.NewServiceMock()
-	excPartialMatchersSvc := matchers.NewServiceMock()
-	incCompleteMatchersSvc := matchers.NewServiceMock()
-	incPartialMatchersSvc := matchers.NewServiceMock()
-	svc := NewService(
-		stor,
-		excCompleteMatchersSvc,
-		excPartialMatchersSvc,
-		incCompleteMatchersSvc,
-		incPartialMatchersSvc,
-	)
+	kiwiTreeSvc := kiwiTree.NewServiceMock()
+	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	require.Nil(
 		t, svc.Create(
 			nil,
-			"subscription 4",
-			CreateRequest{
+			model.Subscription{
+				Name:        "subscription 4",
 				Description: "pre existing",
 				Routes: []string{
 					"route 4",
 				},
-				Includes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							MatcherData: model.MatcherData{
-								Key: "key0",
-								Pattern: model.Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Condition: model.NewKiwiTreeCondition(
+					model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(false),
+							"key0",
+						),
+						false,
+						"pattern0",
+					),
+				),
 			},
 		),
 	)
 	//
 	cases := map[string]struct {
-		name string
-		req  CreateRequest
-		err  error
+		req model.Subscription
+		err error
 	}{
 		"empty": {
-			name: "subscription 0",
-			req: CreateRequest{
+			req: model.Subscription{
+				Name:        "subscription 0",
 				Description: "my subscription",
 			},
 			err: model.ErrInvalidSubscription,
 		},
 		"empty name": {
-			name: "",
-			req: CreateRequest{
+			req: model.Subscription{
 				Description: "my subscription",
 				Routes: []string{
 					"route",
 				},
-				Includes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							MatcherData: model.MatcherData{
-								Pattern: model.Pattern{
-									Src: "ok",
-								},
-							},
-						},
-					},
-				},
+				Condition: model.NewKiwiTreeCondition(
+					model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(false),
+							"",
+						),
+						false,
+						"ok",
+					),
+				),
 			},
 			err: model.ErrInvalidSubscription,
 		},
 		"locked": {
-			name: "subscription 1",
-			req: CreateRequest{
+			req: model.Subscription{
+				Name:        "subscription 1",
 				Description: "my subscription",
 				Routes: []string{
 					"route 1",
 				},
-				Includes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							MatcherData: model.MatcherData{
-								Pattern: model.Pattern{
-									Src: "locked",
-								},
-							},
-						},
-					},
-				},
+				Condition: model.NewKiwiTreeCondition(
+					model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(false),
+							"",
+						),
+						false,
+						"locked",
+					),
+				),
 			},
 			err: ErrShouldRetry,
 		},
 		"fail": {
-			name: "subscription 2",
-			req: CreateRequest{
+			req: model.Subscription{
+				Name:        "subscription 2",
 				Description: "my subscription",
 				Routes: []string{
 					"route 2",
 				},
-				Includes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							MatcherData: model.MatcherData{
-								Key: "fail",
-							},
-						},
-					},
-				},
+				Condition: model.NewKiwiTreeCondition(
+					model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(false),
+							"fail",
+						),
+						false,
+						"fail",
+					),
+				),
 			},
 			err: ErrInternal,
 		},
 		"ok": {
-			name: "subscription 3",
-			req: CreateRequest{
+			req: model.Subscription{
+				Name:        "subscription 3",
 				Description: "my subscription",
 				Routes: []string{
 					"route 3",
 				},
-				Includes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							Partial: true,
-							MatcherData: model.MatcherData{
-								Key: "ok",
-							},
-						},
-					},
-				},
+				Condition: model.NewKiwiTreeCondition(
+					model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(false),
+							"key0",
+						),
+						false,
+						"ok",
+					),
+				),
 			},
 		},
 		"conflict": {
-			name: "subscription 4",
-			req: CreateRequest{
+			req: model.Subscription{
+				Name: "subscription 4",
 				Routes: []string{
 					"route 4",
 				},
-				Excludes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							Partial: true,
-							MatcherData: model.MatcherData{
-								Key: "key0",
-								Pattern: model.Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Condition: model.NewKiwiTreeCondition(
+					model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(false),
+							"key0",
+						),
+						false,
+						"pattern0",
+					),
+				),
 			},
 			err: ErrConflict,
 		},
@@ -172,7 +155,7 @@ func TestService_Create(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			err := svc.Create(ctx, c.name, c.req)
+			err := svc.Create(ctx, c.req)
 			if c.err == nil {
 				assert.Nil(t, err)
 			} else {
@@ -186,38 +169,27 @@ func TestService_Read(t *testing.T) {
 	//
 	storMem := make(map[string]model.Subscription)
 	stor := storage.NewStorageMock(storMem)
-	excCompleteMatchersSvc := matchers.NewServiceMock()
-	excPartialMatchersSvc := matchers.NewServiceMock()
-	incCompleteMatchersSvc := matchers.NewServiceMock()
-	incPartialMatchersSvc := matchers.NewServiceMock()
-	svc := NewService(
-		stor,
-		excCompleteMatchersSvc,
-		excPartialMatchersSvc,
-		incCompleteMatchersSvc,
-		incPartialMatchersSvc,
-	)
+	kiwiTreeSvc := kiwiTree.NewServiceMock()
+	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	require.Nil(
 		t, svc.Create(
 			nil,
-			"subscription 1",
-			CreateRequest{
+			model.Subscription{
+				Name:        "subscription 1",
 				Description: "pre existing",
 				Routes: []string{
 					"route 1",
 				},
-				Includes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							MatcherData: model.MatcherData{
-								Key: "key0",
-								Pattern: model.Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Condition: model.NewKiwiTreeCondition(
+					model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(false),
+							"key0",
+						),
+						false,
+						"pattern0",
+					),
+				),
 			},
 		),
 	)
@@ -236,20 +208,16 @@ func TestService_Read(t *testing.T) {
 				Routes: []string{
 					"route 1",
 				},
-				Includes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							MatcherData: model.MatcherData{
-								Key: "key0",
-								Pattern: model.Pattern{
-									Src:  "pattern0",
-									Code: model.PatternCode{0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x30},
-								},
-							},
-						},
-					},
-				},
-				Excludes: model.MatcherGroup{},
+				Condition: model.NewKiwiTreeCondition(
+					model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(false),
+							"key0",
+						),
+						false,
+						"pattern0",
+					),
+				),
 			},
 		},
 	}
@@ -273,88 +241,81 @@ func TestService_Delete(t *testing.T) {
 	//
 	storMem := make(map[string]model.Subscription)
 	stor := storage.NewStorageMock(storMem)
-	excCompleteMatchersSvc := matchers.NewServiceMock()
-	excPartialMatchersSvc := matchers.NewServiceMock()
-	incCompleteMatchersSvc := matchers.NewServiceMock()
-	incPartialMatchersSvc := matchers.NewServiceMock()
-	svc := NewService(
-		stor,
-		excCompleteMatchersSvc,
-		excPartialMatchersSvc,
-		incCompleteMatchersSvc,
-		incPartialMatchersSvc,
-	)
+	kiwiTreeSvc := kiwiTree.NewServiceMock()
+	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	require.Nil(
 		t, svc.Create(
 			nil,
-			"subscription 1",
-			CreateRequest{
+			model.Subscription{
+				Name:        "subscription 1",
 				Description: "pre existing",
 				Routes: []string{
 					"route 1",
 				},
-				Includes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							MatcherData: model.MatcherData{
-								Key: "key0",
-								Pattern: model.Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
+				Condition: model.NewGroupCondition(
+					model.NewCondition(false),
+					model.GroupLogicAnd,
+					[]model.Condition{
+						model.NewKiwiTreeCondition(
+							model.NewKiwiCondition(
+								model.NewKeyCondition(
+									model.NewCondition(false),
+									"key0",
+								),
+								false,
+								"pattern0",
+							),
+						),
+						model.NewKiwiTreeCondition(
+							model.NewKiwiCondition(
+								model.NewKeyCondition(
+									model.NewCondition(true),
+									"key1",
+								),
+								true,
+								"pattern1",
+							),
+						),
 					},
-				},
-				Excludes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							Partial: true,
-							MatcherData: model.MatcherData{
-								Key: "key1",
-								Pattern: model.Pattern{
-									Src: "pattern1",
-								},
-							},
-						},
-					},
-				},
+				),
 			},
 		),
 	)
 	require.Nil(
 		t, svc.Create(
 			nil,
-			"subscription 2",
-			CreateRequest{
-				Description: "fails to clean up matchers",
+			model.Subscription{
+				Name:        "subscription 2",
+				Description: "fails to clean up kiwis",
 				Routes: []string{
 					"route 2",
 				},
-				Includes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							MatcherData: model.MatcherData{
-								Key: "key0",
-								Pattern: model.Pattern{
-									Src: "pattern0",
-								},
-							},
-						},
+				Condition: model.NewGroupCondition(
+					model.NewCondition(false),
+					model.GroupLogicAnd,
+					[]model.Condition{
+						model.NewKiwiTreeCondition(
+							model.NewKiwiCondition(
+								model.NewKeyCondition(
+									model.NewCondition(false),
+									"key0",
+								),
+								false,
+								"pattern0",
+							),
+						),
+						model.NewKiwiTreeCondition(
+							model.NewKiwiCondition(
+								model.NewKeyCondition(
+									model.NewCondition(true),
+									"key1",
+								),
+								true,
+								"fail",
+							),
+						),
 					},
-				},
-				Excludes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							Partial: true,
-							MatcherData: model.MatcherData{
-								Key: "key1",
-								Pattern: model.Pattern{
-									Src: "fail",
-								},
-							},
-						},
-					},
-				},
+				),
 			},
 		),
 	)
@@ -369,8 +330,8 @@ func TestService_Delete(t *testing.T) {
 		},
 		"subscription 1": {},
 		"subscription 2": {
-			err:    ErrCleanMatcher,
-			errMsg: "matchers cleanup failure, may cause matchers garbage: internal failure, subscription: {subscription 2 fails to clean up matchers [route 2] {false [{{key0 pattern0} false}]} {false [{{key1 fail} true}]}}",
+			err:    ErrCleanKiwis,
+			errMsg: "kiwis cleanup failure, may cause kiwis garbage: internal failure, subscription: {subscription 2 fails to clean up kiwis [route 2] {{false} And [{{{{false} key0} false pattern0}} {{{{true} key1} true fail}}]}}",
 		},
 	}
 	//
@@ -393,39 +354,32 @@ func TestService_ListNames(t *testing.T) {
 	//
 	storMem := make(map[string]model.Subscription)
 	stor := storage.NewStorageMock(storMem)
-	excCompleteMatchersSvc := matchers.NewServiceMock()
-	excPartialMatchersSvc := matchers.NewServiceMock()
-	incCompleteMatchersSvc := matchers.NewServiceMock()
-	incPartialMatchersSvc := matchers.NewServiceMock()
-	svc := NewService(
-		stor,
-		excCompleteMatchersSvc,
-		excPartialMatchersSvc,
-		incCompleteMatchersSvc,
-		incPartialMatchersSvc,
-	)
+	kiwiTreeSvc := kiwiTree.NewServiceMock()
+	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	//
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	//
 	for i := 0; i < 5; i++ {
-		req := CreateRequest{
+		req := model.Subscription{
+			Name:        fmt.Sprintf("sub%d", i),
 			Description: "my subscription",
 			Routes: []string{
 				"route",
 			},
-			Includes: model.MatcherGroup{
-				Matchers: []model.Matcher{
-					{
-						MatcherData: model.MatcherData{
-							Key: "ok",
-						},
-					},
-				},
-			},
+			Condition: model.NewKiwiTreeCondition(
+				model.NewKiwiCondition(
+					model.NewKeyCondition(
+						model.NewCondition(false),
+						"key0",
+					),
+					false,
+					"pattern0",
+				),
+			),
 		}
 
-		require.Nil(t, svc.Create(ctx, fmt.Sprintf("sub%d", i), req))
+		require.Nil(t, svc.Create(ctx, req))
 	}
 	//
 	cases := map[string]struct {
@@ -468,67 +422,48 @@ func TestService_Search(t *testing.T) {
 	//
 	storMem := make(map[string]model.Subscription)
 	stor := storage.NewStorageMock(storMem)
-	excCompleteMatchersSvc := matchers.NewServiceMock()
-	excPartialMatchersSvc := matchers.NewServiceMock()
-	incCompleteMatchersSvc := matchers.NewServiceMock()
-	incPartialMatchersSvc := matchers.NewServiceMock()
-	svc := NewService(
-		stor,
-		excCompleteMatchersSvc,
-		excPartialMatchersSvc,
-		incCompleteMatchersSvc,
-		incPartialMatchersSvc,
-	)
+	kiwiTreeSvc := kiwiTree.NewServiceMock()
+	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	//
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	for i := 0; i < 100; i++ {
-		inExcludes := i%2 == 1 // every 2nd: 1, 3, 5, 7, 9, ...
-		matchers := []model.Matcher{
-			{
-				Partial: i%3 == 2, // every 3rd: 2, 5, 8, ...
-				MatcherData: model.MatcherData{
-					Key: fmt.Sprintf("key%d", i%4),
-					Pattern: model.Pattern{
-						Src: fmt.Sprintf("pattern%d", i%5),
-					},
-				},
-			},
-		}
-		req := CreateRequest{
+		req := model.Subscription{
+			Name: fmt.Sprintf("sub%d", i),
 			Routes: []string{
 				"route 4",
 			},
+			Condition: model.NewKiwiTreeCondition(
+				model.NewKiwiCondition(
+					model.NewKeyCondition(
+						model.NewCondition(false),
+						fmt.Sprintf("key%d", i%4),
+					),
+					i%3 == 2,
+					fmt.Sprintf("pattern%d", i%5),
+				),
+			),
 		}
-		if inExcludes {
-			req.Excludes = model.MatcherGroup{
-				Matchers: matchers,
-			}
-		} else {
-			req.Includes = model.MatcherGroup{
-				Matchers: matchers,
-			}
-		}
-		require.Nil(t, svc.Create(ctx, fmt.Sprintf("sub%d", i), req))
+		require.Nil(t, svc.Create(ctx, req))
 	}
 	//
 	cases := map[string]struct {
-		query  Query
+		query  model.ConditionQuery
 		cursor string
 		page   []model.Subscription
 		err    error
 	}{
 		"key0/pattern0 -> 3 subs": {
-			query: Query{
+			query: model.ConditionQuery{
 				Limit: 10,
-				Matcher: model.Matcher{
-					MatcherData: model.MatcherData{
-						Key: "key0",
-						Pattern: model.Pattern{
-							Code: []byte("pattern0"),
-						},
-					},
-				},
+				Condition: model.NewKiwiCondition(
+					model.NewKeyCondition(
+						model.NewCondition(false),
+						"key0",
+					),
+					false,
+					"pattern0",
+				),
 			},
 			page: []model.Subscription{
 				{
@@ -536,72 +471,94 @@ func TestService_Search(t *testing.T) {
 					Routes: []string{
 						"route 4",
 					},
-					Includes: model.MatcherGroup{
-						Matchers: []model.Matcher{
-							{
-								MatcherData: model.MatcherData{
-									Key: "key0",
-									Pattern: model.Pattern{
-										Code: []byte("pattern0"),
-										Src:  "pattern0",
-									},
-								},
-							},
-						},
+					Condition: model.NewKiwiTreeCondition(
+						model.NewKiwiCondition(
+							model.NewKeyCondition(
+								model.NewCondition(false),
+								fmt.Sprintf("key0"),
+							),
+							false,
+							"pattern0",
+						),
+					),
+				},
+				{
+					Name: "sub20",
+					Routes: []string{
+						"route 4",
 					},
+					Condition: model.NewKiwiTreeCondition(
+						model.NewKiwiCondition(
+							model.NewKeyCondition(
+								model.NewCondition(false),
+								fmt.Sprintf("key0"),
+							),
+							true,
+							"pattern0",
+						),
+					),
 				},
 				{
 					Name: "sub40",
 					Routes: []string{
 						"route 4",
 					},
-					Includes: model.MatcherGroup{
-						Matchers: []model.Matcher{
-							{
-								MatcherData: model.MatcherData{
-									Key: "key0",
-									Pattern: model.Pattern{
-										Code: []byte("pattern0"),
-										Src:  "pattern0",
-									},
-								},
-							},
-						},
-					},
+					Condition: model.NewKiwiTreeCondition(
+						model.NewKiwiCondition(
+							model.NewKeyCondition(
+								model.NewCondition(false),
+								fmt.Sprintf("key0"),
+							),
+							false,
+							"pattern0",
+						),
+					),
 				},
 				{
 					Name: "sub60",
 					Routes: []string{
 						"route 4",
 					},
-					Includes: model.MatcherGroup{
-						Matchers: []model.Matcher{
-							{
-								MatcherData: model.MatcherData{
-									Key: "key0",
-									Pattern: model.Pattern{
-										Code: []byte("pattern0"),
-										Src:  "pattern0",
-									},
-								},
-							},
-						},
+					Condition: model.NewKiwiTreeCondition(
+						model.NewKiwiCondition(
+							model.NewKeyCondition(
+								model.NewCondition(false),
+								fmt.Sprintf("key0"),
+							),
+							false,
+							"pattern0",
+						),
+					),
+				},
+				{
+					Name: "sub80",
+					Routes: []string{
+						"route 4",
 					},
+					Condition: model.NewKiwiTreeCondition(
+						model.NewKiwiCondition(
+							model.NewKeyCondition(
+								model.NewCondition(false),
+								fmt.Sprintf("key0"),
+							),
+							true,
+							"pattern0",
+						),
+					),
 				},
 			},
 		},
 		"key1/pattern1, limit=2": {
-			query: Query{
-				Limit:      2,
-				InExcludes: true,
-				Matcher: model.Matcher{
-					MatcherData: model.MatcherData{
-						Key: "key1",
-						Pattern: model.Pattern{
-							Code: []byte("pattern1"),
-						},
-					},
-				},
+			query: model.ConditionQuery{
+				Limit: 2,
+				Condition: model.NewKiwiCondition(
+					model.NewKeyCondition(
+						model.NewCondition(false),
+						"key1",
+					),
+					false,
+					"pattern1",
+				),
 			},
 			page: []model.Subscription{
 				{
@@ -609,95 +566,126 @@ func TestService_Search(t *testing.T) {
 					Routes: []string{
 						"route 4",
 					},
-					Excludes: model.MatcherGroup{
-						Matchers: []model.Matcher{
-							{
-								MatcherData: model.MatcherData{
-									Key: "key1",
-									Pattern: model.Pattern{
-										Code: []byte("pattern1"),
-										Src:  "pattern1",
-									},
-								},
-							},
-						},
-					},
+					Condition: model.NewKiwiTreeCondition(
+						model.NewKiwiCondition(
+							model.NewKeyCondition(
+								model.NewCondition(false),
+								fmt.Sprintf("key1"),
+							),
+							false,
+							"pattern1",
+						),
+					),
 				},
 				{
 					Name: "sub21",
 					Routes: []string{
 						"route 4",
 					},
-					Excludes: model.MatcherGroup{
-						Matchers: []model.Matcher{
-							{
-								MatcherData: model.MatcherData{
-									Key: "key1",
-									Pattern: model.Pattern{
-										Code: []byte("pattern1"),
-										Src:  "pattern1",
-									},
-								},
-							},
-						},
-					},
+					Condition: model.NewKiwiTreeCondition(
+						model.NewKiwiCondition(
+							model.NewKeyCondition(
+								model.NewCondition(false),
+								fmt.Sprintf("key1"),
+							),
+							false,
+							"pattern1",
+						),
+					),
 				},
 			},
 		},
 		"key1/pattern1, cursor=sub21": {
-			query: Query{
-				Limit:      3,
-				InExcludes: true,
-				Matcher: model.Matcher{
-					MatcherData: model.MatcherData{
-						Key: "key1",
-						Pattern: model.Pattern{
-							Code: []byte("pattern1"),
-						},
-					},
-				},
+			query: model.ConditionQuery{
+				Limit: 3,
+				Condition: model.NewKiwiCondition(
+					model.NewKeyCondition(
+						model.NewCondition(false),
+						"key1",
+					),
+					false,
+					"pattern1",
+				),
 			},
 			cursor: "sub21",
 			page: []model.Subscription{
+				{
+					Name: "sub41",
+					Routes: []string{
+						"route 4",
+					},
+					Condition: model.NewKiwiTreeCondition(
+						model.NewKiwiCondition(
+							model.NewKeyCondition(
+								model.NewCondition(false),
+								fmt.Sprintf("key1"),
+							),
+							true,
+							"pattern1",
+						),
+					),
+				},
 				{
 					Name: "sub61",
 					Routes: []string{
 						"route 4",
 					},
-					Excludes: model.MatcherGroup{
-						Matchers: []model.Matcher{
-							{
-								MatcherData: model.MatcherData{
-									Key: "key1",
-									Pattern: model.Pattern{
-										Code: []byte("pattern1"),
-										Src:  "pattern1",
-									},
-								},
-							},
-						},
-					},
+					Condition: model.NewKiwiTreeCondition(
+						model.NewKiwiCondition(
+							model.NewKeyCondition(
+								model.NewCondition(false),
+								fmt.Sprintf("key1"),
+							),
+							false,
+							"pattern1",
+						),
+					),
 				},
 				{
 					Name: "sub81",
 					Routes: []string{
 						"route 4",
 					},
-					Excludes: model.MatcherGroup{
-						Matchers: []model.Matcher{
-							{
-								MatcherData: model.MatcherData{
-									Key: "key1",
-									Pattern: model.Pattern{
-										Code: []byte("pattern1"),
-										Src:  "pattern1",
-									},
-								},
-							},
-						},
-					},
+					Condition: model.NewKiwiTreeCondition(
+						model.NewKiwiCondition(
+							model.NewKeyCondition(
+								model.NewCondition(false),
+								fmt.Sprintf("key1"),
+							),
+							false,
+							"pattern1",
+						),
+					),
 				},
 			},
+		},
+		"fail on group condition query": {
+			query: model.ConditionQuery{
+				Limit: 3,
+				Condition: model.NewGroupCondition(
+					model.NewCondition(false),
+					model.GroupLogicAnd,
+					[]model.Condition{},
+				),
+			},
+			err: ErrInvalidQuery,
+		},
+		"fail on base condition query": {
+			query: model.ConditionQuery{
+				Limit:     3,
+				Condition: model.NewCondition(false),
+			},
+			err: ErrInvalidQuery,
+		},
+		"fail on key condition query": {
+			query: model.ConditionQuery{
+				Limit: 3,
+				Condition: model.NewKeyCondition(
+					model.NewCondition(false),
+					"key0",
+				),
+			},
+			err: ErrInvalidQuery,
 		},
 	}
 	//
@@ -705,7 +693,7 @@ func TestService_Search(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			page, err := svc.Search(ctx, c.query, c.cursor)
+			page, err := svc.SearchByCondition(ctx, c.query, c.cursor)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, len(c.page), len(page))

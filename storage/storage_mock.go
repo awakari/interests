@@ -1,11 +1,10 @@
 package storage
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/util"
+	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/util"
 	"golang.org/x/exp/slices"
 )
 
@@ -72,21 +71,12 @@ func (s storageMock) ListNames(ctx context.Context, limit uint32, cursor string)
 	return
 }
 
-func (s storageMock) Search(ctx context.Context, q Query, cursor string) (page []model.Subscription, err error) {
-	var mg model.MatcherGroup
+func (s storageMock) SearchByKiwi(ctx context.Context, q KiwiQuery, cursor string) (page []model.Subscription, err error) {
 	sortedNames := util.SortedKeys(s.storage)
 	for _, subName := range sortedNames {
 		sub := s.storage[subName]
-		if q.InExcludes {
-			mg = sub.Excludes
-		} else {
-			mg = sub.Includes
-		}
-		for _, m := range mg.Matchers {
-			if matchersEqual(m, q.Matcher) && sub.Name > cursor {
-				page = append(page, sub)
-				break
-			}
+		if containsKiwi(sub.Condition, q.Key, q.Pattern) && sub.Name > cursor {
+			page = append(page, sub)
 		}
 		if uint32(len(page)) == q.Limit {
 			break
@@ -95,7 +85,17 @@ func (s storageMock) Search(ctx context.Context, q Query, cursor string) (page [
 	return
 }
 
-// do not replace it with Matcher.Equal because Pattern.Source is missing in the matchers response
-func matchersEqual(m1, m2 model.Matcher) bool {
-	return m1.Partial == m2.Partial && m1.Key == m2.Key && bytes.Equal(m1.Pattern.Code, m2.Pattern.Code)
+func containsKiwi(c model.Condition, k, p string) (contains bool) {
+	switch cond := c.(type) {
+	case model.GroupCondition:
+		for _, childCond := range cond.GetGroup() {
+			contains = containsKiwi(childCond, k, p)
+			if contains {
+				break
+			}
+		}
+	case model.KiwiCondition:
+		contains = cond.GetKey() == k && cond.GetPattern() == p
+	}
+	return
 }

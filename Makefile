@@ -26,15 +26,18 @@ build: proto
 	chmod ugo+x ${BINARY_FILE_NAME}
 
 docker:
-	docker build -t meandros-messaging/subscriptions .
+	docker build -t awakari/subscriptions .
 
 run: docker
 	docker run \
 		-d \
-		--name meandros-subscriptions \
+		--name awakari-subscriptions \
 		-p 8080:8080 \
 		--expose 8080 \
-		meandros-messaging/subscriptions
+		awakari/subscriptions
+
+staging: docker
+	./scripts/staging.sh
 
 release: docker
 	./scripts/release.sh

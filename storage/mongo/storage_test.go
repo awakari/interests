@@ -3,9 +3,9 @@ package mongo
 import (
 	"context"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/config"
-	"github.com/meandros-messaging/subscriptions/model"
-	"github.com/meandros-messaging/subscriptions/storage"
+	"github.com/awakari/subscriptions/config"
+	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/rand"
@@ -23,7 +23,7 @@ func TestNewStorage(t *testing.T) {
 	collName := fmt.Sprintf("subscriptions-test-%d", rand.Uint32())
 	dbCfg := config.Db{
 		Uri:  dbUri,
-		Name: "subscriptions-dev",
+		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -45,7 +45,7 @@ func TestStorageImpl_Create(t *testing.T) {
 	collName := fmt.Sprintf("subscriptions-test-%d", rand.Uint32())
 	dbCfg := config.Db{
 		Uri:  dbUri,
-		Name: "subscriptions-dev",
+		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -60,21 +60,14 @@ func TestStorageImpl_Create(t *testing.T) {
 		Routes: []string{
 			"test route 0",
 		},
-		Includes: model.MatcherGroup{
-			All: true,
-			Matchers: []model.Matcher{
-				{
-					Partial: true,
-					MatcherData: model.MatcherData{
-						Key: "key0",
-						Pattern: model.Pattern{
-							Code: []byte("pattern0"),
-							Src:  "pattern0",
-						},
-					},
-				},
-			},
-		},
+		Condition: model.NewKiwiCondition(
+			model.NewKeyCondition(
+				model.NewCondition(false),
+				"key0",
+			),
+			true,
+			"pattern0",
+		),
 	})
 	assert.Nil(t, err)
 	//
@@ -89,29 +82,32 @@ func TestStorageImpl_Create(t *testing.T) {
 				Routes: []string{
 					"test route 0",
 				},
-				Excludes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							Partial: true,
-							MatcherData: model.MatcherData{
-								Key: "key0",
-								Pattern: model.Pattern{
-									Code: []byte("pattern0"),
-									Src:  "pattern0",
-								},
-							},
-						},
-						{
-							MatcherData: model.MatcherData{
-								Key: "key1",
-								Pattern: model.Pattern{
-									Code: []byte("pattern1"),
-									Src:  "pattern1",
-								},
-							},
-						},
+				Condition: model.NewGroupCondition(
+					model.NewCondition(false),
+					model.GroupLogicOr,
+					[]model.Condition{
+						model.NewKiwiTreeCondition(
+							model.NewKiwiCondition(
+								model.NewKeyCondition(
+									model.NewCondition(true),
+									"key0",
+								),
+								true,
+								"pattern0",
+							),
+						),
+						model.NewKiwiTreeCondition(
+							model.NewKiwiCondition(
+								model.NewKeyCondition(
+									model.NewCondition(false),
+									"key1",
+								),
+								false,
+								"pattern1",
+							),
+						),
 					},
-				},
+				),
 			},
 		},
 		"duplicate name failure": {
@@ -121,48 +117,43 @@ func TestStorageImpl_Create(t *testing.T) {
 				Routes: []string{
 					"test route 0",
 				},
-				Excludes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							MatcherData: model.MatcherData{
-								Key: "key0",
-								Pattern: model.Pattern{
-									Code: []byte("pattern0"),
-									Src:  "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Condition: model.NewKiwiCondition(
+					model.NewKeyCondition(
+						model.NewCondition(false),
+						"key0",
+					),
+					false,
+					"pattern0",
+				),
 			},
 			err: storage.ErrConflict,
 		},
-		"unique index allows duplicate matcher in group :(": {
+		"index allows duplicate kiwi in the subscription": {
 			sub: model.Subscription{
 				Name:        "sub2",
 				Description: "test subscription 2",
-				Includes: model.MatcherGroup{
-					Matchers: []model.Matcher{
-						{
-							MatcherData: model.MatcherData{
-								Key: "key0",
-								Pattern: model.Pattern{
-									Code: []byte("pattern0"),
-									Src:  "pattern0",
-								},
-							},
-						},
-						{
-							MatcherData: model.MatcherData{
-								Key: "key0",
-								Pattern: model.Pattern{
-									Code: []byte("pattern0"),
-									Src:  "pattern0",
-								},
-							},
-						},
+				Condition: model.NewGroupCondition(
+					model.NewCondition(false),
+					model.GroupLogicAnd,
+					[]model.Condition{
+						model.NewKiwiCondition(
+							model.NewKeyCondition(
+								model.NewCondition(false),
+								"key0",
+							),
+							false,
+							"pattern0",
+						),
+						model.NewKiwiCondition(
+							model.NewKeyCondition(
+								model.NewCondition(false),
+								"key0",
+							),
+							false,
+							"pattern0",
+						),
 					},
-				},
+				),
 			},
 		},
 	}
@@ -199,21 +190,14 @@ func TestStorageImpl_Read(t *testing.T) {
 		Routes: []string{
 			"test route 0",
 		},
-		Includes: model.MatcherGroup{
-			All: true,
-			Matchers: []model.Matcher{
-				{
-					Partial: true,
-					MatcherData: model.MatcherData{
-						Key: "key0",
-						Pattern: model.Pattern{
-							Code: []byte("pattern0"),
-							Src:  "pattern0",
-						},
-					},
-				},
-			},
-		},
+		Condition: model.NewKiwiCondition(
+			model.NewKeyCondition(
+				model.NewCondition(false),
+				"key0",
+			),
+			true,
+			"pattern0",
+		),
 	})
 	require.Nil(t, err)
 	//
@@ -230,21 +214,14 @@ func TestStorageImpl_Read(t *testing.T) {
 				Routes: []string{
 					"test route 0",
 				},
-				Includes: model.MatcherGroup{
-					All: true,
-					Matchers: []model.Matcher{
-						{
-							Partial: true,
-							MatcherData: model.MatcherData{
-								Key: "key0",
-								Pattern: model.Pattern{
-									Code: []byte("pattern0"),
-									Src:  "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Condition: model.NewKiwiCondition(
+					model.NewKeyCondition(
+						model.NewCondition(false),
+						"key0",
+					),
+					true,
+					"pattern0",
+				),
 			},
 		},
 		"not found": {
@@ -286,21 +263,14 @@ func TestStorageImpl_Delete(t *testing.T) {
 		Routes: []string{
 			"test route 0",
 		},
-		Includes: model.MatcherGroup{
-			All: true,
-			Matchers: []model.Matcher{
-				{
-					Partial: true,
-					MatcherData: model.MatcherData{
-						Key: "key0",
-						Pattern: model.Pattern{
-							Code: []byte("pattern0"),
-							Src:  "pattern0",
-						},
-					},
-				},
-			},
-		},
+		Condition: model.NewKiwiCondition(
+			model.NewKeyCondition(
+				model.NewCondition(false),
+				"key0",
+			),
+			true,
+			"pattern0",
+		),
 	})
 	require.Nil(t, err)
 	//
@@ -317,21 +287,14 @@ func TestStorageImpl_Delete(t *testing.T) {
 				Routes: []string{
 					"test route 0",
 				},
-				Includes: model.MatcherGroup{
-					All: true,
-					Matchers: []model.Matcher{
-						{
-							Partial: true,
-							MatcherData: model.MatcherData{
-								Key: "key0",
-								Pattern: model.Pattern{
-									Code: []byte("pattern0"),
-									Src:  "pattern0",
-								},
-							},
-						},
-					},
-				},
+				Condition: model.NewKiwiCondition(
+					model.NewKeyCondition(
+						model.NewCondition(false),
+						"key0",
+					),
+					true,
+					"pattern0",
+				),
 			},
 		},
 		"not found": {
@@ -354,7 +317,6 @@ func TestStorageImpl_Delete(t *testing.T) {
 }
 
 func TestStorageImpl_ListNames(t *testing.T) {
-	//
 	collName := fmt.Sprintf("subscriptions-test-%d", rand.Uint32())
 	dbCfg := config.Db{
 		Uri:  dbUri,
@@ -373,19 +335,14 @@ func TestStorageImpl_ListNames(t *testing.T) {
 			Routes: []string{
 				"test route 0",
 			},
-			Includes: model.MatcherGroup{
-				Matchers: []model.Matcher{
-					{
-						MatcherData: model.MatcherData{
-							Key: "key0",
-							Pattern: model.Pattern{
-								Code: []byte("pattern0"),
-								Src:  "pattern0",
-							},
-						},
-					},
-				},
-			},
+			Condition: model.NewKiwiCondition(
+				model.NewKeyCondition(
+					model.NewCondition(false),
+					"key0",
+				),
+				false,
+				"pattern0",
+			),
 		})
 		require.Nil(t, err)
 	}
@@ -477,133 +434,90 @@ func TestStorageImpl_Search(t *testing.T) {
 	defer clear(ctx, t, s.(storageImpl))
 	//
 	for i := 0; i < 10; i++ {
-		mg := model.MatcherGroup{
-			Matchers: []model.Matcher{
-				{
-					Partial: i%2 == 0,
-					MatcherData: model.MatcherData{
-						Key: fmt.Sprintf("key%d", i%3),
-						Pattern: model.Pattern{
-							Code: []byte(fmt.Sprintf("pattern%d", i%3)),
-							Src:  fmt.Sprintf("pattern%d", i%3),
-						},
-					},
-				},
-			},
-		}
 		sub := model.Subscription{
 			Name:        fmt.Sprintf("sub%d", i),
 			Description: fmt.Sprintf("test subscription %d", i),
 			Routes: []string{
 				fmt.Sprintf("test route %d", i),
 			},
-		}
-		if i%4 == 0 {
-			sub.Excludes = mg
-		} else {
-			sub.Includes = mg
+			Condition: model.NewKiwiCondition(
+				model.NewKeyCondition(
+					model.NewCondition(i%4 == 0),
+					fmt.Sprintf("key%d", i%3),
+				),
+				i%2 == 0,
+				fmt.Sprintf("pattern%d", i%3),
+			),
 		}
 		err = s.Create(ctx, sub)
 		require.Nil(t, err)
 	}
 	//
 	cases := map[string]struct {
-		q      storage.Query
+		q      storage.KiwiQuery
 		cursor string
 		page   []model.Subscription
 		err    error
 	}{
 		"1": {
-			q: storage.Query{
-				InExcludes: true,
-				Matcher: model.Matcher{
-					Partial: true,
-					MatcherData: model.MatcherData{
-						Key: "key0",
-						Pattern: model.Pattern{
-							Code: []byte("pattern0"),
-							Src:  "pattern0",
-						},
-					},
-				},
+			q: storage.KiwiQuery{
+				Limit:   100,
+				Key:     "key1",
+				Pattern: "pattern1",
+				Partial: true,
 			},
 			page: []model.Subscription{
 				{
-					Name:        "sub0",
-					Description: "test subscription 0",
+					Name: "sub4",
 					Routes: []string{
-						"test route 0",
+						"test route 4",
 					},
-					Excludes: model.MatcherGroup{
-						Matchers: []model.Matcher{
-							{
-								Partial: true,
-								MatcherData: model.MatcherData{
-									Key: "key0",
-									Pattern: model.Pattern{
-										Code: []byte("pattern0"),
-										Src:  "pattern0",
-									},
-								},
-							},
-						},
-					},
+					Condition: model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(true),
+							fmt.Sprintf("key1"),
+						),
+						true,
+						fmt.Sprintf("pattern1"),
+					),
 				},
 			},
 		},
 		"2": {
-			q: storage.Query{
-				Matcher: model.Matcher{
-					Partial: false,
-					MatcherData: model.MatcherData{
-						Key: "key0",
-						Pattern: model.Pattern{
-							Code: []byte("pattern0"),
-							Src:  "pattern0",
-						},
-					},
-				},
+			q: storage.KiwiQuery{
+				Limit:   100,
+				Key:     "key0",
+				Pattern: "pattern0",
+				Partial: false,
 			},
 			page: []model.Subscription{
 				{
-					Name:        "sub3",
-					Description: "test subscription 3",
+					Name: "sub3",
 					Routes: []string{
 						"test route 3",
 					},
-					Includes: model.MatcherGroup{
-						Matchers: []model.Matcher{
-							{
-								MatcherData: model.MatcherData{
-									Key: "key0",
-									Pattern: model.Pattern{
-										Code: []byte("pattern0"),
-										Src:  "pattern0",
-									},
-								},
-							},
-						},
-					},
+					Condition: model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(false),
+							fmt.Sprintf("key0"),
+						),
+						false,
+						fmt.Sprintf("pattern0"),
+					),
 				},
 				{
-					Name:        "sub9",
-					Description: "test subscription 9",
+					Name: "sub9",
 					Routes: []string{
 						"test route 9",
 					},
-					Includes: model.MatcherGroup{
-						Matchers: []model.Matcher{
-							{
-								MatcherData: model.MatcherData{
-									Key: "key0",
-									Pattern: model.Pattern{
-										Code: []byte("pattern0"),
-										Src:  "pattern0",
-									},
-								},
-							},
-						},
-					},
+					Condition: model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewCondition(false),
+							fmt.Sprintf("key0"),
+						),
+						false,
+						fmt.Sprintf("pattern0"),
+					),
 				},
 			},
 		},
@@ -611,7 +525,7 @@ func TestStorageImpl_Search(t *testing.T) {
 	//
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			p, err := s.Search(ctx, c.q, c.cursor)
+			p, err := s.SearchByKiwi(ctx, c.q, c.cursor)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, len(c.page), len(p))

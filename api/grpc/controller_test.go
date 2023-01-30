@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"github.com/meandros-messaging/subscriptions/service"
+	"github.com/awakari/subscriptions/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slog"
@@ -45,47 +45,124 @@ func TestServiceController_Create(t *testing.T) {
 	client := NewServiceClient(conn)
 	//
 	cases := map[string]struct {
-		excludes *MatcherGroup
-		includes *MatcherGroup
-		err      error
+		cond *InputCondition
+		err  error
 	}{
-		"ok1": {},
-		"ok2": {
-			excludes: &MatcherGroup{
-				Matchers: []*Matcher{
-					{
-						Partial: true,
-						Key:     "key0",
-						Pattern: &Pattern{
-							Code: []byte("pattern0"),
-							Src:  "pattern0",
+		"ok1": {
+			cond: &InputCondition{
+				Condition: &InputCondition_KiwiTreeCondition{
+					KiwiTreeCondition: &KiwiTreeCondition{
+						Base: &KiwiCondition{
+							Base: &KeyCondition{
+								Base: &ConditionBase{},
+							},
 						},
 					},
 				},
 			},
-			includes: &MatcherGroup{
-				All: true,
-				Matchers: []*Matcher{
-					{
-						Key: "key0",
-						Pattern: &Pattern{
-							Code: []byte("pattern0"),
-							Src:  "pattern0",
+		},
+		"ok2": {
+			cond: &InputCondition{
+				Condition: &InputCondition_GroupCondition{
+					GroupCondition: &GroupInputCondition{
+						Base: &GroupConditionBase{
+							Base: &ConditionBase{
+								Not: false,
+							},
+							Logic: GroupLogic_And,
+						},
+						Group: []*InputCondition{
+							{
+								Condition: &InputCondition_KiwiTreeCondition{
+									KiwiTreeCondition: &KiwiTreeCondition{
+										Base: &KiwiCondition{
+											Base: &KeyCondition{
+												Base: &ConditionBase{
+													Not: true,
+												},
+												Key: "key0",
+											},
+											Pattern: "pattern0",
+											Partial: true,
+										},
+									},
+								},
+							},
+							{
+								Condition: &InputCondition_KiwiTreeCondition{
+									KiwiTreeCondition: &KiwiTreeCondition{
+										Base: &KiwiCondition{
+											Base: &KeyCondition{
+												Base: &ConditionBase{
+													Not: false,
+												},
+												Key: "key1",
+											},
+											Pattern: "pattern1",
+											Partial: false,
+										},
+									},
+								},
+							},
 						},
 					},
 				},
 			},
 		},
 		"fail": {
+			cond: &InputCondition{
+				Condition: &InputCondition_KiwiTreeCondition{
+					KiwiTreeCondition: &KiwiTreeCondition{
+						Base: &KiwiCondition{
+							Base: &KeyCondition{
+								Base: &ConditionBase{},
+							},
+						},
+					},
+				},
+			},
 			err: status.Error(codes.Internal, "internal failure"),
 		},
 		"invalid": {
+			cond: &InputCondition{
+				Condition: &InputCondition_KiwiTreeCondition{
+					KiwiTreeCondition: &KiwiTreeCondition{
+						Base: &KiwiCondition{
+							Base: &KeyCondition{
+								Base: &ConditionBase{},
+							},
+						},
+					},
+				},
+			},
 			err: status.Error(codes.InvalidArgument, "invalid subscription"),
 		},
 		"conflict": {
+			cond: &InputCondition{
+				Condition: &InputCondition_KiwiTreeCondition{
+					KiwiTreeCondition: &KiwiTreeCondition{
+						Base: &KiwiCondition{
+							Base: &KeyCondition{
+								Base: &ConditionBase{},
+							},
+						},
+					},
+				},
+			},
 			err: status.Error(codes.AlreadyExists, "subscription already exists"),
 		},
 		"busy": {
+			cond: &InputCondition{
+				Condition: &InputCondition_KiwiTreeCondition{
+					KiwiTreeCondition: &KiwiTreeCondition{
+						Base: &KiwiCondition{
+							Base: &KeyCondition{
+								Base: &ConditionBase{},
+							},
+						},
+					},
+				},
+			},
 			err: status.Error(codes.Unavailable, "retry the operation"),
 		},
 	}
@@ -100,8 +177,7 @@ func TestServiceController_Create(t *testing.T) {
 				Routes: []string{
 					"destination",
 				},
-				Excludes: c.excludes,
-				Includes: c.includes,
+				Condition: c.cond,
 			})
 			if c.err == nil {
 				assert.Nil(t, err)
@@ -130,26 +206,44 @@ func TestServiceController_Read(t *testing.T) {
 				Routes: []string{
 					"destination",
 				},
-				Includes: &MatcherGroup{
-					All: true,
-					Matchers: []*Matcher{
-						{
-							Partial: true,
-							Key:     "key0",
-							Pattern: &Pattern{
-								Code: []byte("pattern0"),
-								Src:  "pattern0",
+				Condition: &OutputCondition{
+					Condition: &OutputCondition_GroupCondition{
+						GroupCondition: &GroupOutputCondition{
+							Base: &GroupConditionBase{
+								Base: &ConditionBase{
+									Not: false,
+								},
+								Logic: GroupLogic_And,
 							},
-						},
-					},
-				},
-				Excludes: &MatcherGroup{
-					Matchers: []*Matcher{
-						{
-							Key: "key1",
-							Pattern: &Pattern{
-								Code: []byte("pattern1"),
-								Src:  "pattern1",
+							Group: []*OutputCondition{
+								{
+									Condition: &OutputCondition_KiwiCondition{
+										KiwiCondition: &KiwiCondition{
+											Base: &KeyCondition{
+												Base: &ConditionBase{
+													Not: false,
+												},
+												Key: "key0",
+											},
+											Pattern: "pattern0",
+											Partial: true,
+										},
+									},
+								},
+								{
+									Condition: &OutputCondition_KiwiCondition{
+										KiwiCondition: &KiwiCondition{
+											Base: &KeyCondition{
+												Base: &ConditionBase{
+													Not: true,
+												},
+												Key: "key1",
+											},
+											Pattern: "pattern1",
+											Partial: false,
+										},
+									},
+								},
 							},
 						},
 					},
@@ -173,16 +267,18 @@ func TestServiceController_Read(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, c.sub.Name, sub.Name)
 				assert.Equal(t, c.sub.Description, sub.Description)
-				assert.Equal(t, c.sub.Excludes.All, sub.Excludes.All)
-				assert.Equal(t, c.sub.Excludes.Matchers[0].Key, sub.Excludes.Matchers[0].Key)
-				assert.Equal(t, c.sub.Excludes.Matchers[0].Partial, sub.Excludes.Matchers[0].Partial)
-				assert.Equal(t, c.sub.Excludes.Matchers[0].Pattern.Code, sub.Excludes.Matchers[0].Pattern.Code)
-				assert.Equal(t, c.sub.Excludes.Matchers[0].Pattern.Src, sub.Excludes.Matchers[0].Pattern.Src)
-				assert.Equal(t, c.sub.Includes.All, sub.Includes.All)
-				assert.Equal(t, c.sub.Includes.Matchers[0].Key, sub.Includes.Matchers[0].Key)
-				assert.Equal(t, c.sub.Includes.Matchers[0].Partial, sub.Includes.Matchers[0].Partial)
-				assert.Equal(t, c.sub.Includes.Matchers[0].Pattern.Code, sub.Includes.Matchers[0].Pattern.Code)
-				assert.Equal(t, c.sub.Includes.Matchers[0].Pattern.Src, sub.Includes.Matchers[0].Pattern.Src)
+				assert.Equal(t, c.sub.Routes, sub.Routes)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().Base.Base.Not, sub.Condition.GetGroupCondition().Base.Base.Not)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().Base.Logic, sub.Condition.GetGroupCondition().Base.Logic)
+				assert.Equal(t, len(c.sub.Condition.GetGroupCondition().GetGroup()), len(sub.Condition.GetGroupCondition().GetGroup()))
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Base.Base.Not, sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Base.Base.Not)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Base.Key, sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Base.Key)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Pattern, sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Pattern)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Partial, sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Partial)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Base.Base.Not, sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Base.Base.Not)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Base.Key, sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Base.Key)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Pattern, sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Pattern)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Partial, sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Partial)
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}
@@ -270,14 +366,22 @@ func TestServiceController_Search(t *testing.T) {
 	client := NewServiceClient(conn)
 	//
 	cases := map[string]struct {
-		err   error
-		count int
+		condition isSearchByConditionRequest_Condition
+		err       error
+		count     int
 	}{
 		"": {
+			condition: &SearchByConditionRequest_KiwiCondition{
+				KiwiCondition: &KiwiCondition{
+					Base: &KeyCondition{
+						Base: &ConditionBase{},
+					},
+				},
+			},
 			count: 2,
 		},
 		"fail": {
-			err: status.Error(codes.Internal, "internal failure"),
+			err: status.Error(codes.InvalidArgument, "unsupported condition type"),
 		},
 	}
 	//
@@ -285,7 +389,13 @@ func TestServiceController_Search(t *testing.T) {
 	defer cancel()
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			resp, err := client.Search(ctx, &SearchRequest{Cursor: k})
+			resp, err := client.SearchByCondition(
+				ctx,
+				&SearchByConditionRequest{
+					Condition: c.condition,
+					Cursor:    k,
+				},
+			)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.count, len(resp.Page))

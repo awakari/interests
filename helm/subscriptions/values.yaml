@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/meandros-messaging/subscriptions
+  repository: ghcr.io/awakari/subscriptions
   pullPolicy: IfNotPresent
   tag: "latest"
 
@@ -46,7 +46,7 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: meandros.local
+    - host: subscriptions.local
       paths:
         - path: /
           pathType: ImplementationSpecific
@@ -89,16 +89,13 @@ db:
   table:
     # Database table name to use.
     name: subscriptions
-# Matchers
+# Dependency services
 api:
   uri:
-    matchers:
-      excludes:
-        complete: "matchers-excludes-complete:8080"
-        partial: "matchers-excludes-partial:8080"
-      includes:
-        complete: "matchers-includes-complete:8080"
-        partial: "matchers-includes-partial:8080"
+    kiwi:
+      tree:
+        complete: "kiwi-tree-complete:8080"
+        partial: "kiwi-tree-partial:8080"
 log:
   # https://pkg.go.dev/golang.org/x/exp/slog#Level
   level: -4
