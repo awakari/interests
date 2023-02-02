@@ -43,15 +43,6 @@ func TestMetadataPatternRule_Equal(t *testing.T) {
 		"different base condition": {
 			in: NewKiwiCondition(NewKeyCondition(NewCondition(true), "key1"), true, p1),
 		},
-		"different key": {
-			in: NewKiwiCondition(NewKeyCondition(r1, "key2"), true, p1),
-		},
-		"different partial flag": {
-			in: NewKiwiCondition(mdr1, false, p1),
-		},
-		"different pattern": {
-			in: NewKiwiCondition(mdr1, true, "pattern2"),
-		},
 	}
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {

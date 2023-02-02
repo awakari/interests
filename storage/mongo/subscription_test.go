@@ -16,13 +16,17 @@ func Test_decodeSubscription(t *testing.T) {
 	}{
 		"ok": {
 			in: subscription{
-				Name: "sub0",
+				Id: "sub0",
+				Metadata: map[string]string{
+					"description": "description0",
+				},
 				Routes: []string{
 					"route0",
 					"route1",
 				},
 				RawCondition: bson.M{
 					conditionAttrBase: bson.M{
+						conditionAttrId:  "cond0",
 						conditionAttrNot: false,
 					},
 					kiwiConditionAttrPartial: true,
@@ -31,25 +35,32 @@ func Test_decodeSubscription(t *testing.T) {
 				},
 			},
 			out: model.Subscription{
-				Name:        "sub0",
-				Description: "",
-				Routes: []string{
-					"route0",
-					"route1",
-				},
-				Condition: model.NewKiwiCondition(
-					model.NewKeyCondition(
-						model.NewCondition(false),
-						"key0",
+				Id: "sub0",
+				Data: model.SubscriptionData{
+					Metadata: map[string]string{
+						"description": "description0",
+					},
+					Routes: []string{
+						"route0",
+						"route1",
+					},
+					Condition: model.NewKiwiCondition(
+						model.NewKeyCondition(
+							model.NewConditionWithId(false, "cond0"),
+							"key0",
+						),
+						true,
+						"pattern0",
 					),
-					true,
-					"pattern0",
-				),
+				},
 			},
 		},
 		"fail": {
 			in: subscription{
-				Name: "sub0",
+				Id: "sub0",
+				Metadata: map[string]string{
+					"description": "description0",
+				},
 				Routes: []string{
 					"route0",
 					"route1",

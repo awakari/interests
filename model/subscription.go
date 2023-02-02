@@ -5,35 +5,33 @@ import (
 	"fmt"
 )
 
-type (
+// Subscription represents the subscription entry.
+type Subscription struct {
 
-	// Subscription represents the subscription entry.
-	Subscription struct {
+	// Id represents the unique Subscription Id.
+	Id string
 
-		// Name represents the unique Subscription name.
-		Name string
+	// Data represents the Subscription payload data.
+	Data SubscriptionData
+}
 
-		// Description represents an optional human readable Subscription description.
-		Description string
+// SubscriptionData represents the Subscription payload data.
+type SubscriptionData struct {
 
-		// Routes represents a list of routes associated with the Subscription.
-		Routes []string
+	// Metadata represents the optional subscription attributes, e.g. human-readable description, user ownership.
+	Metadata map[string]string
 
-		// Condition represents the certain criteria to select the Subscription.
-		Condition Condition
-	}
-)
+	// Routes represents a list of routes associated with the Subscription.
+	Routes []string
 
-var (
+	// Condition represents the certain criteria to select the Subscription.
+	Condition Condition
+}
 
-	// ErrInvalidSubscription indicates the Subscription is invalid
-	ErrInvalidSubscription = errors.New("invalid subscription")
-)
+// ErrInvalidSubscription indicates the Subscription is invalid
+var ErrInvalidSubscription = errors.New("invalid subscription")
 
-func (sub Subscription) Validate() (err error) {
-	if len(sub.Name) == 0 {
-		return fmt.Errorf("%w: %s", ErrInvalidSubscription, "empty name")
-	}
+func (sub SubscriptionData) Validate() (err error) {
 	if len(sub.Routes) == 0 {
 		return fmt.Errorf("%w: %s", ErrInvalidSubscription, "empty routes")
 	}

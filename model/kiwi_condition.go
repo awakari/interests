@@ -22,20 +22,16 @@ func NewKiwiCondition(kc KeyCondition, partial bool, pattern string) KiwiConditi
 	}
 }
 
+func (kc kiwiCondition) GetId() string {
+	return kc.KeyCondition.GetId()
+}
+
 func (kc kiwiCondition) IsNot() bool {
 	return kc.KeyCondition.IsNot()
 }
 
 func (kc kiwiCondition) Equal(another Condition) (equal bool) {
-	equal = kc.KeyCondition.Equal(another)
-	if equal {
-		var anotherKc KiwiCondition
-		anotherKc, equal = another.(KiwiCondition)
-		if equal {
-			equal = kc.Partial == anotherKc.IsPartial() && kc.Pattern == anotherKc.GetPattern()
-		}
-	}
-	return
+	return kc.KeyCondition.Equal(another)
 }
 
 func (kc kiwiCondition) GetKey() string {

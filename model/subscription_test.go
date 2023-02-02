@@ -7,21 +7,11 @@ import (
 
 func TestSubscription_Validate(t *testing.T) {
 	cases := map[string]struct {
-		sub Subscription
+		sub SubscriptionData
 		err error
 	}{
-		"empty name": {
-			sub: Subscription{
-				Routes: []string{
-					"destination",
-				},
-				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(true), "key0"), false, ""),
-			},
-			err: ErrInvalidSubscription,
-		},
 		"empty condition group": {
-			sub: Subscription{
-				Name: "sub0",
+			sub: SubscriptionData{
 				Routes: []string{
 					"destination",
 				},
@@ -30,15 +20,13 @@ func TestSubscription_Validate(t *testing.T) {
 			err: ErrInvalidGroupCondition,
 		},
 		"empty routes": {
-			sub: Subscription{
-				Name:      "sub0",
+			sub: SubscriptionData{
 				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
 			},
 			err: ErrInvalidSubscription,
 		},
 		"ok": {
-			sub: Subscription{
-				Name: "sub0",
+			sub: SubscriptionData{
 				Routes: []string{
 					"destination",
 				},
@@ -46,8 +34,7 @@ func TestSubscription_Validate(t *testing.T) {
 			},
 		},
 		"negation only condition": {
-			sub: Subscription{
-				Name: "sub0",
+			sub: SubscriptionData{
 				Routes: []string{
 					"destination",
 				},
@@ -56,8 +43,7 @@ func TestSubscription_Validate(t *testing.T) {
 			err: ErrInvalidSubscription,
 		},
 		"non pattern neither group root condition": {
-			sub: Subscription{
-				Name: "sub0",
+			sub: SubscriptionData{
 				Routes: []string{
 					"destination",
 				},
@@ -66,8 +52,7 @@ func TestSubscription_Validate(t *testing.T) {
 			err: ErrInvalidSubscription,
 		},
 		"valid group root condition": {
-			sub: Subscription{
-				Name: "sub0",
+			sub: SubscriptionData{
 				Routes: []string{
 					"destination",
 				},
@@ -82,8 +67,7 @@ func TestSubscription_Validate(t *testing.T) {
 			},
 		},
 		"invalid group root condition: negation": {
-			sub: Subscription{
-				Name: "sub0",
+			sub: SubscriptionData{
 				Routes: []string{
 					"destination",
 				},
@@ -99,8 +83,7 @@ func TestSubscription_Validate(t *testing.T) {
 			err: ErrInvalidSubscription,
 		},
 		"invalid group root condition: contains negation only child rules": {
-			sub: Subscription{
-				Name: "sub0",
+			sub: SubscriptionData{
 				Routes: []string{
 					"destination",
 				},
@@ -116,8 +99,7 @@ func TestSubscription_Validate(t *testing.T) {
 			err: ErrInvalidSubscription,
 		},
 		"invalid group root condition: contains more than 2 child rules": {
-			sub: Subscription{
-				Name: "sub0",
+			sub: SubscriptionData{
 				Routes: []string{
 					"destination",
 				},

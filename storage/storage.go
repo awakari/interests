@@ -14,22 +14,22 @@ type (
 		io.Closer
 
 		// Create a subscription means subscribing.
-		Create(ctx context.Context, sub model.Subscription) (err error)
+		Create(ctx context.Context, sub model.SubscriptionData) (id string, err error)
 
-		// Read the specified subscription details.
-		Read(ctx context.Context, name string) (sub model.Subscription, err error)
+		// Read the model.SubscriptionData by the model.Subscription id.
+		Read(ctx context.Context, id string) (sub model.SubscriptionData, err error)
 
-		// Delete removes the model.Subscription specified by its unique name.
-		// Returns the model.Subscription if deleted, error otherwise.
-		Delete(ctx context.Context, name string) (sub model.Subscription, err error)
-
-		// ListNames returns all known subscription names with the pagination support that match the specified query.
-		ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error)
+		// Delete removes the model.Subscription specified by its unique id.
+		// Returns the model.SubscriptionData if deleted, error otherwise.
+		Delete(ctx context.Context, name string) (sub model.SubscriptionData, err error)
 
 		// SearchByKiwi returns subscriptions page where:<br/>
-		// * model.Subscription name is greater than the one specified by the cursor<br/>
+		// * model.Subscription id is greater than the one specified by the cursor<br/>
 		// * subscriptions match the specified model.KiwiQuery.
 		SearchByKiwi(ctx context.Context, q KiwiQuery, cursor string) (page []model.Subscription, err error)
+
+		// SearchByMetadata returns all subscriptions those have the metadata matching the query (same keys and values).
+		SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []model.Subscription, err error)
 	}
 )
 

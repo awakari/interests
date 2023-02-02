@@ -15,11 +15,14 @@ func Test_decodeGroupCondition(t *testing.T) {
 		err  error
 	}{
 		"ok": {
-			base: ConditionBase{},
+			base: ConditionBase{
+				Id: "cond0",
+			},
 			raw: bson.M{
 				"group": bson.A{
 					bson.M{
 						"base": bson.M{
+							"id":  "cond0",
 							"not": true,
 						},
 						"key":     "k0",
@@ -28,11 +31,13 @@ func Test_decodeGroupCondition(t *testing.T) {
 					},
 					bson.M{
 						"base": bson.M{
+							"id":  "cond1",
 							"not": false,
 						},
 						"group": bson.A{
 							bson.M{
 								"base": bson.M{
+									"id":  "cond2",
 									"not": false,
 								},
 								"key":     "k1",
@@ -41,6 +46,7 @@ func Test_decodeGroupCondition(t *testing.T) {
 							},
 							bson.M{
 								"base": bson.M{
+									"id":  "cond3",
 									"not": false,
 								},
 								"key":     "k2",
@@ -55,6 +61,7 @@ func Test_decodeGroupCondition(t *testing.T) {
 			},
 			out: groupCondition{
 				Base: ConditionBase{
+					Id:  "cond0",
 					Not: false,
 				},
 				Group: []Condition{
@@ -62,12 +69,14 @@ func Test_decodeGroupCondition(t *testing.T) {
 						Key:     "k0",
 						Pattern: "p0",
 						Base: ConditionBase{
+							Id:  "cond0",
 							Not: true,
 						},
 						Partial: false,
 					},
 					groupCondition{
 						Base: ConditionBase{
+							Id:  "cond1",
 							Not: false,
 						},
 						Group: []Condition{
@@ -75,6 +84,7 @@ func Test_decodeGroupCondition(t *testing.T) {
 								Key:     "k1",
 								Pattern: "p1",
 								Base: ConditionBase{
+									Id:  "cond2",
 									Not: false,
 								},
 								Partial: true,
@@ -83,6 +93,7 @@ func Test_decodeGroupCondition(t *testing.T) {
 								Key:     "k2",
 								Pattern: "p2",
 								Base: ConditionBase{
+									Id:  "cond3",
 									Not: false,
 								},
 								Partial: false,

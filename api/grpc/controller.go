@@ -22,68 +22,57 @@ func NewServiceController(svc service.Service) ServiceServer {
 	}
 }
 
-func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (resp *emptypb.Empty, err error) {
-	resp = &emptypb.Empty{}
+func (sc serviceController) Create(ctx context.Context, req *SubscriptionInputData) (resp *CreateResponse, err error) {
+	var id string
 	var cond model.Condition
 	cond, err = decodeCondition(req.Condition)
 	if err == nil {
-		sub := model.Subscription{
-			Name:        req.Name,
-			Description: req.Description,
-			Routes:      req.Routes,
-			Condition:   cond,
+		sd := model.SubscriptionData{
+			Metadata:  req.Metadata,
+			Routes:    req.Routes,
+			Condition: cond,
 		}
-		err = sc.svc.Create(ctx, sub)
+		id, err = sc.svc.Create(ctx, sd)
 		err = encodeError(err)
+	}
+	resp = &CreateResponse{
+		Id: id,
 	}
 	return
 }
 
-func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *Subscription, err error) {
-	var sub model.Subscription
-	sub, err = sc.svc.Read(ctx, req.Name)
+func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *SubscriptionOutputData, err error) {
+	var sd model.SubscriptionData
+	sd, err = sc.svc.Read(ctx, req.Id)
 	if err != nil {
 		err = encodeError(err)
 	} else {
-		resp, err = encodeSubscription(sub)
+		resp, err = encodeSubscriptionData(sd)
 	}
 	return
 }
 
 func (sc serviceController) Delete(ctx context.Context, req *DeleteRequest) (resp *emptypb.Empty, err error) {
-	err = sc.svc.Delete(ctx, req.Name)
+	err = sc.svc.Delete(ctx, req.Id)
 	return &emptypb.Empty{}, encodeError(err)
-}
-
-func (sc serviceController) ListNames(ctx context.Context, req *ListNamesRequest) (resp *ListNamesResponse, err error) {
-	var page []string
-	page, err = sc.svc.ListNames(ctx, req.Limit, req.Cursor)
-	if err != nil {
-		err = encodeError(err)
-	} else {
-		resp = &ListNamesResponse{
-			Names: page,
-		}
-	}
-	return
 }
 
 func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchByConditionRequest) (resp *SearchResponse, err error) {
 	resp = &SearchResponse{
 		Page: []*Subscription{},
 	}
-	kc := req.GetKiwiCondition()
+	kcq := req.GetKiwiConditionQuery()
 	switch {
-	case kc != nil:
+	case kcq != nil:
 		q := model.ConditionQuery{
 			Limit: req.Limit,
 			Condition: model.NewKiwiCondition(
 				model.NewKeyCondition(
-					model.NewCondition(kc.Base.Base.Not),
-					kc.Base.Key,
+					model.NewCondition(false), // not flag is not used in the search by condition
+					kcq.Key,
 				),
-				kc.Partial,
-				kc.Pattern,
+				kcq.Partial,
+				kcq.Pattern,
 			),
 		}
 		var page []model.Subscription
@@ -95,6 +84,27 @@ func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchBy
 		}
 	default:
 		err = status.Error(codes.InvalidArgument, "unsupported condition type")
+	}
+	return
+}
+
+func (sc serviceController) SearchByMetadata(ctx context.Context, req *SearchByMetadataRequest) (resp *SearchResponse, err error) {
+	resp = &SearchResponse{
+		Page: []*Subscription{},
+	}
+	q := model.MetadataQuery{
+		Limit:    req.Limit,
+		Metadata: req.Metadata,
+	}
+	var page []model.Subscription
+	var encodedSub *Subscription
+	page, err = sc.svc.SearchByMetadata(ctx, q, req.Cursor)
+	for _, sub := range page {
+		encodedSub, err = encodeSubscription(sub)
+		resp.Page = append(resp.Page, encodedSub)
+	}
+	if err != nil {
+		err = encodeError(err)
 	}
 	return
 }
@@ -113,10 +123,9 @@ func decodeCondition(src *InputCondition) (dst model.Condition, err error) {
 			group = append(group, childDst)
 		}
 		if err == nil {
-			gcBase := gc.GetBase()
 			dst = model.NewGroupCondition(
-				model.NewCondition(gcBase.GetBase().GetNot()),
-				model.GroupLogic(gcBase.GetLogic()),
+				model.NewCondition(gc.GetNot()),
+				model.GroupLogic(gc.GetLogic()),
 				group,
 			)
 		}
@@ -124,11 +133,11 @@ func decodeCondition(src *InputCondition) (dst model.Condition, err error) {
 		dst = model.NewKiwiTreeCondition(
 			model.NewKiwiCondition(
 				model.NewKeyCondition(
-					model.NewCondition(ktc.GetBase().GetBase().GetBase().GetNot()),
-					ktc.GetBase().GetBase().GetKey(),
+					model.NewCondition(ktc.GetNot()),
+					ktc.GetKey(),
 				),
-				ktc.GetBase().GetPartial(),
-				ktc.GetBase().GetPattern(),
+				ktc.GetPartial(),
+				ktc.GetPattern(),
 			),
 		)
 	default:
@@ -138,13 +147,24 @@ func decodeCondition(src *InputCondition) (dst model.Condition, err error) {
 }
 
 func encodeSubscription(src model.Subscription) (dst *Subscription, err error) {
+	var dstData *SubscriptionOutputData
+	dstData, err = encodeSubscriptionData(src.Data)
+	if err == nil {
+		dst = &Subscription{
+			Id:   src.Id,
+			Data: dstData,
+		}
+	}
+	return
+}
+
+func encodeSubscriptionData(src model.SubscriptionData) (dst *SubscriptionOutputData, err error) {
 	var dstCond *OutputCondition
 	dstCond, err = encodeCondition(src.Condition)
-	dst = &Subscription{
-		Name:        src.Name,
-		Description: src.Description,
-		Routes:      src.Routes,
-		Condition:   dstCond,
+	dst = &SubscriptionOutputData{
+		Metadata:  src.Metadata,
+		Routes:    src.Routes,
+		Condition: dstCond,
 	}
 	return
 }
@@ -165,25 +185,21 @@ func encodeCondition(src model.Condition) (dst *OutputCondition, err error) {
 		if err == nil {
 			dst.Condition = &OutputCondition_GroupCondition{
 				GroupCondition: &GroupOutputCondition{
-					Base: &GroupConditionBase{
-						Base: &ConditionBase{
-							Not: src.IsNot(),
-						},
-						Logic: GroupLogic(c.GetLogic()),
+					Base: &OutputConditionBase{
+						Not: src.IsNot(),
 					},
+					Logic: GroupLogic(c.GetLogic()),
 					Group: dstGroup,
 				},
 			}
 		}
 	case model.KiwiCondition:
 		dst.Condition = &OutputCondition_KiwiCondition{
-			KiwiCondition: &KiwiCondition{
-				Base: &KeyCondition{
-					Base: &ConditionBase{
-						Not: c.IsNot(),
-					},
-					Key: c.GetKey(),
+			KiwiCondition: &KiwiOutputCondition{
+				Base: &OutputConditionBase{
+					Not: c.IsNot(),
 				},
+				Key:     c.GetKey(),
 				Pattern: c.GetPattern(),
 				Partial: c.IsPartial(),
 			},

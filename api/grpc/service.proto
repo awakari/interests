@@ -7,42 +7,42 @@ option go_package = "./api/grpc";
 import "google/protobuf/empty.proto";
 
 service Service {
-  rpc Create(CreateRequest) returns (google.protobuf.Empty);
-  rpc Read(ReadRequest) returns (Subscription);
+  rpc Create(SubscriptionInputData) returns (CreateResponse);
+  rpc Read(ReadRequest) returns (SubscriptionOutputData);
   rpc Delete(DeleteRequest) returns (google.protobuf.Empty);
-  rpc ListNames(ListNamesRequest) returns (ListNamesResponse);
   rpc SearchByCondition(SearchByConditionRequest) returns (SearchResponse);
+  rpc SearchByMetadata(SearchByMetadataRequest) returns (SearchResponse);
 }
 
-message CreateRequest {
-  string name = 1;
-  string description = 2;
-  repeated string routes = 3;
-  InputCondition condition = 4;
+message SubscriptionInputData {
+  map<string, string> metadata = 1;
+  repeated string routes = 2;
+  InputCondition condition = 3;
+}
+
+message CreateResponse {
+  string id = 1;
 }
 
 message ReadRequest {
-  string name = 1;
+  string id = 1;
+}
+
+message SubscriptionOutputData {
+  map<string, string> metadata = 1;
+  repeated string routes = 2;
+  OutputCondition condition = 3;
 }
 
 message DeleteRequest {
-  string name = 1;
-}
-
-message ListNamesRequest {
-  string cursor = 1;
-  uint32 limit = 2;
-}
-
-message ListNamesResponse {
-  repeated string names = 1;
+  string id = 1;
 }
 
 message SearchByConditionRequest {
   string cursor = 1;
   uint32 limit = 2;
   oneof condition {
-    KiwiCondition kiwiCondition = 3;
+    KiwiConditionQuery kiwiConditionQuery = 3;
   }
 }
 
@@ -51,43 +51,39 @@ message SearchResponse {
 }
 
 message Subscription {
-  string name = 1;
-  string description = 2;
-  repeated string routes = 3;
-  OutputCondition condition = 4;
+  string id = 1;
+  SubscriptionOutputData data = 2;
 }
 
 message InputCondition {
   oneof condition {
     GroupInputCondition groupCondition = 1;
-    KiwiTreeCondition kiwiTreeCondition = 2;
+    KiwiTreeInputCondition kiwiTreeCondition = 2;
   }
 }
 
 message OutputCondition {
   oneof condition {
     GroupOutputCondition groupCondition = 1;
-    KiwiCondition kiwiCondition = 2;
+    KiwiOutputCondition kiwiCondition = 2;
   }
 }
 
-message ConditionBase {
-  bool not = 1;
-}
-
-message GroupConditionBase {
-  ConditionBase base = 1;
-  GroupLogic logic = 2;
+message OutputConditionBase {
+  string id = 1;
+  bool not = 2;
 }
 
 message GroupInputCondition {
-  GroupConditionBase base = 1;
-  repeated InputCondition group = 2;
+  bool not = 1;
+  GroupLogic logic = 2;
+  repeated InputCondition group = 3;
 }
 
 message GroupOutputCondition {
-  GroupConditionBase base = 1;
-  repeated OutputCondition group = 2;
+  OutputConditionBase base = 1;
+  GroupLogic logic = 2;
+  repeated OutputCondition group = 3;
 }
 
 enum GroupLogic {
@@ -96,18 +92,29 @@ enum GroupLogic {
   And = 2;
 }
 
-message KeyCondition {
-  ConditionBase base = 1;
-  string key = 2;
-}
-
-message KiwiCondition {
-  KeyCondition base = 1;
+message KiwiConditionQuery {
+  string key = 1;
   string pattern = 2;
   bool partial = 3;
 }
 
-// marker only type
-message KiwiTreeCondition {
-  KiwiCondition base = 1;
+// marker type
+message KiwiTreeInputCondition {
+  bool not = 1;
+  string key = 2;
+  string pattern = 3;
+  bool partial = 4;
+}
+
+message KiwiOutputCondition {
+  OutputConditionBase base = 1;
+  string key = 2;
+  string pattern = 3;
+  bool partial = 4;
+}
+
+message SearchByMetadataRequest {
+  string cursor = 1;
+  uint32 limit = 2;
+  map<string, string> metadata = 3;
 }

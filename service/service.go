@@ -13,26 +13,26 @@ import (
 // Service is a model.Subscription CRUDL service.
 type Service interface {
 
-	// Create an empty model.Subscription with the specified name and description.
+	// Create a new model.Subscription with the specified model.SubscriptionData.
 	// Returns ErrConflict if a Subscription with the same name already present in the underlying storage.
 	// Returns model.ErrInvalidSubscription if the specified CreateRequest is invalid.
-	Create(ctx context.Context, sub model.Subscription) (err error)
+	Create(ctx context.Context, sd model.SubscriptionData) (id string, err error)
 
 	// Read the specified model.Subscription.
 	// Returns ErrNotFound if Subscription is missing in the underlying storage.
-	Read(ctx context.Context, name string) (sub model.Subscription, err error)
+	Read(ctx context.Context, id string) (sd model.SubscriptionData, err error)
 
 	// Delete a model.Subscription and all associated conditions those not in use by any other model.Subscription.
 	// Returns ErrNotFound if model.Subscription with the specified name is missing in the underlying storage.
-	Delete(ctx context.Context, name string) (err error)
-
-	// ListNames returns all subscription names starting from the specified cursor.
-	ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error)
+	Delete(ctx context.Context, id string) (err error)
 
 	// SearchByCondition returns model.Subscription page where:<br/>
 	// * name is greater than the specified cursor<br/>
 	// * contains a model.Condition specified by the query.
 	SearchByCondition(ctx context.Context, q model.ConditionQuery, cursor string) (page []model.Subscription, err error)
+
+	// SearchByMetadata returns all subscriptions those have the metadata matching the query (same keys and values).
+	SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []model.Subscription, err error)
 }
 
 type service struct {
@@ -74,12 +74,12 @@ func NewService(
 	}
 }
 
-func (svc service) Create(ctx context.Context, sub model.Subscription) (err error) {
-	err = sub.Validate()
+func (svc service) Create(ctx context.Context, sd model.SubscriptionData) (id string, err error) {
+	err = sd.Validate()
 	if err == nil {
-		err = svc.createCondition(ctx, sub.Condition)
+		err = svc.createCondition(ctx, sd.Condition)
 		if err == nil {
-			err = svc.stor.Create(ctx, sub)
+			id, err = svc.stor.Create(ctx, sd)
 		}
 	}
 	err = translateError(err)
@@ -113,21 +113,21 @@ func (svc service) selectKiwiTreeService(ktc model.KiwiTreeCondition) (kiwiTreeS
 	return
 }
 
-func (svc service) Read(ctx context.Context, name string) (sub model.Subscription, err error) {
-	sub, err = svc.stor.Read(ctx, name)
+func (svc service) Read(ctx context.Context, id string) (sd model.SubscriptionData, err error) {
+	sd, err = svc.stor.Read(ctx, id)
 	if err != nil {
 		err = translateError(err)
 	}
 	return
 }
 
-func (svc service) Delete(ctx context.Context, name string) (err error) {
-	var sub model.Subscription
-	sub, err = svc.stor.Delete(ctx, name)
+func (svc service) Delete(ctx context.Context, id string) (err error) {
+	var sd model.SubscriptionData
+	sd, err = svc.stor.Delete(ctx, id)
 	if err == nil {
-		err = svc.clearUnusedCondition(ctx, sub.Condition)
+		err = svc.clearUnusedCondition(ctx, sd.Condition)
 		if err != nil {
-			err = fmt.Errorf("%w: %s, subscription: %v", ErrCleanKiwis, err, sub)
+			err = fmt.Errorf("%w: %s, subscription id: %s", ErrCleanKiwis, err, id)
 		}
 	}
 	err = translateError(err)
@@ -178,14 +178,6 @@ func (svc service) clearUnusedKiwiTreeCondition(ctx context.Context, ktc model.K
 	return
 }
 
-func (svc service) ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error) {
-	page, err = svc.stor.ListNames(ctx, limit, cursor)
-	if err != nil {
-		err = translateError(err)
-	}
-	return
-}
-
 func (svc service) SearchByCondition(ctx context.Context, q model.ConditionQuery, cursor string) (page []model.Subscription, err error) {
 	switch c := q.Condition.(type) {
 	case model.KiwiCondition:
@@ -199,6 +191,14 @@ func (svc service) SearchByCondition(ctx context.Context, q model.ConditionQuery
 	default:
 		err = fmt.Errorf("%w: unsupported condition type: %s", ErrInvalidQuery, reflect.TypeOf(c))
 	}
+	if err != nil {
+		err = translateError(err)
+	}
+	return
+}
+
+func (svc service) SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []model.Subscription, err error) {
+	page, err = svc.stor.SearchByMetadata(ctx, q, cursor)
 	if err != nil {
 		err = translateError(err)
 	}

@@ -19,8 +19,8 @@ func NewKeyCondition(c Condition, k string) KeyCondition {
 	}
 }
 
-func (kc keyCondition) GetKey() string {
-	return kc.Key
+func (kc keyCondition) GetId() string {
+	return kc.Condition.GetId()
 }
 
 func (kc keyCondition) IsNot() bool {
@@ -28,13 +28,9 @@ func (kc keyCondition) IsNot() bool {
 }
 
 func (kc keyCondition) Equal(another Condition) (equal bool) {
-	equal = kc.Condition.Equal(another)
-	if equal {
-		var anotherKc KeyCondition
-		anotherKc, equal = another.(KeyCondition)
-		if equal {
-			equal = kc.Key == anotherKc.GetKey()
-		}
-	}
-	return
+	return kc.Condition.Equal(another)
+}
+
+func (kc keyCondition) GetKey() string {
+	return kc.Key
 }

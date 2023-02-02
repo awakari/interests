@@ -51,13 +51,7 @@ func TestServiceController_Create(t *testing.T) {
 		"ok1": {
 			cond: &InputCondition{
 				Condition: &InputCondition_KiwiTreeCondition{
-					KiwiTreeCondition: &KiwiTreeCondition{
-						Base: &KiwiCondition{
-							Base: &KeyCondition{
-								Base: &ConditionBase{},
-							},
-						},
-					},
+					KiwiTreeCondition: &KiwiTreeInputCondition{},
 				},
 			},
 		},
@@ -65,42 +59,26 @@ func TestServiceController_Create(t *testing.T) {
 			cond: &InputCondition{
 				Condition: &InputCondition_GroupCondition{
 					GroupCondition: &GroupInputCondition{
-						Base: &GroupConditionBase{
-							Base: &ConditionBase{
-								Not: false,
-							},
-							Logic: GroupLogic_And,
-						},
+						Not:   false,
+						Logic: GroupLogic_And,
 						Group: []*InputCondition{
 							{
 								Condition: &InputCondition_KiwiTreeCondition{
-									KiwiTreeCondition: &KiwiTreeCondition{
-										Base: &KiwiCondition{
-											Base: &KeyCondition{
-												Base: &ConditionBase{
-													Not: true,
-												},
-												Key: "key0",
-											},
-											Pattern: "pattern0",
-											Partial: true,
-										},
+									KiwiTreeCondition: &KiwiTreeInputCondition{
+										Not:     true,
+										Key:     "key0",
+										Pattern: "pattern0",
+										Partial: true,
 									},
 								},
 							},
 							{
 								Condition: &InputCondition_KiwiTreeCondition{
-									KiwiTreeCondition: &KiwiTreeCondition{
-										Base: &KiwiCondition{
-											Base: &KeyCondition{
-												Base: &ConditionBase{
-													Not: false,
-												},
-												Key: "key1",
-											},
-											Pattern: "pattern1",
-											Partial: false,
-										},
+									KiwiTreeCondition: &KiwiTreeInputCondition{
+										Not:     false,
+										Key:     "key1",
+										Pattern: "pattern1",
+										Partial: false,
 									},
 								},
 							},
@@ -112,13 +90,7 @@ func TestServiceController_Create(t *testing.T) {
 		"fail": {
 			cond: &InputCondition{
 				Condition: &InputCondition_KiwiTreeCondition{
-					KiwiTreeCondition: &KiwiTreeCondition{
-						Base: &KiwiCondition{
-							Base: &KeyCondition{
-								Base: &ConditionBase{},
-							},
-						},
-					},
+					KiwiTreeCondition: &KiwiTreeInputCondition{},
 				},
 			},
 			err: status.Error(codes.Internal, "internal failure"),
@@ -126,13 +98,7 @@ func TestServiceController_Create(t *testing.T) {
 		"invalid": {
 			cond: &InputCondition{
 				Condition: &InputCondition_KiwiTreeCondition{
-					KiwiTreeCondition: &KiwiTreeCondition{
-						Base: &KiwiCondition{
-							Base: &KeyCondition{
-								Base: &ConditionBase{},
-							},
-						},
-					},
+					KiwiTreeCondition: &KiwiTreeInputCondition{},
 				},
 			},
 			err: status.Error(codes.InvalidArgument, "invalid subscription"),
@@ -140,13 +106,7 @@ func TestServiceController_Create(t *testing.T) {
 		"conflict": {
 			cond: &InputCondition{
 				Condition: &InputCondition_KiwiTreeCondition{
-					KiwiTreeCondition: &KiwiTreeCondition{
-						Base: &KiwiCondition{
-							Base: &KeyCondition{
-								Base: &ConditionBase{},
-							},
-						},
-					},
+					KiwiTreeCondition: &KiwiTreeInputCondition{},
 				},
 			},
 			err: status.Error(codes.AlreadyExists, "subscription already exists"),
@@ -154,13 +114,7 @@ func TestServiceController_Create(t *testing.T) {
 		"busy": {
 			cond: &InputCondition{
 				Condition: &InputCondition_KiwiTreeCondition{
-					KiwiTreeCondition: &KiwiTreeCondition{
-						Base: &KiwiCondition{
-							Base: &KeyCondition{
-								Base: &ConditionBase{},
-							},
-						},
-					},
+					KiwiTreeCondition: &KiwiTreeInputCondition{},
 				},
 			},
 			err: status.Error(codes.Unavailable, "retry the operation"),
@@ -171,9 +125,10 @@ func TestServiceController_Create(t *testing.T) {
 	defer cancel()
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			_, err = client.Create(ctx, &CreateRequest{
-				Name:        k,
-				Description: k,
+			_, err = client.Create(ctx, &SubscriptionInputData{
+				Metadata: map[string]string{
+					"description": k,
+				},
 				Routes: []string{
 					"destination",
 				},
@@ -196,35 +151,32 @@ func TestServiceController_Read(t *testing.T) {
 	client := NewServiceClient(conn)
 	//
 	cases := map[string]struct {
-		sub *Subscription
+		sub *SubscriptionOutputData
 		err error
 	}{
 		"ok": {
-			sub: &Subscription{
-				Name:        "ok",
-				Description: "description",
+			sub: &SubscriptionOutputData{
+				Metadata: map[string]string{
+					"description": "description",
+				},
 				Routes: []string{
 					"destination",
 				},
 				Condition: &OutputCondition{
 					Condition: &OutputCondition_GroupCondition{
 						GroupCondition: &GroupOutputCondition{
-							Base: &GroupConditionBase{
-								Base: &ConditionBase{
-									Not: false,
-								},
-								Logic: GroupLogic_And,
+							Base: &OutputConditionBase{
+								Not: false,
 							},
+							Logic: GroupLogic_And,
 							Group: []*OutputCondition{
 								{
 									Condition: &OutputCondition_KiwiCondition{
-										KiwiCondition: &KiwiCondition{
-											Base: &KeyCondition{
-												Base: &ConditionBase{
-													Not: false,
-												},
-												Key: "key0",
+										KiwiCondition: &KiwiOutputCondition{
+											Base: &OutputConditionBase{
+												Not: false,
 											},
+											Key:     "key0",
 											Pattern: "pattern0",
 											Partial: true,
 										},
@@ -232,13 +184,11 @@ func TestServiceController_Read(t *testing.T) {
 								},
 								{
 									Condition: &OutputCondition_KiwiCondition{
-										KiwiCondition: &KiwiCondition{
-											Base: &KeyCondition{
-												Base: &ConditionBase{
-													Not: true,
-												},
-												Key: "key1",
+										KiwiCondition: &KiwiOutputCondition{
+											Base: &OutputConditionBase{
+												Not: true,
 											},
+											Key:     "key1",
 											Pattern: "pattern1",
 											Partial: false,
 										},
@@ -262,21 +212,20 @@ func TestServiceController_Read(t *testing.T) {
 	defer cancel()
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			sub, err := client.Read(ctx, &ReadRequest{Name: k})
+			sub, err := client.Read(ctx, &ReadRequest{Id: k})
 			if c.err == nil {
 				assert.Nil(t, err)
-				assert.Equal(t, c.sub.Name, sub.Name)
-				assert.Equal(t, c.sub.Description, sub.Description)
+				assert.Equal(t, c.sub.Metadata, sub.Metadata)
 				assert.Equal(t, c.sub.Routes, sub.Routes)
-				assert.Equal(t, c.sub.Condition.GetGroupCondition().Base.Base.Not, sub.Condition.GetGroupCondition().Base.Base.Not)
-				assert.Equal(t, c.sub.Condition.GetGroupCondition().Base.Logic, sub.Condition.GetGroupCondition().Base.Logic)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().Base.Not, sub.Condition.GetGroupCondition().Base.Not)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().Logic, sub.Condition.GetGroupCondition().Logic)
 				assert.Equal(t, len(c.sub.Condition.GetGroupCondition().GetGroup()), len(sub.Condition.GetGroupCondition().GetGroup()))
-				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Base.Base.Not, sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Base.Base.Not)
-				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Base.Key, sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Base.Key)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Base.Not, sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Base.Not)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Key, sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Key)
 				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Pattern, sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Pattern)
 				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Partial, sub.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Partial)
-				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Base.Base.Not, sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Base.Base.Not)
-				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Base.Key, sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Base.Key)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Base.Not, sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Base.Not)
+				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Key, sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Key)
 				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Pattern, sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Pattern)
 				assert.Equal(t, c.sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Partial, sub.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Partial)
 			} else {
@@ -310,7 +259,7 @@ func TestServiceController_Delete(t *testing.T) {
 	defer cancel()
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			_, err := client.Delete(ctx, &DeleteRequest{Name: k})
+			_, err := client.Delete(ctx, &DeleteRequest{Id: k})
 			if c.err == nil {
 				assert.Nil(t, err)
 			} else {
@@ -320,45 +269,7 @@ func TestServiceController_Delete(t *testing.T) {
 	}
 }
 
-func TestServiceController_ListNames(t *testing.T) {
-	//
-	addr := fmt.Sprintf("localhost:%d", port)
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.Nil(t, err)
-	client := NewServiceClient(conn)
-	//
-	cases := map[string]struct {
-		err   error
-		names []string
-	}{
-		"": {
-			names: []string{
-				"sub0",
-				"sub1",
-			},
-		},
-		"fail": {
-			err: status.Error(codes.Internal, "internal failure"),
-		},
-	}
-	//
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-	for k, c := range cases {
-		t.Run(k, func(t *testing.T) {
-			resp, err := client.ListNames(ctx, &ListNamesRequest{Cursor: k})
-			if c.err == nil {
-				assert.Nil(t, err)
-				assert.Equal(t, len(c.names), len(resp.Names))
-				assert.ElementsMatch(t, c.names, resp.Names)
-			} else {
-				assert.ErrorIs(t, err, c.err)
-			}
-		})
-	}
-}
-
-func TestServiceController_Search(t *testing.T) {
+func TestServiceController_SearchByCondition(t *testing.T) {
 	//
 	addr := fmt.Sprintf("localhost:%d", port)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -371,12 +282,8 @@ func TestServiceController_Search(t *testing.T) {
 		count     int
 	}{
 		"": {
-			condition: &SearchByConditionRequest_KiwiCondition{
-				KiwiCondition: &KiwiCondition{
-					Base: &KeyCondition{
-						Base: &ConditionBase{},
-					},
-				},
+			condition: &SearchByConditionRequest_KiwiConditionQuery{
+				KiwiConditionQuery: &KiwiConditionQuery{},
 			},
 			count: 2,
 		},
@@ -394,6 +301,48 @@ func TestServiceController_Search(t *testing.T) {
 				&SearchByConditionRequest{
 					Condition: c.condition,
 					Cursor:    k,
+				},
+			)
+			if c.err == nil {
+				assert.Nil(t, err)
+				assert.Equal(t, c.count, len(resp.Page))
+			} else {
+				assert.ErrorIs(t, err, c.err)
+			}
+		})
+	}
+}
+
+func TestServiceController_SearchByMetadata(t *testing.T) {
+	//
+	addr := fmt.Sprintf("localhost:%d", port)
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.Nil(t, err)
+	client := NewServiceClient(conn)
+	//
+	cases := map[string]struct {
+		metadata map[string]string
+		err      error
+		count    int
+	}{
+		"": {
+			metadata: map[string]string{},
+			count:    2,
+		},
+		"fail": {
+			err: status.Error(codes.Internal, "internal failure"),
+		},
+	}
+	//
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	for k, c := range cases {
+		t.Run(k, func(t *testing.T) {
+			resp, err := client.SearchByMetadata(
+				ctx,
+				&SearchByMetadataRequest{
+					Metadata: c.metadata,
+					Cursor:   k,
 				},
 			)
 			if c.err == nil {

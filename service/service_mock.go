@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/awakari/subscriptions/model"
+	"github.com/google/uuid"
 )
 
 type (
@@ -14,29 +15,33 @@ func NewServiceMock() Service {
 	return serviceMock{}
 }
 
-func (sm serviceMock) Create(ctx context.Context, sub model.Subscription) (err error) {
-	name := sub.Name
-	if name == "fail" {
+func (sm serviceMock) Create(ctx context.Context, sd model.SubscriptionData) (id string, err error) {
+	descr := sd.Metadata["description"]
+	if descr == "fail" {
 		err = ErrInternal
-	} else if name == "invalid" {
+	} else if descr == "invalid" {
 		err = model.ErrInvalidSubscription
-	} else if name == "conflict" {
+	} else if descr == "conflict" {
 		err = ErrConflict
-	} else if name == "busy" {
+	} else if descr == "busy" {
 		err = ErrShouldRetry
+	}
+	if err == nil {
+		id = uuid.NewString()
 	}
 	return
 }
 
-func (sm serviceMock) Read(ctx context.Context, name string) (sub model.Subscription, err error) {
-	if name == "fail" {
+func (sm serviceMock) Read(ctx context.Context, id string) (sd model.SubscriptionData, err error) {
+	if id == "fail" {
 		err = ErrInternal
-	} else if name == "missing" {
+	} else if id == "missing" {
 		err = ErrNotFound
 	} else {
-		sub = model.Subscription{
-			Name:        name,
-			Description: "description",
+		sd = model.SubscriptionData{
+			Metadata: map[string]string{
+				"description": "description",
+			},
 			Routes: []string{
 				"destination",
 			},
@@ -67,23 +72,11 @@ func (sm serviceMock) Read(ctx context.Context, name string) (sub model.Subscrip
 	return
 }
 
-func (sm serviceMock) Delete(ctx context.Context, name string) (err error) {
-	if name == "fail" {
+func (sm serviceMock) Delete(ctx context.Context, id string) (err error) {
+	if id == "fail" {
 		err = ErrInternal
-	} else if name == "missing" {
+	} else if id == "missing" {
 		err = ErrNotFound
-	}
-	return
-}
-
-func (sm serviceMock) ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error) {
-	if cursor == "" {
-		page = []string{
-			"sub0",
-			"sub1",
-		}
-	} else if cursor == "fail" {
-		err = ErrInternal
 	}
 	return
 }
@@ -92,10 +85,26 @@ func (sm serviceMock) SearchByCondition(ctx context.Context, q model.ConditionQu
 	if cursor == "" {
 		page = []model.Subscription{
 			{
-				Name: "sub0",
+				Id: "sub0",
 			},
 			{
-				Name: "sub1",
+				Id: "sub1",
+			},
+		}
+	} else if cursor == "fail" {
+		err = ErrInternal
+	}
+	return
+}
+
+func (sm serviceMock) SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []model.Subscription, err error) {
+	if cursor == "" {
+		page = []model.Subscription{
+			{
+				Id: "sub0",
+			},
+			{
+				Id: "sub1",
 			},
 		}
 	} else if cursor == "fail" {
