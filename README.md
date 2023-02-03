@@ -293,6 +293,9 @@ Example data:
 
 #### 5.2.1.1. Subscription
 
+A subscription is immutable by design, hence there's no update operation for this. If a user wants to change a 
+subscription they need to delete it 1st and then create again.
+
 | Attribute | Type                                       | Description                                                  |
 |-----------|--------------------------------------------|--------------------------------------------------------------|
 | id        | String                                     | Subscription UUID (generated on creation)                    |
