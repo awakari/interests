@@ -11,16 +11,19 @@ type Condition interface {
 }
 
 type ConditionBase struct {
-	Not bool `bson:"not"`
+	Id  string `bson:"id"`
+	Not bool   `bson:"not"`
 }
 
 const conditionAttrBase = "base"
+const conditionAttrId = "id"
 const conditionAttrNot = "not"
 
 var _ Condition = (*ConditionBase)(nil)
 
-func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwiCondition) {
+func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwiSearchData) {
 	bc := ConditionBase{
+		Id:  src.GetId(),
 		Not: src.IsNot(),
 	}
 	switch c := src.(type) {
@@ -43,7 +46,12 @@ func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwiCondition)
 			Key:     c.GetKey(),
 			Pattern: c.GetPattern(),
 		}
-		kiwis = append(kiwis, kc)
+		kd := kiwiSearchData{
+			Partial: c.IsPartial(),
+			Key:     c.GetKey(),
+			Pattern: c.GetPattern(),
+		}
+		kiwis = append(kiwis, kd)
 		dst = kc
 	}
 	return
@@ -54,8 +62,12 @@ func decodeRawCondition(raw bson.M) (result Condition, err error) {
 	if !isBase {
 		err = fmt.Errorf("%w: value is not a condition instance: %v", storage.ErrInternal, raw)
 	} else {
+		id := base.(bson.M)[conditionAttrId].(string)
 		not := base.(bson.M)[conditionAttrNot].(bool)
-		baseCond := ConditionBase{Not: not}
+		baseCond := ConditionBase{
+			Id:  id,
+			Not: not,
+		}
 		group, isGroup := raw[groupConditionAttrGroup].(bson.A)
 		if isGroup {
 			result, err = decodeRawGroupCondition(baseCond, group, raw)
@@ -73,10 +85,10 @@ func decodeCondition(src Condition) (dst model.Condition) {
 		for _, childCond := range c.Group {
 			children = append(children, decodeCondition(childCond))
 		}
-		dstBase := model.NewCondition(c.Base.Not)
+		dstBase := model.NewConditionWithId(c.Base.Not, c.Base.Id)
 		dst = model.NewGroupCondition(dstBase, model.GroupLogic(c.Logic), children)
 	case kiwiCondition:
-		dstBase := model.NewCondition(c.Base.Not)
+		dstBase := model.NewConditionWithId(c.Base.Not, c.Base.Id)
 		dstKey := model.NewKeyCondition(dstBase, c.Key)
 		dst = model.NewKiwiCondition(dstKey, c.Partial, c.Pattern)
 	}

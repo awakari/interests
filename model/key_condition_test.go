@@ -35,9 +35,6 @@ func TestMetadataRule_Equal(t *testing.T) {
 		"different base condition": {
 			in: NewKeyCondition(r2, "key1"),
 		},
-		"different key": {
-			in: NewKeyCondition(r1, "key2"),
-		},
 	}
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {

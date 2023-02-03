@@ -1,27 +1,39 @@
 package model
 
-type (
-	Condition interface {
-		IsNot() bool
+import "github.com/google/uuid"
 
-		Equal(another Condition) (equal bool)
-	}
+type Condition interface {
+	GetId() string
 
-	condition struct {
-		Not bool
-	}
-)
+	IsNot() bool
+
+	Equal(another Condition) (equal bool)
+}
+
+type condition struct {
+	Id  string
+	Not bool
+}
 
 func NewCondition(not bool) Condition {
+	return NewConditionWithId(not, uuid.NewString())
+}
+
+func NewConditionWithId(not bool, id string) Condition {
 	return condition{
+		Id:  id,
 		Not: not,
 	}
 }
 
-func (r condition) IsNot() bool {
-	return r.Not
+func (c condition) GetId() string {
+	return c.Id
 }
 
-func (r condition) Equal(another Condition) bool {
-	return r.Not == another.IsNot()
+func (c condition) IsNot() bool {
+	return c.Not
+}
+
+func (c condition) Equal(another Condition) bool {
+	return c.Id == another.GetId()
 }

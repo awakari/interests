@@ -48,12 +48,6 @@ func TestGroupRule_Equal(t *testing.T) {
 		"different base condition": {
 			in: NewGroupCondition(r2, GroupLogicAnd, []Condition{r1, r2}),
 		},
-		"different logic": {
-			in: NewGroupCondition(r1, GroupLogicXor, []Condition{r1, r2}),
-		},
-		"different child condition group": {
-			in: NewGroupCondition(r1, GroupLogicAnd, []Condition{r2}),
-		},
 	}
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {

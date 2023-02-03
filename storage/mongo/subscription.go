@@ -6,9 +6,9 @@ import (
 )
 
 type subscriptionWrite struct {
-	Name string `bson:"name"`
+	Id string `bson:"id"`
 
-	Description string `bson:"description"`
+	Metadata map[string]string `bson:"metadata"`
 
 	Routes []string `bson:"routes"`
 
@@ -16,34 +16,47 @@ type subscriptionWrite struct {
 
 	// Kiwis contains the list of copies of all key-pattern pairs. The Kiwis field is necessary to support the
 	// subscriptions search by a "Kiwi".
-	Kiwis []kiwiCondition `bson:"kiwis"`
+	Kiwis []kiwiSearchData `bson:"kiwis"`
+}
+
+type kiwiSearchData struct {
+	Partial bool   `bson:"partial"`
+	Key     string `bson:"key"`
+	Pattern string `bson:"pattern"`
 }
 
 // intermediate read result that contains the condition not decoded yet
 type subscription struct {
-	Name string `bson:"name"`
+	Id string `bson:"id"`
 
 	Description string `bson:"description"`
+
+	Metadata map[string]string `bson:"metadata"`
 
 	Routes []string `bson:"routes"`
 
 	RawCondition bson.M `bson:"condition"`
 }
 
-const attrName = "name"
-const attrDescription = "description"
+const attrId = "id"
+const attrMetadata = "metadata"
 const attrRoutes = "routes"
 const attrKiwis = "kiwis"
 const attrCondition = "condition"
 
 func (rec subscription) decodeSubscription(sub *model.Subscription) (err error) {
-	sub.Name = rec.Name
-	sub.Description = rec.Description
-	sub.Routes = rec.Routes
+	sub.Id = rec.Id
+	err = rec.decodeSubscriptionData(&sub.Data)
+	return
+}
+
+func (rec subscription) decodeSubscriptionData(sd *model.SubscriptionData) (err error) {
+	sd.Metadata = rec.Metadata
+	sd.Routes = rec.Routes
 	var condRec Condition
 	condRec, err = decodeRawCondition(rec.RawCondition)
 	if err == nil {
-		sub.Condition = decodeCondition(condRec)
+		sd.Condition = decodeCondition(condRec)
 	}
 	return
 }

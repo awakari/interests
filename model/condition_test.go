@@ -17,5 +17,5 @@ func TestRule_Equal(t *testing.T) {
 	r2 := NewCondition(true)
 	r3 := NewCondition(false)
 	assert.False(t, r1.Equal(r2))
-	assert.True(t, r1.Equal(r3))
+	assert.False(t, r1.Equal(r3))
 }

@@ -21,32 +21,25 @@ func NewLoggingMiddleware(svc Service, log *slog.Logger) Service {
 	}
 }
 
-func (lm loggingMiddleware) Create(ctx context.Context, sub model.Subscription) (err error) {
+func (lm loggingMiddleware) Create(ctx context.Context, sd model.SubscriptionData) (id string, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Create(%v): %s", sub, err))
+		lm.log.Debug(fmt.Sprintf("Create(%v): %s, %s", sd, id, err))
 	}()
-	return lm.svc.Create(ctx, sub)
+	return lm.svc.Create(ctx, sd)
 }
 
-func (lm loggingMiddleware) Read(ctx context.Context, name string) (sub model.Subscription, err error) {
+func (lm loggingMiddleware) Read(ctx context.Context, id string) (sd model.SubscriptionData, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Read(%s): (%v, %s)", name, sub, err))
+		lm.log.Debug(fmt.Sprintf("Read(%s): (%v, %s)", id, sd, err))
 	}()
-	return lm.svc.Read(ctx, name)
+	return lm.svc.Read(ctx, id)
 }
 
-func (lm loggingMiddleware) Delete(ctx context.Context, name string) (err error) {
+func (lm loggingMiddleware) Delete(ctx context.Context, id string) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Delete(%s): %s", name, err))
+		lm.log.Debug(fmt.Sprintf("Delete(%s): %s", id, err))
 	}()
-	return lm.svc.Delete(ctx, name)
-}
-
-func (lm loggingMiddleware) ListNames(ctx context.Context, limit uint32, cursor string) (page []string, err error) {
-	defer func() {
-		lm.log.Debug(fmt.Sprintf("ListNames(%d, %s): %s", limit, cursor, err))
-	}()
-	return lm.svc.ListNames(ctx, limit, cursor)
+	return lm.svc.Delete(ctx, id)
 }
 
 func (lm loggingMiddleware) SearchByCondition(ctx context.Context, q model.ConditionQuery, cursor string) (page []model.Subscription, err error) {
@@ -54,4 +47,11 @@ func (lm loggingMiddleware) SearchByCondition(ctx context.Context, q model.Condi
 		lm.log.Debug(fmt.Sprintf("SearchByCondition(%v, %v): %s", q, cursor, err))
 	}()
 	return lm.svc.SearchByCondition(ctx, q, cursor)
+}
+
+func (lm loggingMiddleware) SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []model.Subscription, err error) {
+	defer func() {
+		lm.log.Debug(fmt.Sprintf("SearchByMetadata(%v, %v): %s", q, cursor, err))
+	}()
+	return lm.svc.SearchByMetadata(ctx, q, cursor)
 }

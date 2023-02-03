@@ -24,11 +24,11 @@ func Test_decodeKiwiCondition(t *testing.T) {
 				kiwiConditionAttrPattern: "pattern0",
 			},
 			out: kiwiCondition{
-				Key:     "key0",
-				Pattern: "pattern0",
 				Base: ConditionBase{
 					Not: true,
 				},
+				Key:     "key0",
+				Pattern: "pattern0",
 				Partial: true,
 			},
 		},
