@@ -16,7 +16,13 @@ type subscriptionWrite struct {
 
 	// Kiwis contains the list of copies of all key-pattern pairs. The Kiwis field is necessary to support the
 	// subscriptions search by a "Kiwi".
-	Kiwis []kiwiCondition `bson:"kiwis"`
+	Kiwis []kiwiSearchData `bson:"kiwis"`
+}
+
+type kiwiSearchData struct {
+	Partial bool   `bson:"partial"`
+	Key     string `bson:"key"`
+	Pattern string `bson:"pattern"`
 }
 
 // intermediate read result that contains the condition not decoded yet

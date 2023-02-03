@@ -17,8 +17,14 @@
    3.2. [Bare](#32-bare)<br/>
    3.3. [Docker](#33-docker)<br/>
    3.4. [K8s](#34-k8s)<br/>
-   &nbsp;&nbsp;&nbsp;3.4.1. [Helm](#341-helm) <br/>
+   &nbsp;&nbsp;&nbsp;3.4.1. [Helm](#341-helm)<br/>
 4. [Usage](#4-usage)<br/>
+   4.1. [Create](#41-create)<br/>
+   4.2. [Read](#42-read)<br/>
+   4.3. [Delete](#43-delete)<br/>
+   4.4. [Search](#44-search)<br/>
+   &nbsp;&nbsp;&nbsp;4.4.1. [By Condition](#441-by-condition)</br>
+   &nbsp;&nbsp;&nbsp;4.4.2. [By Metadata](#442-by-metadata)</br>
 5. [Design](#5-design)<br/>
    5.1. [Requirements](#51-requirements)<br/>
    5.2. [Approach](#52-approach)<br/>
@@ -81,13 +87,13 @@ in a O(log(N)) time.
 
 #### 1.2.2.5. Kiwi Bird Condition
 
-A [kiwi-tree](https://github.com/awakari/kiwi-tree) specific condition implementation of a kiwi condition. It should 
-come without any limitation on the pattern syntax but will resolve a condition in O(N) time. Not implemented yet. 
+A specific kiwi condition implementation. It should come without any limitation on the pattern syntax but will resolve a 
+condition in O(N) time. Not implemented yet. 
 
 ### 1.2.3. Subscription
 
 Subscriptions is an entity linking the [condition](#122-condition) with the [route](#121-route)s. 
-A subscription also has unique name and human-readable description.
+A subscription also has unique id generated on creation and human-readable metadata.
 
 # 2. Configuration
 
@@ -169,7 +175,7 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{"name": "sub0", "description": "my subscription", "routes": ["route0"], "condition": {"kiwiTreeCondition": {"base": { "base": {"base": {"not" :false}, "key": "key0"}, "pattern": "pattern*", "partial": false}}}}' \
+  -d '{"metadata" :{"description": "my subscription"}, "routes": ["route0"], "condition": {"kiwiTreeCondition": {"not" :false, "key": "key0", "pattern": "pattern*", "partial": false}}}' \
   localhost:8080 \
   subscriptions.Service/Create
 ```
@@ -179,7 +185,7 @@ Yet another example:
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{"name": "sub1", "description": "my subscription", "routes": ["route1"], "condition": {"groupCondition": {"group": [{"kiwiTreeCondition": {"base": {"base": {"base": {"not": false}, "key": "key0"}, "pattern": "pattern?", "partial": false}}}, {"kiwiTreeCondition": {"base": {"base": {"base": {"not": true}, "key": "key1"}, "pattern": "pattern1", "partial": true}}}]}}}' \
+  -d '{"metadata": {"name": "sub1", "description": "my subscription 1"}, "routes": ["route1"], "condition": {"groupCondition": {"not": false, "logic": 0, "group": [{"kiwiTreeCondition": {"not": false, "key": "key0", "pattern": "pattern?", "partial": false}}, {"kiwiTreeCondition": {"not": true, "key": "key1", "pattern": "pattern1", "partial": true}}]}}}' \
   localhost:8080 \
   subscriptions.Service/Create
 ```
@@ -191,7 +197,7 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{"name": "sub0"}' \
+  -d '{"id": "c00e1228-fd78-4761-8f59-fbbfa690b9a9"}' \
   localhost:8080 \
   subscriptions.Service/Read
 ```
@@ -208,28 +214,34 @@ grpcurl \
   subscriptions.Service/Read
 ```
 
-## 4.4. List
+## 4.4. Search
+
+### 4.4.1. By Condition
+
+The search by condition purpose is to be used by a resolver to find the matching subscriptions.
 
 Example:
 ```shell
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{"limit": 100}' \
-  localhost:8080 \
-  subscriptions.Service/ListNames
-```
-
-## 4.5. Search
-
-Example:
-```shell
-grpcurl \
-  -plaintext \
-  -proto api/grpc/service.proto \
-  -d '{"limit": 100, "kiwiCondition": {"base": {"base": {"not": false}, "key": "key0"}, "pattern": "pattern*", "partial": false}}' \
+  -d '{"limit": 100, "kiwiConditionQuery": {"key": "key0", "pattern": "pattern*", "partial": false}}' \
   localhost:8080 \
   subscriptions.Service/SearchByCondition
+```
+
+### 4.4.2. By Metadata
+
+The search by metadata purpose is to be used by a user to find own subscriptions.
+
+Example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/service.proto \
+  -d '{"limit": 100, "metadata": {"description": "my subscription"}}' \
+  localhost:8080 \
+  subscriptions.Service/SearchByMetadata
 ```
 
 # 5. Design
@@ -252,21 +264,27 @@ Subscriptions are stored in the single table under the denormalized schema.
 Example data:
 
 ```yaml
-- name: subscription0
-  description: Anything related to orders that are not in Helsinki
+- id: "2f63ea52-a66c-4b93-92f1-12aa2831cd2c"
+  metadata:
+    name: subscription0
+    description: Anything related to orders that are not in Helsinki
+    user: "e7fae6df-f0e7-4a6b-b8ae-3802a7927f7e"  
   routes:
   - /dev/null
   condition:
     base:
+      id: "6054bb7c-2a35-457e-887d-1efaf0d23007" 
       not: false
     logic: "And"
     group:
       - base:
+          id: "14cadd71-c662-4f1a-8b0f-3b17dfb107f5"
           not: false
         partial: true
         key: "subject"
         pattern: "orders"
       - base:
+          id: "c00e1228-fd78-4761-8f59-fbbfa690b9a9"
           not: true
         partial: false
         key: "location"
@@ -275,17 +293,18 @@ Example data:
 
 #### 5.2.1.1. Subscription
 
-| Attribute   | Type                                       | Description                                                  |
-|-------------|--------------------------------------------|--------------------------------------------------------------|
-| name        | String                                     | Unique subscription name                                     |
-| description | String                                     | Human readable subscription description                      |
-| routes      | Array of String                            | Destination routes to use for the matching messages delivery |
-| condition   | Condition (currently may be Group or Kiwi) | Message matching criteria                                    |
+| Attribute | Type                                       | Description                                                  |
+|-----------|--------------------------------------------|--------------------------------------------------------------|
+| id        | String                                     | Subscription UUID (generated on creation)                    |
+| metadata  | Map<String, String>                        | Human readable subscription metadata                         |
+| routes    | Array of String                            | Destination routes to use for the matching messages delivery |
+| condition | Condition (currently may be Group or Kiwi) | Message matching criteria                                    |
 
 #### 5.2.1.2. Group Condition
 
 | Attribute | Type                      | Description                                                    |
 |-----------|---------------------------|----------------------------------------------------------------|
+| id        | String                    | Condition UUID (generated on creation)                         |
 | not       | Boolean                   | Defines whether the conditions should act as a negation or not |
 | logic     | Enum of `And`/`Or`/`Xor`  | Defines the grouping logic for the child conditions            |
 | group     | Array of child conditions | Set of conditions in the group                                 |
@@ -294,6 +313,7 @@ Example data:
 
 | Attribute | Type    | Description                                                                                                   |
 |-----------|---------|---------------------------------------------------------------------------------------------------------------|
+| id        | String  | Condition UUID (generated on creation)                                                                        |
 | not       | Boolean | Defines whether the conditions should act as a negation or not                                                |
 | key       | String  | Metadata key                                                                                                  |
 | pattern   | String  | Metadata value matching pattern                                                                               |

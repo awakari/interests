@@ -3,15 +3,15 @@ package model
 type GroupLogic int
 
 const (
-	GroupLogicOr = iota
+	GroupLogicAnd = iota
+	GroupLogicOr
 	GroupLogicXor
-	GroupLogicAnd
 )
 
 func (gl GroupLogic) String() string {
 	return [...]string{
+		"And",
 		"Or",
 		"Xor",
-		"And",
 	}[gl]
 }

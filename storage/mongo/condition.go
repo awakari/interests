@@ -21,7 +21,7 @@ const conditionAttrNot = "not"
 
 var _ Condition = (*ConditionBase)(nil)
 
-func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwiCondition) {
+func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwiSearchData) {
 	bc := ConditionBase{
 		Id:  src.GetId(),
 		Not: src.IsNot(),
@@ -46,7 +46,12 @@ func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwiCondition)
 			Key:     c.GetKey(),
 			Pattern: c.GetPattern(),
 		}
-		kiwis = append(kiwis, kc)
+		kd := kiwiSearchData{
+			Partial: c.IsPartial(),
+			Key:     c.GetKey(),
+			Pattern: c.GetPattern(),
+		}
+		kiwis = append(kiwis, kd)
 		dst = kc
 	}
 	return

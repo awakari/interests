@@ -68,11 +68,11 @@ func Test_decodeGroupCondition(t *testing.T) {
 					kiwiCondition{
 						Key:     "k0",
 						Pattern: "p0",
+						Partial: false,
 						Base: ConditionBase{
 							Id:  "cond0",
 							Not: true,
 						},
-						Partial: false,
 					},
 					groupCondition{
 						Base: ConditionBase{
@@ -83,20 +83,20 @@ func Test_decodeGroupCondition(t *testing.T) {
 							kiwiCondition{
 								Key:     "k1",
 								Pattern: "p1",
+								Partial: true,
 								Base: ConditionBase{
 									Id:  "cond2",
 									Not: false,
 								},
-								Partial: true,
 							},
 							kiwiCondition{
 								Key:     "k2",
 								Pattern: "p2",
+								Partial: false,
 								Base: ConditionBase{
 									Id:  "cond3",
 									Not: false,
 								},
-								Partial: false,
 							},
 						},
 						Logic: model.GroupLogicXor,
