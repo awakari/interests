@@ -11,19 +11,16 @@ type Condition interface {
 }
 
 type ConditionBase struct {
-	Id  string `bson:"id"`
-	Not bool   `bson:"not"`
+	Not bool `bson:"not"`
 }
 
 const conditionAttrBase = "base"
-const conditionAttrId = "id"
 const conditionAttrNot = "not"
 
 var _ Condition = (*ConditionBase)(nil)
 
 func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwiSearchData) {
 	bc := ConditionBase{
-		Id:  src.GetId(),
 		Not: src.IsNot(),
 	}
 	switch c := src.(type) {
@@ -42,11 +39,13 @@ func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwiSearchData
 	case model.KiwiCondition:
 		kc := kiwiCondition{
 			Base:    bc,
+			Id:      c.GetId(),
 			Partial: c.IsPartial(),
 			Key:     c.GetKey(),
 			Pattern: c.GetPattern(),
 		}
 		kd := kiwiSearchData{
+			Id:      c.GetId(),
 			Partial: c.IsPartial(),
 			Key:     c.GetKey(),
 			Pattern: c.GetPattern(),
@@ -62,10 +61,8 @@ func decodeRawCondition(raw bson.M) (result Condition, err error) {
 	if !isBase {
 		err = fmt.Errorf("%w: value is not a condition instance: %v", storage.ErrInternal, raw)
 	} else {
-		id := base.(bson.M)[conditionAttrId].(string)
 		not := base.(bson.M)[conditionAttrNot].(bool)
 		baseCond := ConditionBase{
-			Id:  id,
 			Not: not,
 		}
 		group, isGroup := raw[groupConditionAttrGroup].(bson.A)
@@ -85,11 +82,11 @@ func decodeCondition(src Condition) (dst model.Condition) {
 		for _, childCond := range c.Group {
 			children = append(children, decodeCondition(childCond))
 		}
-		dstBase := model.NewConditionWithId(c.Base.Not, c.Base.Id)
+		dstBase := model.NewCondition(c.Base.Not)
 		dst = model.NewGroupCondition(dstBase, model.GroupLogic(c.Logic), children)
 	case kiwiCondition:
-		dstBase := model.NewConditionWithId(c.Base.Not, c.Base.Id)
-		dstKey := model.NewKeyCondition(dstBase, c.Key)
+		dstBase := model.NewCondition(c.Base.Not)
+		dstKey := model.NewKeyCondition(dstBase, c.Id, c.Key)
 		dst = model.NewKiwiCondition(dstKey, c.Partial, c.Pattern)
 	}
 	return dst

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGroupRule_IsNot(t *testing.T) {
+func TestGroupCondition_IsNot(t *testing.T) {
 	r1 := NewCondition(false)
 	r2 := NewCondition(true)
 	gr1 := NewGroupCondition(r1, GroupLogicAnd, []Condition{})
@@ -14,7 +14,7 @@ func TestGroupRule_IsNot(t *testing.T) {
 	assert.True(t, gr2.IsNot())
 }
 
-func TestGroupRule_GetLogic(t *testing.T) {
+func TestGroupCondition_GetLogic(t *testing.T) {
 	r1 := NewCondition(false)
 	gr1 := NewGroupCondition(r1, GroupLogicAnd, []Condition{})
 	gr2 := NewGroupCondition(r1, GroupLogicOr, []Condition{})
@@ -22,7 +22,7 @@ func TestGroupRule_GetLogic(t *testing.T) {
 	assert.Equal(t, GroupLogicOr, int(gr2.GetLogic()))
 }
 
-func TestGroupRule_GetGroup(t *testing.T) {
+func TestGroupCondition_GetGroup(t *testing.T) {
 	r1 := NewCondition(false)
 	r2 := NewCondition(true)
 	group := []Condition{
@@ -33,7 +33,7 @@ func TestGroupRule_GetGroup(t *testing.T) {
 	assert.ElementsMatch(t, group, gr1.GetGroup())
 }
 
-func TestGroupRule_Equal(t *testing.T) {
+func TestGroupCondition_Equal(t *testing.T) {
 	r1 := NewCondition(false)
 	r2 := NewCondition(true)
 	gr1 := NewGroupCondition(r1, GroupLogicAnd, []Condition{r1, r2})
@@ -48,6 +48,12 @@ func TestGroupRule_Equal(t *testing.T) {
 		"different base condition": {
 			in: NewGroupCondition(r2, GroupLogicAnd, []Condition{r1, r2}),
 		},
+		"different logic": {
+			in: NewGroupCondition(r1, GroupLogicXor, []Condition{r1, r2}),
+		},
+		"different child condition group": {
+			in: NewGroupCondition(r1, GroupLogicAnd, []Condition{r2}),
+		},
 	}
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
@@ -57,7 +63,7 @@ func TestGroupRule_Equal(t *testing.T) {
 	}
 }
 
-func TestGroupRule_Validate(t *testing.T) {
+func TestGroupCondition_Validate(t *testing.T) {
 	r1 := NewCondition(false)
 	r2 := NewCondition(true)
 	cases := map[string]struct {

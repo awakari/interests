@@ -31,7 +31,15 @@ func (kc kiwiCondition) IsNot() bool {
 }
 
 func (kc kiwiCondition) Equal(another Condition) (equal bool) {
-	return kc.KeyCondition.Equal(another)
+	equal = kc.KeyCondition.Equal(another)
+	if equal {
+		var anotherKc KiwiCondition
+		anotherKc, equal = another.(KiwiCondition)
+		if equal {
+			equal = kc.Partial == anotherKc.IsPartial() && kc.Pattern == anotherKc.GetPattern()
+		}
+	}
+	return
 }
 
 func (kc kiwiCondition) GetKey() string {

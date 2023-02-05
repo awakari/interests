@@ -15,40 +15,37 @@ func Test_decodeGroupCondition(t *testing.T) {
 		err  error
 	}{
 		"ok": {
-			base: ConditionBase{
-				Id: "cond0",
-			},
+			base: ConditionBase{},
 			raw: bson.M{
 				"group": bson.A{
 					bson.M{
 						"base": bson.M{
-							"id":  "cond0",
 							"not": true,
 						},
+						"id":      "cond0",
 						"key":     "k0",
 						"pattern": "p0",
 						"partial": false,
 					},
 					bson.M{
 						"base": bson.M{
-							"id":  "cond1",
 							"not": false,
 						},
 						"group": bson.A{
 							bson.M{
 								"base": bson.M{
-									"id":  "cond2",
 									"not": false,
 								},
+								"id":      "cond2",
 								"key":     "k1",
 								"pattern": "p1",
 								"partial": true,
 							},
 							bson.M{
 								"base": bson.M{
-									"id":  "cond3",
 									"not": false,
 								},
+								"id":      "cond3",
 								"key":     "k2",
 								"pattern": "p2",
 								"partial": false,
@@ -61,40 +58,38 @@ func Test_decodeGroupCondition(t *testing.T) {
 			},
 			out: groupCondition{
 				Base: ConditionBase{
-					Id:  "cond0",
 					Not: false,
 				},
 				Group: []Condition{
 					kiwiCondition{
+						Id:      "cond0",
 						Key:     "k0",
 						Pattern: "p0",
 						Partial: false,
 						Base: ConditionBase{
-							Id:  "cond0",
 							Not: true,
 						},
 					},
 					groupCondition{
 						Base: ConditionBase{
-							Id:  "cond1",
 							Not: false,
 						},
 						Group: []Condition{
 							kiwiCondition{
+								Id:      "cond2",
 								Key:     "k1",
 								Pattern: "p1",
 								Partial: true,
 								Base: ConditionBase{
-									Id:  "cond2",
 									Not: false,
 								},
 							},
 							kiwiCondition{
+								Id:      "cond3",
 								Key:     "k2",
 								Pattern: "p2",
 								Partial: false,
 								Base: ConditionBase{
-									Id:  "cond3",
 									Not: false,
 								},
 							},

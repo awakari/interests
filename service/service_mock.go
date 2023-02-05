@@ -52,6 +52,7 @@ func (sm serviceMock) Read(ctx context.Context, id string) (sd model.Subscriptio
 					model.NewKiwiCondition(
 						model.NewKeyCondition(
 							model.NewCondition(false),
+							"",
 							"key0",
 						),
 						true,
@@ -60,6 +61,7 @@ func (sm serviceMock) Read(ctx context.Context, id string) (sd model.Subscriptio
 					model.NewKiwiCondition(
 						model.NewKeyCondition(
 							model.NewCondition(true),
+							"",
 							"key1",
 						),
 						false,

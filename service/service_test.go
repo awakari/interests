@@ -31,6 +31,7 @@ func TestService_Create(t *testing.T) {
 				model.NewKiwiCondition(
 					model.NewKeyCondition(
 						model.NewCondition(false),
+						"",
 						"key0",
 					),
 					false,
@@ -61,6 +62,7 @@ func TestService_Create(t *testing.T) {
 						model.NewKeyCondition(
 							model.NewCondition(false),
 							"",
+							"",
 						),
 						false,
 						"locked",
@@ -81,6 +83,7 @@ func TestService_Create(t *testing.T) {
 					model.NewKiwiCondition(
 						model.NewKeyCondition(
 							model.NewCondition(false),
+							"",
 							"fail",
 						),
 						false,
@@ -102,6 +105,7 @@ func TestService_Create(t *testing.T) {
 					model.NewKiwiCondition(
 						model.NewKeyCondition(
 							model.NewCondition(false),
+							"",
 							"key0",
 						),
 						false,
@@ -122,6 +126,7 @@ func TestService_Create(t *testing.T) {
 					model.NewKiwiCondition(
 						model.NewKeyCondition(
 							model.NewCondition(false),
+							"",
 							"key0",
 						),
 						false,
@@ -167,6 +172,7 @@ func TestService_Read(t *testing.T) {
 				model.NewKiwiCondition(
 					model.NewKeyCondition(
 						model.NewCondition(false),
+						"",
 						"key0",
 					),
 					false,
@@ -196,6 +202,7 @@ func TestService_Read(t *testing.T) {
 					model.NewKiwiCondition(
 						model.NewKeyCondition(
 							model.NewCondition(false),
+							"",
 							"key0",
 						),
 						false,
@@ -246,6 +253,7 @@ func TestService_Delete(t *testing.T) {
 						model.NewKiwiCondition(
 							model.NewKeyCondition(
 								model.NewCondition(false),
+								"",
 								"key0",
 							),
 							false,
@@ -256,6 +264,7 @@ func TestService_Delete(t *testing.T) {
 						model.NewKiwiCondition(
 							model.NewKeyCondition(
 								model.NewCondition(true),
+								"",
 								"key1",
 							),
 							true,
@@ -284,6 +293,7 @@ func TestService_Delete(t *testing.T) {
 						model.NewKiwiCondition(
 							model.NewKeyCondition(
 								model.NewCondition(false),
+								"",
 								"key0",
 							),
 							false,
@@ -294,6 +304,7 @@ func TestService_Delete(t *testing.T) {
 						model.NewKiwiCondition(
 							model.NewKeyCondition(
 								model.NewCondition(true),
+								"",
 								"key1",
 							),
 							true,
@@ -357,6 +368,7 @@ func TestService_SearchByKiwi(t *testing.T) {
 				model.NewKiwiCondition(
 					model.NewKeyCondition(
 						model.NewCondition(false),
+						"",
 						fmt.Sprintf("key%d", i%4),
 					),
 					i%3 == 2,
@@ -379,6 +391,7 @@ func TestService_SearchByKiwi(t *testing.T) {
 				Condition: model.NewKiwiCondition(
 					model.NewKeyCondition(
 						model.NewCondition(false),
+						"",
 						"key0",
 					),
 					false,
@@ -393,6 +406,7 @@ func TestService_SearchByKiwi(t *testing.T) {
 				Condition: model.NewKiwiCondition(
 					model.NewKeyCondition(
 						model.NewCondition(false),
+						"",
 						"key1",
 					),
 					false,
@@ -424,6 +438,7 @@ func TestService_SearchByKiwi(t *testing.T) {
 				Limit: 3,
 				Condition: model.NewKeyCondition(
 					model.NewCondition(false),
+					"",
 					"key0",
 				),
 			},
@@ -467,6 +482,7 @@ func TestService_SearchByMetadata(t *testing.T) {
 				model.NewKiwiCondition(
 					model.NewKeyCondition(
 						model.NewCondition(false),
+						"",
 						fmt.Sprintf("key%d", i%4),
 					),
 					i%3 == 2,
