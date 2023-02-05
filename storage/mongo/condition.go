@@ -20,38 +20,11 @@ const conditionAttrNot = "not"
 var _ Condition = (*ConditionBase)(nil)
 
 func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwiSearchData) {
-	bc := ConditionBase{
-		Not: src.IsNot(),
-	}
 	switch c := src.(type) {
 	case model.GroupCondition:
-		var group []Condition
-		for _, childSrc := range c.GetGroup() {
-			childDst, childKiwis := encodeCondition(childSrc)
-			group = append(group, childDst)
-			kiwis = append(kiwis, childKiwis...)
-		}
-		dst = groupCondition{
-			Base:  bc,
-			Group: group,
-			Logic: int32(c.GetLogic()),
-		}
+		dst, kiwis = encodeGroupCondition(c)
 	case model.KiwiCondition:
-		kc := kiwiCondition{
-			Base:    bc,
-			Id:      c.GetId(),
-			Partial: c.IsPartial(),
-			Key:     c.GetKey(),
-			Pattern: c.GetPattern(),
-		}
-		kd := kiwiSearchData{
-			Id:      c.GetId(),
-			Partial: c.IsPartial(),
-			Key:     c.GetKey(),
-			Pattern: c.GetPattern(),
-		}
-		kiwis = append(kiwis, kd)
-		dst = kc
+		dst, kiwis = encodeKiwiCondition(c)
 	}
 	return
 }

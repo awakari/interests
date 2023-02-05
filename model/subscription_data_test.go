@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestSubscription_Validate(t *testing.T) {
+func TestSubscriptionData_Validate(t *testing.T) {
 	cases := map[string]struct {
 		sub SubscriptionData
 		err error
@@ -62,6 +62,7 @@ func TestSubscription_Validate(t *testing.T) {
 					[]Condition{
 						NewKiwiCondition(NewKeyCondition(NewCondition(false), "", "key0"), false, ""),
 						NewKiwiCondition(NewKeyCondition(NewCondition(true), "", "key1"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(false), "", "key2"), false, ""),
 					},
 				),
 			},
@@ -98,7 +99,7 @@ func TestSubscription_Validate(t *testing.T) {
 			},
 			err: ErrInvalidSubscription,
 		},
-		"invalid group root condition: contains more than 2 child rules": {
+		"invalid group root condition: contains less than 2 child rules": {
 			sub: SubscriptionData{
 				Routes: []string{
 					"destination",
@@ -108,12 +109,10 @@ func TestSubscription_Validate(t *testing.T) {
 					GroupLogicAnd,
 					[]Condition{
 						NewKiwiCondition(NewKeyCondition(NewCondition(true), "", "key0"), false, ""),
-						NewKiwiCondition(NewKeyCondition(NewCondition(false), "", "key1"), false, ""),
-						NewKiwiCondition(NewKeyCondition(NewCondition(false), "", "key2"), false, ""),
 					},
 				),
 			},
-			err: ErrInvalidSubscription,
+			err: ErrInvalidGroupCondition,
 		},
 	}
 	for k, c := range cases {

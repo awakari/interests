@@ -2,7 +2,9 @@ package mongo
 
 import (
 	"fmt"
+	"github.com/awakari/subscriptions/model"
 	"github.com/awakari/subscriptions/storage"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -20,6 +22,30 @@ const kiwiConditionAttrKey = "key"
 const kiwiConditionAttrPattern = "pattern"
 
 var _ Condition = (*kiwiCondition)(nil)
+
+func encodeKiwiCondition(src model.KiwiCondition) (dst kiwiCondition, kiwis []kiwiSearchData) {
+	id := uuid.NewString()
+	partial := src.IsPartial()
+	key := src.GetKey()
+	pattern := src.GetPattern()
+	kd := kiwiSearchData{
+		Id:      id,
+		Partial: partial,
+		Key:     key,
+		Pattern: pattern,
+	}
+	kiwis = append(kiwis, kd)
+	dst = kiwiCondition{
+		Base: ConditionBase{
+			Not: src.IsNot(),
+		},
+		Id:      id,
+		Partial: partial,
+		Key:     key,
+		Pattern: pattern,
+	}
+	return
+}
 
 func decodeKiwiCondition(baseCond ConditionBase, raw bson.M) (kc kiwiCondition, err error) {
 	kc.Base = baseCond
