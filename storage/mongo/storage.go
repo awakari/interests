@@ -23,7 +23,7 @@ type (
 
 var (
 	indices = []mongo.IndexModel{
-		// name should be unique
+		// id should be unique
 		{
 			Keys: bson.D{
 				{
@@ -35,7 +35,7 @@ var (
 				Index().
 				SetUnique(true),
 		},
-		// query by name and kiwi
+		// query by id (cursor) and kiwi
 		{
 			Keys: bson.D{
 				{

@@ -26,8 +26,8 @@ func Test_decodeSubscription(t *testing.T) {
 				},
 				RawCondition: bson.M{
 					conditionAttrBase: bson.M{
-						conditionAttrId:  "cond0",
-						conditionAttrNot: false,
+						kiwiConditionAttrId: "cond0",
+						conditionAttrNot:    false,
 					},
 					kiwiConditionAttrPartial: true,
 					kiwiConditionAttrKey:     "key0",

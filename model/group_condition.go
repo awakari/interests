@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/exp/slices"
 )
 
 type (
@@ -34,16 +35,21 @@ func NewGroupCondition(c Condition, logic GroupLogic, group []Condition) GroupCo
 	}
 }
 
-func (gc groupCondition) GetId() string {
-	return gc.Condition.GetId()
-}
-
 func (gc groupCondition) IsNot() bool {
 	return gc.Condition.IsNot()
 }
 
 func (gc groupCondition) Equal(another Condition) (equal bool) {
-	return gc.Condition.Equal(another)
+	equal = gc.Condition.Equal(another)
+	if equal {
+		var anotherGc GroupCondition
+		anotherGc, equal = another.(GroupCondition)
+		condEqFunc := func(c1, c2 Condition) bool {
+			return c1.Equal(c2)
+		}
+		equal = gc.Logic == anotherGc.GetLogic() && slices.EqualFunc(gc.Group, anotherGc.GetGroup(), condEqFunc)
+	}
+	return
 }
 
 func (gc groupCondition) GetLogic() (logic GroupLogic) {

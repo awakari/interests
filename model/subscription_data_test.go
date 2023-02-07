@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestSubscription_Validate(t *testing.T) {
+func TestSubscriptionData_Validate(t *testing.T) {
 	cases := map[string]struct {
 		sub SubscriptionData
 		err error
@@ -21,7 +21,7 @@ func TestSubscription_Validate(t *testing.T) {
 		},
 		"empty routes": {
 			sub: SubscriptionData{
-				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
+				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(false), "", "key0"), false, ""),
 			},
 			err: ErrInvalidSubscription,
 		},
@@ -30,7 +30,7 @@ func TestSubscription_Validate(t *testing.T) {
 				Routes: []string{
 					"destination",
 				},
-				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
+				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(false), "", "key0"), false, ""),
 			},
 		},
 		"negation only condition": {
@@ -38,7 +38,7 @@ func TestSubscription_Validate(t *testing.T) {
 				Routes: []string{
 					"destination",
 				},
-				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(true), "key0"), false, ""),
+				Condition: NewKiwiCondition(NewKeyCondition(NewCondition(true), "", "key0"), false, ""),
 			},
 			err: ErrInvalidSubscription,
 		},
@@ -47,7 +47,7 @@ func TestSubscription_Validate(t *testing.T) {
 				Routes: []string{
 					"destination",
 				},
-				Condition: NewKeyCondition(NewCondition(true), "key0"),
+				Condition: NewKeyCondition(NewCondition(true), "", "key0"),
 			},
 			err: ErrInvalidSubscription,
 		},
@@ -60,8 +60,9 @@ func TestSubscription_Validate(t *testing.T) {
 					NewCondition(false),
 					GroupLogicAnd,
 					[]Condition{
-						NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
-						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key1"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(false), "", "key0"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "", "key1"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(false), "", "key2"), false, ""),
 					},
 				),
 			},
@@ -75,8 +76,8 @@ func TestSubscription_Validate(t *testing.T) {
 					NewCondition(true),
 					GroupLogicAnd,
 					[]Condition{
-						NewKiwiCondition(NewKeyCondition(NewCondition(false), "key0"), false, ""),
-						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key1"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(false), "", "key0"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "", "key1"), false, ""),
 					},
 				),
 			},
@@ -91,14 +92,14 @@ func TestSubscription_Validate(t *testing.T) {
 					NewCondition(false),
 					GroupLogicAnd,
 					[]Condition{
-						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key0"), false, ""),
-						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key1"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "", "key0"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "", "key1"), false, ""),
 					},
 				),
 			},
 			err: ErrInvalidSubscription,
 		},
-		"invalid group root condition: contains more than 2 child rules": {
+		"invalid group root condition: contains less than 2 child rules": {
 			sub: SubscriptionData{
 				Routes: []string{
 					"destination",
@@ -107,13 +108,11 @@ func TestSubscription_Validate(t *testing.T) {
 					NewCondition(false),
 					GroupLogicAnd,
 					[]Condition{
-						NewKiwiCondition(NewKeyCondition(NewCondition(true), "key0"), false, ""),
-						NewKiwiCondition(NewKeyCondition(NewCondition(false), "key1"), false, ""),
-						NewKiwiCondition(NewKeyCondition(NewCondition(false), "key2"), false, ""),
+						NewKiwiCondition(NewKeyCondition(NewCondition(true), "", "key0"), false, ""),
 					},
 				),
 			},
-			err: ErrInvalidSubscription,
+			err: ErrInvalidGroupCondition,
 		},
 	}
 	for k, c := range cases {

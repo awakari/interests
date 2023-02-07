@@ -3,24 +3,27 @@ package model
 type (
 	KeyCondition interface {
 		Condition
+		GetId() string
 		GetKey() string
 	}
 
 	keyCondition struct {
 		Condition Condition
+		Id        string
 		Key       string
 	}
 )
 
-func NewKeyCondition(c Condition, k string) KeyCondition {
+func NewKeyCondition(c Condition, id string, k string) KeyCondition {
 	return keyCondition{
 		Condition: c,
+		Id:        id,
 		Key:       k,
 	}
 }
 
 func (kc keyCondition) GetId() string {
-	return kc.Condition.GetId()
+	return kc.Id
 }
 
 func (kc keyCondition) IsNot() bool {
@@ -28,7 +31,15 @@ func (kc keyCondition) IsNot() bool {
 }
 
 func (kc keyCondition) Equal(another Condition) (equal bool) {
-	return kc.Condition.Equal(another)
+	equal = kc.Condition.Equal(another)
+	if equal {
+		var anotherKc KeyCondition
+		anotherKc, equal = another.(KeyCondition)
+		if equal {
+			equal = kc.Key == anotherKc.GetKey()
+		}
+	}
+	return
 }
 
 func (kc keyCondition) GetKey() string {

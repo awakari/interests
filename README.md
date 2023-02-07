@@ -273,18 +273,17 @@ Example data:
   - /dev/null
   condition:
     base:
-      id: "6054bb7c-2a35-457e-887d-1efaf0d23007" 
       not: false
     logic: "And"
     group:
-      - base:
-          id: "14cadd71-c662-4f1a-8b0f-3b17dfb107f5"
+      - id: "14cadd71-c662-4f1a-8b0f-3b17dfb107f5"
+        base:
           not: false
         partial: true
         key: "subject"
         pattern: "orders"
-      - base:
-          id: "c00e1228-fd78-4761-8f59-fbbfa690b9a9"
+      - id: "c00e1228-fd78-4761-8f59-fbbfa690b9a9"
+        base:
           not: true
         partial: false
         key: "location"
@@ -307,7 +306,6 @@ subscription they need to delete it 1st and then create again.
 
 | Attribute | Type                      | Description                                                    |
 |-----------|---------------------------|----------------------------------------------------------------|
-| id        | String                    | Condition UUID (generated on creation)                         |
 | not       | Boolean                   | Defines whether the conditions should act as a negation or not |
 | logic     | Enum of `And`/`Or`/`Xor`  | Defines the grouping logic for the child conditions            |
 | group     | Array of child conditions | Set of conditions in the group                                 |
