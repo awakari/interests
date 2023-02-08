@@ -175,7 +175,7 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{"metadata" :{"description": "my subscription"}, "routes": ["route0"], "condition": {"kiwiTreeCondition": {"not" :false, "key": "key0", "pattern": "pattern*", "partial": false}}}' \
+  -d '{"metadata" :{"description": "my subscription"}, "route": { "destinations": ["dst0"], "condition": {"kiwiTreeCondition": {"not" :false, "key": "key0", "pattern": "pattern*", "partial": false}}}}' \
   localhost:8080 \
   subscriptions.Service/Create
 ```
@@ -185,7 +185,7 @@ Yet another example:
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{"metadata": {"name": "sub1", "description": "my subscription 1"}, "routes": ["route1"], "condition": {"groupCondition": {"not": false, "logic": 0, "group": [{"kiwiTreeCondition": {"not": false, "key": "key0", "pattern": "pattern?", "partial": false}}, {"kiwiTreeCondition": {"not": true, "key": "key1", "pattern": "pattern1", "partial": true}}]}}}' \
+  -d '{"metadata": {"name": "sub1", "description": "my subscription 1"}, "route": {"destinations": ["dst1"], "condition": {"groupCondition": {"not": false, "logic": 0, "group": [{"kiwiTreeCondition": {"not": false, "key": "key0", "pattern": "pattern?", "partial": false}}, {"kiwiTreeCondition": {"not": true, "key": "key1", "pattern": "pattern1", "partial": true}}]}}}}' \
   localhost:8080 \
   subscriptions.Service/Create
 ```
@@ -197,7 +197,7 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{"id": "c00e1228-fd78-4761-8f59-fbbfa690b9a9"}' \
+  -d '{"id": "3426d090-1b8a-4a09-ac9c-41f2de24d5ac"}' \
   localhost:8080 \
   subscriptions.Service/Read
 ```
@@ -209,9 +209,9 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{"name": "sub1"}' \
+  -d '{"id": "f7102c87-3ce4-4bb0-8527-b4644f685b13"}' \
   localhost:8080 \
-  subscriptions.Service/Read
+  subscriptions.Service/Delete
 ```
 
 ## 4.4. Search
