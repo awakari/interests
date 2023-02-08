@@ -1,7 +1,7 @@
 package mongo
 
 import (
-	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/storage"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,15 +10,15 @@ import (
 
 func Test_encodeCondition(t *testing.T) {
 	cases := map[string]struct {
-		src   model.Condition
+		src   condition.Condition
 		dst   Condition
 		kiwis []kiwiSearchData
 	}{
 		"single Kiwi condition": {
-			src: model.NewKiwiTreeCondition(
-				model.NewKiwiCondition(
-					model.NewKeyCondition(
-						model.NewCondition(true),
+			src: condition.NewKiwiTreeCondition(
+				condition.NewKiwiCondition(
+					condition.NewKeyCondition(
+						condition.NewCondition(true),
 						"cond0",
 						"key0",
 					),
@@ -45,14 +45,14 @@ func Test_encodeCondition(t *testing.T) {
 			},
 		},
 		"group condition": {
-			src: model.NewGroupCondition(
-				model.NewCondition(false),
-				model.GroupLogicOr,
-				[]model.Condition{
-					model.NewKiwiTreeCondition(
-						model.NewKiwiCondition(
-							model.NewKeyCondition(
-								model.NewCondition(true),
+			src: condition.NewGroupCondition(
+				condition.NewCondition(false),
+				condition.GroupLogicOr,
+				[]condition.Condition{
+					condition.NewKiwiTreeCondition(
+						condition.NewKiwiCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition(true),
 								"cond1",
 								"key0",
 							),
@@ -60,10 +60,10 @@ func Test_encodeCondition(t *testing.T) {
 							"pattern0",
 						),
 					),
-					model.NewKiwiTreeCondition(
-						model.NewKiwiCondition(
-							model.NewKeyCondition(
-								model.NewCondition(false),
+					condition.NewKiwiTreeCondition(
+						condition.NewKiwiCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition(false),
 								"cond2",
 								"key1",
 							),
@@ -97,7 +97,7 @@ func Test_encodeCondition(t *testing.T) {
 						},
 					},
 				},
-				Logic: model.GroupLogicOr,
+				Logic: condition.GroupLogicOr,
 			},
 			kiwis: []kiwiSearchData{
 				{
@@ -117,11 +117,63 @@ func Test_encodeCondition(t *testing.T) {
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
 			dst, kiwis := encodeCondition(c.src)
-			assert.Equal(t, c.dst, dst)
+			assert.True(t, conditionRecsEqual(c.dst, dst))
 			assert.Equal(t, len(c.kiwis), len(kiwis))
-			assert.ElementsMatch(t, c.kiwis, kiwis)
+			for i, k := range c.kiwis {
+				assert.True(t, conditionRecsEqual(k, kiwis[i]))
+			}
 		})
 	}
+}
+
+func conditionRecsEqual(a, b Condition) (equal bool) {
+	switch at := a.(type) {
+	case groupCondition:
+		var bg groupCondition
+		bg, equal = b.(groupCondition)
+		if equal {
+			equal = at.Base.Not == bg.Base.Not
+		}
+		if equal {
+			equal = at.Logic == bg.Logic
+		}
+		if equal {
+			for i, child := range at.Group {
+				equal = conditionRecsEqual(child, bg.Group[i])
+				if !equal {
+					break
+				}
+			}
+		}
+	case kiwiCondition:
+		var bk kiwiCondition
+		bk, equal = b.(kiwiCondition)
+		if equal {
+			equal = at.Base.Not == bk.Base.Not
+		}
+		if equal {
+			equal = at.Partial == bk.Partial
+		}
+		if equal {
+			equal = at.Key == bk.Key
+		}
+		if equal {
+			equal = at.Pattern == bk.Pattern
+		}
+	case kiwiSearchData:
+		var bk kiwiSearchData
+		bk, equal = b.(kiwiSearchData)
+		if equal {
+			equal = at.Partial == bk.Partial
+		}
+		if equal {
+			equal = at.Key == bk.Key
+		}
+		if equal {
+			equal = at.Pattern == bk.Pattern
+		}
+	}
+	return
 }
 
 func Test_decodeRawCondition(t *testing.T) {
@@ -185,7 +237,7 @@ func Test_decodeRawCondition(t *testing.T) {
 				"base": bson.M{
 					"not": false,
 				},
-				"logic": int32(model.GroupLogicAnd),
+				"logic": int32(condition.GroupLogicAnd),
 				"group": bson.A{
 					bson.M{
 						"base": bson.M{
@@ -200,7 +252,7 @@ func Test_decodeRawCondition(t *testing.T) {
 						"base": bson.M{
 							"not": false,
 						},
-						"logic": int32(model.GroupLogicXor),
+						"logic": int32(condition.GroupLogicXor),
 						"group": bson.A{
 							bson.M{
 								"base": bson.M{
@@ -262,10 +314,10 @@ func Test_decodeRawCondition(t *testing.T) {
 								},
 							},
 						},
-						Logic: model.GroupLogicXor,
+						Logic: condition.GroupLogicXor,
 					},
 				},
-				Logic: model.GroupLogicAnd,
+				Logic: condition.GroupLogicAnd,
 			},
 		},
 	}
@@ -283,13 +335,13 @@ func Test_decodeRawCondition(t *testing.T) {
 
 func Test_decodeCondition(t *testing.T) {
 	cases := map[string]struct {
-		dst model.Condition
+		dst condition.Condition
 		src Condition
 	}{
 		"single Kiwi condition": {
-			dst: model.NewKiwiCondition(
-				model.NewKeyCondition(
-					model.NewCondition(true),
+			dst: condition.NewKiwiCondition(
+				condition.NewKeyCondition(
+					condition.NewCondition(true),
 					"cond0",
 					"key0",
 				),
@@ -307,22 +359,22 @@ func Test_decodeCondition(t *testing.T) {
 			},
 		},
 		"group condition": {
-			dst: model.NewGroupCondition(
-				model.NewCondition(false),
-				model.GroupLogicOr,
-				[]model.Condition{
-					model.NewKiwiCondition(
-						model.NewKeyCondition(
-							model.NewCondition(true),
+			dst: condition.NewGroupCondition(
+				condition.NewCondition(false),
+				condition.GroupLogicOr,
+				[]condition.Condition{
+					condition.NewKiwiCondition(
+						condition.NewKeyCondition(
+							condition.NewCondition(true),
 							"cond1",
 							"key0",
 						),
 						true,
 						"pattern0",
 					),
-					model.NewKiwiCondition(
-						model.NewKeyCondition(
-							model.NewCondition(false),
+					condition.NewKiwiCondition(
+						condition.NewKeyCondition(
+							condition.NewCondition(false),
 							"cond2",
 							"key1",
 						),
@@ -355,7 +407,7 @@ func Test_decodeCondition(t *testing.T) {
 						},
 					},
 				},
-				Logic: model.GroupLogicOr,
+				Logic: condition.GroupLogicOr,
 			},
 		},
 	}

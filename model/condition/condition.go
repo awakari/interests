@@ -1,4 +1,4 @@
-package model
+package condition
 
 type Condition interface {
 	IsNot() bool

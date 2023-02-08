@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/model/condition"
+	"github.com/awakari/subscriptions/model/subscription"
 	kiwiTree "github.com/awakari/subscriptions/service/kiwi-tree"
 	"github.com/awakari/subscriptions/storage"
 	"github.com/stretchr/testify/assert"
@@ -14,118 +16,24 @@ import (
 
 func TestService_Create(t *testing.T) {
 	//
-	storMem := make(map[string]model.SubscriptionData)
+	storMem := make(map[string]subscription.Data)
 	stor := storage.NewStorageMock(storMem)
 	kiwiTreeSvc := kiwiTree.NewServiceMock()
 	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	_, err := svc.Create(
 		nil,
-		model.SubscriptionData{
+		subscription.Data{
 			Metadata: map[string]string{
 				"description": "pre-existing",
 			},
-			Routes: []string{
-				"route 4",
-			},
-			Condition: model.NewKiwiTreeCondition(
-				model.NewKiwiCondition(
-					model.NewKeyCondition(
-						model.NewCondition(false),
-						"",
-						"key0",
-					),
-					false,
-					"pattern0",
-				),
-			),
-		},
-	)
-	require.Nil(t, err)
-	//
-	cases := map[string]struct {
-		req model.SubscriptionData
-		err error
-	}{
-		"empty": {
-			err: model.ErrInvalidSubscription,
-		},
-		"locked": {
-			req: model.SubscriptionData{
-				Metadata: map[string]string{
-					"description": "my subscription",
-				},
-				Routes: []string{
-					"route 1",
-				},
-				Condition: model.NewKiwiTreeCondition(
-					model.NewKiwiCondition(
-						model.NewKeyCondition(
-							model.NewCondition(false),
-							"",
-							"",
-						),
-						false,
-						"locked",
-					),
-				),
-			},
-			err: ErrShouldRetry,
-		},
-		"fail": {
-			req: model.SubscriptionData{
-				Metadata: map[string]string{
-					"description": "my subscription",
-				},
-				Routes: []string{
-					"route 2",
-				},
-				Condition: model.NewKiwiTreeCondition(
-					model.NewKiwiCondition(
-						model.NewKeyCondition(
-							model.NewCondition(false),
-							"",
-							"fail",
-						),
-						false,
-						"fail",
-					),
-				),
-			},
-			err: ErrInternal,
-		},
-		"ok": {
-			req: model.SubscriptionData{
-				Metadata: map[string]string{
-					"description": "my subscription",
-				},
-				Routes: []string{
-					"route 3",
-				},
-				Condition: model.NewKiwiTreeCondition(
-					model.NewKiwiCondition(
-						model.NewKeyCondition(
-							model.NewCondition(false),
-							"",
-							"key0",
-						),
-						false,
-						"ok",
-					),
-				),
-			},
-		},
-		"conflict": {
-			req: model.SubscriptionData{
-				Metadata: map[string]string{
-					"description": "conflict",
-				},
-				Routes: []string{
+			Route: subscription.Route{
+				Destinations: []string{
 					"route 4",
 				},
-				Condition: model.NewKiwiTreeCondition(
-					model.NewKiwiCondition(
-						model.NewKeyCondition(
-							model.NewCondition(false),
+				Condition: condition.NewKiwiTreeCondition(
+					condition.NewKiwiCondition(
+						condition.NewKeyCondition(
+							condition.NewCondition(false),
 							"",
 							"key0",
 						),
@@ -133,6 +41,110 @@ func TestService_Create(t *testing.T) {
 						"pattern0",
 					),
 				),
+			},
+		},
+	)
+	require.Nil(t, err)
+	//
+	cases := map[string]struct {
+		req subscription.Data
+		err error
+	}{
+		"empty": {
+			err: subscription.ErrInvalidSubscriptionRoute,
+		},
+		"locked": {
+			req: subscription.Data{
+				Metadata: map[string]string{
+					"description": "my subscription",
+				},
+				Route: subscription.Route{
+					Destinations: []string{
+						"route 1",
+					},
+					Condition: condition.NewKiwiTreeCondition(
+						condition.NewKiwiCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition(false),
+								"",
+								"",
+							),
+							false,
+							"locked",
+						),
+					),
+				},
+			},
+			err: ErrShouldRetry,
+		},
+		"fail": {
+			req: subscription.Data{
+				Metadata: map[string]string{
+					"description": "my subscription",
+				},
+				Route: subscription.Route{
+					Destinations: []string{
+						"route 2",
+					},
+					Condition: condition.NewKiwiTreeCondition(
+						condition.NewKiwiCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition(false),
+								"",
+								"fail",
+							),
+							false,
+							"fail",
+						),
+					),
+				},
+			},
+			err: ErrInternal,
+		},
+		"ok": {
+			req: subscription.Data{
+				Metadata: map[string]string{
+					"description": "my subscription",
+				},
+				Route: subscription.Route{
+					Destinations: []string{
+						"route 3",
+					},
+					Condition: condition.NewKiwiTreeCondition(
+						condition.NewKiwiCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition(false),
+								"",
+								"key0",
+							),
+							false,
+							"ok",
+						),
+					),
+				},
+			},
+		},
+		"conflict": {
+			req: subscription.Data{
+				Metadata: map[string]string{
+					"description": "conflict",
+				},
+				Route: subscription.Route{
+					Destinations: []string{
+						"route 4",
+					},
+					Condition: condition.NewKiwiTreeCondition(
+						condition.NewKiwiCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition(false),
+								"",
+								"key0",
+							),
+							false,
+							"pattern0",
+						),
+					),
+				},
 			},
 			err: ErrConflict,
 		},
@@ -155,53 +167,24 @@ func TestService_Create(t *testing.T) {
 
 func TestService_Read(t *testing.T) {
 	//
-	storMem := make(map[string]model.SubscriptionData)
+	storMem := make(map[string]subscription.Data)
 	stor := storage.NewStorageMock(storMem)
 	kiwiTreeSvc := kiwiTree.NewServiceMock()
 	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	id1, err := svc.Create(
 		nil,
-		model.SubscriptionData{
+		subscription.Data{
 			Metadata: map[string]string{
 				"description": "pre existing",
 			},
-			Routes: []string{
-				"route 1",
-			},
-			Condition: model.NewKiwiTreeCondition(
-				model.NewKiwiCondition(
-					model.NewKeyCondition(
-						model.NewCondition(false),
-						"",
-						"key0",
-					),
-					false,
-					"pattern0",
-				),
-			),
-		},
-	)
-	require.Nil(t, err)
-	//
-	cases := map[string]struct {
-		sd  model.SubscriptionData
-		err error
-	}{
-		"subscription 0": {
-			err: ErrNotFound,
-		},
-		id1: {
-			sd: model.SubscriptionData{
-				Metadata: map[string]string{
-					"description": "pre existing",
-				},
-				Routes: []string{
+			Route: subscription.Route{
+				Destinations: []string{
 					"route 1",
 				},
-				Condition: model.NewKiwiTreeCondition(
-					model.NewKiwiCondition(
-						model.NewKeyCondition(
-							model.NewCondition(false),
+				Condition: condition.NewKiwiTreeCondition(
+					condition.NewKiwiCondition(
+						condition.NewKeyCondition(
+							condition.NewCondition(false),
 							"",
 							"key0",
 						),
@@ -209,6 +192,39 @@ func TestService_Read(t *testing.T) {
 						"pattern0",
 					),
 				),
+			},
+		},
+	)
+	require.Nil(t, err)
+	//
+	cases := map[string]struct {
+		sd  subscription.Data
+		err error
+	}{
+		"subscription 0": {
+			err: ErrNotFound,
+		},
+		id1: {
+			sd: subscription.Data{
+				Metadata: map[string]string{
+					"description": "pre existing",
+				},
+				Route: subscription.Route{
+					Destinations: []string{
+						"route 1",
+					},
+					Condition: condition.NewKiwiTreeCondition(
+						condition.NewKiwiCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition(false),
+								"",
+								"key0",
+							),
+							false,
+							"pattern0",
+						),
+					),
+				},
 			},
 		},
 	}
@@ -221,8 +237,8 @@ func TestService_Read(t *testing.T) {
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.sd.Metadata, sd.Metadata)
-				assert.Equal(t, c.sd.Routes, sd.Routes)
-				assert.True(t, conditionsDataEqual(c.sd.Condition, sd.Condition))
+				assert.Equal(t, c.sd.Route.Destinations, sd.Route.Destinations)
+				assert.True(t, conditionsDataEqual(c.sd.Route.Condition, sd.Route.Condition))
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}
@@ -232,87 +248,91 @@ func TestService_Read(t *testing.T) {
 
 func TestService_Delete(t *testing.T) {
 	//
-	storMem := make(map[string]model.SubscriptionData)
+	storMem := make(map[string]subscription.Data)
 	stor := storage.NewStorageMock(storMem)
 	kiwiTreeSvc := kiwiTree.NewServiceMock()
 	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
 	id1, err := svc.Create(
 		nil,
-		model.SubscriptionData{
+		subscription.Data{
 			Metadata: map[string]string{
 				"description": "pre-existing",
 			},
-			Routes: []string{
-				"route 1",
-			},
-			Condition: model.NewGroupCondition(
-				model.NewCondition(false),
-				model.GroupLogicAnd,
-				[]model.Condition{
-					model.NewKiwiTreeCondition(
-						model.NewKiwiCondition(
-							model.NewKeyCondition(
-								model.NewCondition(false),
-								"",
-								"key0",
-							),
-							false,
-							"pattern0",
-						),
-					),
-					model.NewKiwiTreeCondition(
-						model.NewKiwiCondition(
-							model.NewKeyCondition(
-								model.NewCondition(true),
-								"",
-								"key1",
-							),
-							true,
-							"pattern1",
-						),
-					),
+			Route: subscription.Route{
+				Destinations: []string{
+					"route 1",
 				},
-			),
+				Condition: condition.NewGroupCondition(
+					condition.NewCondition(false),
+					condition.GroupLogicAnd,
+					[]condition.Condition{
+						condition.NewKiwiTreeCondition(
+							condition.NewKiwiCondition(
+								condition.NewKeyCondition(
+									condition.NewCondition(false),
+									"",
+									"key0",
+								),
+								false,
+								"pattern0",
+							),
+						),
+						condition.NewKiwiTreeCondition(
+							condition.NewKiwiCondition(
+								condition.NewKeyCondition(
+									condition.NewCondition(true),
+									"",
+									"key1",
+								),
+								true,
+								"pattern1",
+							),
+						),
+					},
+				),
+			},
 		},
 	)
 	require.Nil(t, err)
 	id2, err := svc.Create(
 		nil,
-		model.SubscriptionData{
+		subscription.Data{
 			Metadata: map[string]string{
 				"description": "fails to clean up kiwi",
 			},
-			Routes: []string{
-				"route 2",
-			},
-			Condition: model.NewGroupCondition(
-				model.NewCondition(false),
-				model.GroupLogicAnd,
-				[]model.Condition{
-					model.NewKiwiTreeCondition(
-						model.NewKiwiCondition(
-							model.NewKeyCondition(
-								model.NewCondition(false),
-								"",
-								"key0",
-							),
-							false,
-							"pattern0",
-						),
-					),
-					model.NewKiwiTreeCondition(
-						model.NewKiwiCondition(
-							model.NewKeyCondition(
-								model.NewCondition(true),
-								"",
-								"key1",
-							),
-							true,
-							"fail",
-						),
-					),
+			Route: subscription.Route{
+				Destinations: []string{
+					"route 2",
 				},
-			),
+				Condition: condition.NewGroupCondition(
+					condition.NewCondition(false),
+					condition.GroupLogicAnd,
+					[]condition.Condition{
+						condition.NewKiwiTreeCondition(
+							condition.NewKiwiCondition(
+								condition.NewKeyCondition(
+									condition.NewCondition(false),
+									"",
+									"key0",
+								),
+								false,
+								"pattern0",
+							),
+						),
+						condition.NewKiwiTreeCondition(
+							condition.NewKiwiCondition(
+								condition.NewKeyCondition(
+									condition.NewCondition(true),
+									"",
+									"key1",
+								),
+								true,
+								"fail",
+							),
+						),
+					},
+				),
+			},
 		},
 	)
 	require.Nil(t, err)
@@ -351,7 +371,7 @@ func TestService_Delete(t *testing.T) {
 
 func TestService_SearchByKiwi(t *testing.T) {
 	//
-	storMem := make(map[string]model.SubscriptionData)
+	storMem := make(map[string]subscription.Data)
 	stor := storage.NewStorageMock(storMem)
 	kiwiTreeSvc := kiwiTree.NewServiceMock()
 	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
@@ -359,38 +379,40 @@ func TestService_SearchByKiwi(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	for i := 0; i < 100; i++ {
-		req := model.SubscriptionData{
+		req := subscription.Data{
 			Metadata: map[string]string{},
-			Routes: []string{
-				fmt.Sprintf("route %d", i),
-			},
-			Condition: model.NewKiwiTreeCondition(
-				model.NewKiwiCondition(
-					model.NewKeyCondition(
-						model.NewCondition(false),
-						"",
-						fmt.Sprintf("key%d", i%4),
+			Route: subscription.Route{
+				Destinations: []string{
+					fmt.Sprintf("route %d", i),
+				},
+				Condition: condition.NewKiwiTreeCondition(
+					condition.NewKiwiCondition(
+						condition.NewKeyCondition(
+							condition.NewCondition(false),
+							"",
+							fmt.Sprintf("key%d", i%4),
+						),
+						i%3 == 2,
+						fmt.Sprintf("pattern%d", i%5),
 					),
-					i%3 == 2,
-					fmt.Sprintf("pattern%d", i%5),
 				),
-			),
+			},
 		}
 		_, err := svc.Create(ctx, req)
 		require.Nil(t, err)
 	}
 	//
 	cases := map[string]struct {
-		query    model.ConditionQuery
+		query    condition.Query
 		pageSize int
 		err      error
 	}{
 		"key0/pattern0 -> 5 subs": {
-			query: model.ConditionQuery{
+			query: condition.Query{
 				Limit: 10,
-				Condition: model.NewKiwiCondition(
-					model.NewKeyCondition(
-						model.NewCondition(false),
+				Condition: condition.NewKiwiCondition(
+					condition.NewKeyCondition(
+						condition.NewCondition(false),
 						"",
 						"key0",
 					),
@@ -401,11 +423,11 @@ func TestService_SearchByKiwi(t *testing.T) {
 			pageSize: 5,
 		},
 		"key1/pattern1, limit=2": {
-			query: model.ConditionQuery{
+			query: condition.Query{
 				Limit: 2,
-				Condition: model.NewKiwiCondition(
-					model.NewKeyCondition(
-						model.NewCondition(false),
+				Condition: condition.NewKiwiCondition(
+					condition.NewKeyCondition(
+						condition.NewCondition(false),
 						"",
 						"key1",
 					),
@@ -416,28 +438,28 @@ func TestService_SearchByKiwi(t *testing.T) {
 			pageSize: 2,
 		},
 		"fail on group condition query": {
-			query: model.ConditionQuery{
+			query: condition.Query{
 				Limit: 3,
-				Condition: model.NewGroupCondition(
-					model.NewCondition(false),
-					model.GroupLogicAnd,
-					[]model.Condition{},
+				Condition: condition.NewGroupCondition(
+					condition.NewCondition(false),
+					condition.GroupLogicAnd,
+					[]condition.Condition{},
 				),
 			},
 			err: ErrInvalidQuery,
 		},
 		"fail on base condition query": {
-			query: model.ConditionQuery{
+			query: condition.Query{
 				Limit:     3,
-				Condition: model.NewCondition(false),
+				Condition: condition.NewCondition(false),
 			},
 			err: ErrInvalidQuery,
 		},
 		"fail on key condition query": {
-			query: model.ConditionQuery{
+			query: condition.Query{
 				Limit: 3,
-				Condition: model.NewKeyCondition(
-					model.NewCondition(false),
+				Condition: condition.NewKeyCondition(
+					condition.NewCondition(false),
 					"",
 					"key0",
 				),
@@ -463,7 +485,7 @@ func TestService_SearchByKiwi(t *testing.T) {
 
 func TestService_SearchByMetadata(t *testing.T) {
 	//
-	storMem := make(map[string]model.SubscriptionData)
+	storMem := make(map[string]subscription.Data)
 	stor := storage.NewStorageMock(storMem)
 	kiwiTreeSvc := kiwiTree.NewServiceMock()
 	svc := NewService(stor, kiwiTreeSvc, kiwiTreeSvc)
@@ -471,24 +493,26 @@ func TestService_SearchByMetadata(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	for i := 0; i < 100; i++ {
-		req := model.SubscriptionData{
+		req := subscription.Data{
 			Metadata: map[string]string{
 				fmt.Sprintf("key%d", i%5): fmt.Sprintf("value%d", i%7),
 			},
-			Routes: []string{
-				"route0",
-			},
-			Condition: model.NewKiwiTreeCondition(
-				model.NewKiwiCondition(
-					model.NewKeyCondition(
-						model.NewCondition(false),
-						"",
-						fmt.Sprintf("key%d", i%4),
+			Route: subscription.Route{
+				Destinations: []string{
+					"route0",
+				},
+				Condition: condition.NewKiwiTreeCondition(
+					condition.NewKiwiCondition(
+						condition.NewKeyCondition(
+							condition.NewCondition(false),
+							"",
+							fmt.Sprintf("key%d", i%4),
+						),
+						i%3 == 2,
+						fmt.Sprintf("pattern%d", i%5),
 					),
-					i%3 == 2,
-					fmt.Sprintf("pattern%d", i%5),
 				),
-			),
+			},
 		}
 		_, err := svc.Create(ctx, req)
 		require.Nil(t, err)
@@ -534,13 +558,13 @@ func TestService_SearchByMetadata(t *testing.T) {
 	}
 }
 
-func conditionsDataEqual(a, b model.Condition) (equal bool) {
+func conditionsDataEqual(a, b condition.Condition) (equal bool) {
 	equal = a.IsNot() == b.IsNot()
 	if equal {
 		switch at := a.(type) {
-		case model.GroupCondition:
+		case condition.GroupCondition:
 			switch bt := b.(type) {
-			case model.GroupCondition:
+			case condition.GroupCondition:
 				equal = at.GetLogic() == bt.GetLogic()
 				if equal {
 					ag := at.GetGroup()
@@ -555,16 +579,16 @@ func conditionsDataEqual(a, b model.Condition) (equal bool) {
 						}
 					}
 				}
-			case model.KiwiCondition:
+			case condition.KiwiCondition:
 				equal = false
 			default:
 				equal = false
 			}
-		case model.KiwiCondition:
+		case condition.KiwiCondition:
 			switch bt := b.(type) {
-			case model.GroupCondition:
+			case condition.GroupCondition:
 				equal = false
-			case model.KiwiCondition:
+			case condition.KiwiCondition:
 				equal = at.IsPartial() == bt.IsPartial() && at.GetKey() == bt.GetKey() && at.GetPattern() == bt.GetPattern()
 			default:
 				equal = false

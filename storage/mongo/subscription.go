@@ -1,7 +1,7 @@
 package mongo
 
 import (
-	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/model/subscription"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -10,7 +10,7 @@ type subscriptionWrite struct {
 
 	Metadata map[string]string `bson:"metadata"`
 
-	Routes []string `bson:"routes"`
+	Destinations []string `bson:"destinations"`
 
 	Condition Condition `bson:"condition"`
 
@@ -27,16 +27,18 @@ type kiwiSearchData struct {
 }
 
 // intermediate read result that contains the condition not decoded yet
-type subscription struct {
+type subscriptionRec struct {
 	Id string `bson:"id"`
-
-	Description string `bson:"description"`
 
 	Metadata map[string]string `bson:"metadata"`
 
-	Routes []string `bson:"routes"`
+	Destinations []string `bson:"destinations"`
 
 	RawCondition bson.M `bson:"condition"`
+
+	// Kiwis contains a flat list of copies of all kiwi conditions.
+	// The Kiwis field is necessary to support the subscriptions search by a "Kiwi".
+	Kiwis []kiwiSearchData `bson:"kiwis"`
 }
 
 const attrId = "id"
@@ -45,19 +47,30 @@ const attrRoutes = "routes"
 const attrKiwis = "kiwis"
 const attrCondition = "condition"
 
-func (rec subscription) decodeSubscription(sub *model.Subscription) (err error) {
+func (rec subscriptionRec) decodeSubscription(sub *subscription.Subscription) (err error) {
 	sub.Id = rec.Id
 	err = rec.decodeSubscriptionData(&sub.Data)
 	return
 }
 
-func (rec subscription) decodeSubscriptionData(sd *model.SubscriptionData) (err error) {
+func (rec subscriptionRec) decodeSubscriptionData(sd *subscription.Data) (err error) {
 	sd.Metadata = rec.Metadata
-	sd.Routes = rec.Routes
+	err = rec.decodeSubscriptionRoute(&sd.Route)
+	return
+}
+
+func (rec subscriptionRec) decodeSubscriptionRoute(sr *subscription.Route) (err error) {
+	sr.Destinations = rec.Destinations
 	var condRec Condition
 	condRec, err = decodeRawCondition(rec.RawCondition)
 	if err == nil {
-		sd.Condition = decodeCondition(condRec)
+		sr.Condition = decodeCondition(condRec)
 	}
+	return
+}
+
+func (rec subscriptionRec) decodeSubscriptionConditionMatch(cm *subscription.ConditionMatch) (err error) {
+	cm.Id = rec.Id
+	err = rec.decodeSubscriptionRoute(&cm.Route)
 	return
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/model/condition"
+	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,15 +24,18 @@ func NewServiceController(svc service.Service) ServiceServer {
 	}
 }
 
-func (sc serviceController) Create(ctx context.Context, req *SubscriptionInputData) (resp *CreateResponse, err error) {
+func (sc serviceController) Create(ctx context.Context, req *SubscriptionDataInput) (resp *CreateResponse, err error) {
 	var id string
-	var cond model.Condition
-	cond, err = decodeCondition(req.Condition)
+	route := req.Route
+	var cond condition.Condition
+	cond, err = decodeCondition(route.Condition)
 	if err == nil {
-		sd := model.SubscriptionData{
-			Metadata:  req.Metadata,
-			Routes:    req.Routes,
-			Condition: cond,
+		sd := subscription.Data{
+			Metadata: req.Metadata,
+			Route: subscription.Route{
+				Destinations: route.Destinations,
+				Condition:    cond,
+			},
 		}
 		id, err = sc.svc.Create(ctx, sd)
 		err = encodeError(err)
@@ -41,8 +46,8 @@ func (sc serviceController) Create(ctx context.Context, req *SubscriptionInputDa
 	return
 }
 
-func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *SubscriptionOutputData, err error) {
-	var sd model.SubscriptionData
+func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *SubscriptionDataOutput, err error) {
+	var sd subscription.Data
 	sd, err = sc.svc.Read(ctx, req.Id)
 	if err != nil {
 		err = encodeError(err)
@@ -57,30 +62,31 @@ func (sc serviceController) Delete(ctx context.Context, req *DeleteRequest) (res
 	return &emptypb.Empty{}, encodeError(err)
 }
 
-func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchByConditionRequest) (resp *SearchResponse, err error) {
-	resp = &SearchResponse{
-		Page: []*Subscription{},
+func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchByConditionRequest) (resp *SearchByConditionResponse, err error) {
+	resp = &SearchByConditionResponse{
+		Page: []*ConditionMatch{},
 	}
 	kcq := req.GetKiwiConditionQuery()
 	switch {
 	case kcq != nil:
-		q := model.ConditionQuery{
+		q := condition.Query{
 			Limit: req.Limit,
-			Condition: model.NewKiwiCondition(
-				model.NewKeyCondition(
-					model.NewCondition(false), // not flag is not used in the search by condition
+			Condition: condition.NewKiwiCondition(
+				condition.NewKeyCondition(
+					condition.NewCondition(false), // not flag is not used
+					"",                            // condition id is not used
 					kcq.Key,
 				),
 				kcq.Partial,
 				kcq.Pattern,
 			),
 		}
-		var page []model.Subscription
-		var encodedSub *Subscription
+		var page []subscription.ConditionMatch
+		var encodedCm *ConditionMatch
 		page, err = sc.svc.SearchByCondition(ctx, q, req.Cursor)
-		for _, sub := range page {
-			encodedSub, err = encodeSubscription(sub)
-			resp.Page = append(resp.Page, encodedSub)
+		for _, cm := range page {
+			encodedCm, err = encodeConditionMatch(cm)
+			resp.Page = append(resp.Page, encodedCm)
 		}
 	default:
 		err = status.Error(codes.InvalidArgument, "unsupported condition type")
@@ -88,15 +94,15 @@ func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchBy
 	return
 }
 
-func (sc serviceController) SearchByMetadata(ctx context.Context, req *SearchByMetadataRequest) (resp *SearchResponse, err error) {
-	resp = &SearchResponse{
+func (sc serviceController) SearchByMetadata(ctx context.Context, req *SearchByMetadataRequest) (resp *SearchByMetadataResponse, err error) {
+	resp = &SearchByMetadataResponse{
 		Page: []*Subscription{},
 	}
 	q := model.MetadataQuery{
 		Limit:    req.Limit,
 		Metadata: req.Metadata,
 	}
-	var page []model.Subscription
+	var page []subscription.Subscription
 	var encodedSub *Subscription
 	page, err = sc.svc.SearchByMetadata(ctx, q, req.Cursor)
 	for _, sub := range page {
@@ -109,12 +115,12 @@ func (sc serviceController) SearchByMetadata(ctx context.Context, req *SearchByM
 	return
 }
 
-func decodeCondition(src *InputCondition) (dst model.Condition, err error) {
+func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
 	gc, ktc := src.GetGroupCondition(), src.GetKiwiTreeCondition()
 	switch {
 	case gc != nil:
-		var group []model.Condition
-		var childDst model.Condition
+		var group []condition.Condition
+		var childDst condition.Condition
 		for _, childSrc := range gc.Group {
 			childDst, err = decodeCondition(childSrc)
 			if err != nil {
@@ -123,17 +129,18 @@ func decodeCondition(src *InputCondition) (dst model.Condition, err error) {
 			group = append(group, childDst)
 		}
 		if err == nil {
-			dst = model.NewGroupCondition(
-				model.NewCondition(gc.GetNot()),
-				model.GroupLogic(gc.GetLogic()),
+			dst = condition.NewGroupCondition(
+				condition.NewCondition(gc.GetNot()),
+				condition.GroupLogic(gc.GetLogic()),
 				group,
 			)
 		}
 	case ktc != nil:
-		dst = model.NewKiwiTreeCondition(
-			model.NewKiwiCondition(
-				model.NewKeyCondition(
-					model.NewCondition(ktc.GetNot()),
+		dst = condition.NewKiwiTreeCondition(
+			condition.NewKiwiCondition(
+				condition.NewKeyCondition(
+					condition.NewCondition(ktc.GetNot()),
+					"", // id is not used, generated later
 					ktc.GetKey(),
 				),
 				ktc.GetPartial(),
@@ -146,8 +153,8 @@ func decodeCondition(src *InputCondition) (dst model.Condition, err error) {
 	return
 }
 
-func encodeSubscription(src model.Subscription) (dst *Subscription, err error) {
-	var dstData *SubscriptionOutputData
+func encodeSubscription(src subscription.Subscription) (dst *Subscription, err error) {
+	var dstData *SubscriptionDataOutput
 	dstData, err = encodeSubscriptionData(src.Data)
 	if err == nil {
 		dst = &Subscription{
@@ -158,23 +165,36 @@ func encodeSubscription(src model.Subscription) (dst *Subscription, err error) {
 	return
 }
 
-func encodeSubscriptionData(src model.SubscriptionData) (dst *SubscriptionOutputData, err error) {
-	var dstCond *OutputCondition
-	dstCond, err = encodeCondition(src.Condition)
-	dst = &SubscriptionOutputData{
-		Metadata:  src.Metadata,
-		Routes:    src.Routes,
-		Condition: dstCond,
+func encodeSubscriptionData(src subscription.Data) (dst *SubscriptionDataOutput, err error) {
+	var dstRoute *RouteOutput
+	dstRoute, err = encodeSubscriptionRoute(src.Route)
+	if err == nil {
+		dst = &SubscriptionDataOutput{
+			Metadata: src.Metadata,
+			Route:    dstRoute,
+		}
 	}
 	return
 }
 
-func encodeCondition(src model.Condition) (dst *OutputCondition, err error) {
-	dst = &OutputCondition{}
+func encodeSubscriptionRoute(src subscription.Route) (dst *RouteOutput, err error) {
+	var dstCond *ConditionOutput
+	dstCond, err = encodeCondition(src.Condition)
+	if err == nil {
+		dst = &RouteOutput{
+			Destinations: src.Destinations,
+			Condition:    dstCond,
+		}
+	}
+	return
+}
+
+func encodeCondition(src condition.Condition) (dst *ConditionOutput, err error) {
+	dst = &ConditionOutput{}
 	switch c := src.(type) {
-	case model.GroupCondition:
-		var dstGroup []*OutputCondition
-		var childDst *OutputCondition
+	case condition.GroupCondition:
+		var dstGroup []*ConditionOutput
+		var childDst *ConditionOutput
 		for _, childSrc := range c.GetGroup() {
 			childDst, err = encodeCondition(childSrc)
 			if err != nil {
@@ -183,27 +203,35 @@ func encodeCondition(src model.Condition) (dst *OutputCondition, err error) {
 			dstGroup = append(dstGroup, childDst)
 		}
 		if err == nil {
-			dst.Condition = &OutputCondition_GroupCondition{
-				GroupCondition: &GroupOutputCondition{
-					Base: &OutputConditionBase{
-						Not: src.IsNot(),
-					},
+			dst.Condition = &ConditionOutput_GroupCondition{
+				GroupCondition: &GroupConditionOutput{
+					Not:   src.IsNot(),
 					Logic: GroupLogic(c.GetLogic()),
 					Group: dstGroup,
 				},
 			}
 		}
-	case model.KiwiCondition:
-		dst.Condition = &OutputCondition_KiwiCondition{
-			KiwiCondition: &KiwiOutputCondition{
-				Base: &OutputConditionBase{
-					Not: c.IsNot(),
-				},
+	case condition.KiwiCondition:
+		dst.Condition = &ConditionOutput_KiwiCondition{
+			KiwiCondition: &KiwiConditionOutput{
+				Not:     c.IsNot(),
+				Id:      c.GetId(),
 				Key:     c.GetKey(),
 				Pattern: c.GetPattern(),
 				Partial: c.IsPartial(),
 			},
 		}
+	}
+	return
+}
+
+func encodeConditionMatch(src subscription.ConditionMatch) (dst *ConditionMatch, err error) {
+	var dstRoute *RouteOutput
+	dstRoute, err = encodeSubscriptionRoute(src.Route)
+	dst = &ConditionMatch{
+		SubscriptionId: src.Id,
+		ConditionId:    src.ConditionId,
+		Route:          dstRoute,
 	}
 	return
 }
@@ -214,7 +242,7 @@ func encodeError(svcErr error) (err error) {
 		err = nil
 	case errors.Is(svcErr, service.ErrInternal):
 		err = status.Error(codes.Internal, svcErr.Error())
-	case errors.Is(svcErr, model.ErrInvalidSubscription):
+	case errors.Is(svcErr, subscription.ErrInvalidSubscriptionRoute):
 		err = status.Error(codes.InvalidArgument, svcErr.Error())
 	case errors.Is(svcErr, service.ErrShouldRetry):
 		err = status.Error(codes.Unavailable, svcErr.Error())

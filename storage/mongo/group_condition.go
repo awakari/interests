@@ -1,7 +1,7 @@
 package mongo
 
 import (
-	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/model/condition"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -16,7 +16,7 @@ const groupConditionAttrLogic = "logic"
 
 var _ Condition = (*groupCondition)(nil)
 
-func encodeGroupCondition(src model.GroupCondition) (dst groupCondition, kiwis []kiwiSearchData) {
+func encodeGroupCondition(src condition.GroupCondition) (dst groupCondition, kiwis []kiwiSearchData) {
 	var group []Condition
 	for _, childSrc := range src.GetGroup() {
 		childDst, childKiwis := encodeCondition(childSrc)

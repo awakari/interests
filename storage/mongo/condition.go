@@ -2,7 +2,7 @@ package mongo
 
 import (
 	"fmt"
-	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/storage"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -19,11 +19,11 @@ const conditionAttrNot = "not"
 
 var _ Condition = (*ConditionBase)(nil)
 
-func encodeCondition(src model.Condition) (dst Condition, kiwis []kiwiSearchData) {
+func encodeCondition(src condition.Condition) (dst Condition, kiwis []kiwiSearchData) {
 	switch c := src.(type) {
-	case model.GroupCondition:
+	case condition.GroupCondition:
 		dst, kiwis = encodeGroupCondition(c)
-	case model.KiwiCondition:
+	case condition.KiwiCondition:
 		dst, kiwis = encodeKiwiCondition(c)
 	}
 	return
@@ -48,19 +48,19 @@ func decodeRawCondition(raw bson.M) (result Condition, err error) {
 	return
 }
 
-func decodeCondition(src Condition) (dst model.Condition) {
+func decodeCondition(src Condition) (dst condition.Condition) {
 	switch c := src.(type) {
 	case groupCondition:
-		var children []model.Condition
+		var children []condition.Condition
 		for _, childCond := range c.Group {
 			children = append(children, decodeCondition(childCond))
 		}
-		dstBase := model.NewCondition(c.Base.Not)
-		dst = model.NewGroupCondition(dstBase, model.GroupLogic(c.Logic), children)
+		dstBase := condition.NewCondition(c.Base.Not)
+		dst = condition.NewGroupCondition(dstBase, condition.GroupLogic(c.Logic), children)
 	case kiwiCondition:
-		dstBase := model.NewCondition(c.Base.Not)
-		dstKey := model.NewKeyCondition(dstBase, c.Id, c.Key)
-		dst = model.NewKiwiCondition(dstKey, c.Partial, c.Pattern)
+		dstBase := condition.NewCondition(c.Base.Not)
+		dstKey := condition.NewKeyCondition(dstBase, c.Id, c.Key)
+		dst = condition.NewKiwiCondition(dstKey, c.Partial, c.Pattern)
 	}
 	return dst
 }

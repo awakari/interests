@@ -1,7 +1,7 @@
 package mongo
 
 import (
-	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/model/condition"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"testing"
@@ -51,10 +51,10 @@ func Test_decodeGroupCondition(t *testing.T) {
 								"partial": false,
 							},
 						},
-						"logic": int32(model.GroupLogicXor),
+						"logic": int32(condition.GroupLogicXor),
 					},
 				},
-				"logic": int32(model.GroupLogicAnd),
+				"logic": int32(condition.GroupLogicAnd),
 			},
 			out: groupCondition{
 				Base: ConditionBase{
@@ -94,10 +94,10 @@ func Test_decodeGroupCondition(t *testing.T) {
 								},
 							},
 						},
-						Logic: model.GroupLogicXor,
+						Logic: condition.GroupLogicXor,
 					},
 				},
-				Logic: model.GroupLogicAnd,
+				Logic: condition.GroupLogicAnd,
 			},
 		},
 	}

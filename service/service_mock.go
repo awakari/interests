@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/model/condition"
+	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/google/uuid"
 )
 
@@ -15,12 +17,12 @@ func NewServiceMock() Service {
 	return serviceMock{}
 }
 
-func (sm serviceMock) Create(ctx context.Context, sd model.SubscriptionData) (id string, err error) {
+func (sm serviceMock) Create(ctx context.Context, sd subscription.Data) (id string, err error) {
 	descr := sd.Metadata["description"]
 	if descr == "fail" {
 		err = ErrInternal
 	} else if descr == "invalid" {
-		err = model.ErrInvalidSubscription
+		err = subscription.ErrInvalidSubscriptionRoute
 	} else if descr == "conflict" {
 		err = ErrConflict
 	} else if descr == "busy" {
@@ -32,43 +34,45 @@ func (sm serviceMock) Create(ctx context.Context, sd model.SubscriptionData) (id
 	return
 }
 
-func (sm serviceMock) Read(ctx context.Context, id string) (sd model.SubscriptionData, err error) {
+func (sm serviceMock) Read(ctx context.Context, id string) (sd subscription.Data, err error) {
 	if id == "fail" {
 		err = ErrInternal
 	} else if id == "missing" {
 		err = ErrNotFound
 	} else {
-		sd = model.SubscriptionData{
+		sd = subscription.Data{
 			Metadata: map[string]string{
 				"description": "description",
 			},
-			Routes: []string{
-				"destination",
-			},
-			Condition: model.NewGroupCondition(
-				model.NewCondition(false),
-				model.GroupLogicAnd,
-				[]model.Condition{
-					model.NewKiwiCondition(
-						model.NewKeyCondition(
-							model.NewCondition(false),
-							"",
-							"key0",
-						),
-						true,
-						"pattern0",
-					),
-					model.NewKiwiCondition(
-						model.NewKeyCondition(
-							model.NewCondition(true),
-							"",
-							"key1",
-						),
-						false,
-						"pattern1",
-					),
+			Route: subscription.Route{
+				Destinations: []string{
+					"destination",
 				},
-			),
+				Condition: condition.NewGroupCondition(
+					condition.NewCondition(false),
+					condition.GroupLogicAnd,
+					[]condition.Condition{
+						condition.NewKiwiCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition(false),
+								"",
+								"key0",
+							),
+							true,
+							"pattern0",
+						),
+						condition.NewKiwiCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition(true),
+								"",
+								"key1",
+							),
+							false,
+							"pattern1",
+						),
+					},
+				),
+			},
 		}
 	}
 	return
@@ -83,14 +87,16 @@ func (sm serviceMock) Delete(ctx context.Context, id string) (err error) {
 	return
 }
 
-func (sm serviceMock) SearchByCondition(ctx context.Context, q model.ConditionQuery, cursor string) (page []model.Subscription, err error) {
+func (sm serviceMock) SearchByCondition(ctx context.Context, q condition.Query, cursor string) (page []subscription.ConditionMatch, err error) {
 	if cursor == "" {
-		page = []model.Subscription{
+		page = []subscription.ConditionMatch{
 			{
-				Id: "sub0",
+				Id:          "sub0",
+				ConditionId: "cond0",
 			},
 			{
-				Id: "sub1",
+				Id:          "sub1",
+				ConditionId: "cond0",
 			},
 		}
 	} else if cursor == "fail" {
@@ -99,9 +105,9 @@ func (sm serviceMock) SearchByCondition(ctx context.Context, q model.ConditionQu
 	return
 }
 
-func (sm serviceMock) SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []model.Subscription, err error) {
+func (sm serviceMock) SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []subscription.Subscription, err error) {
 	if cursor == "" {
-		page = []model.Subscription{
+		page = []subscription.Subscription{
 			{
 				Id: "sub0",
 			},

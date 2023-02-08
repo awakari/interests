@@ -2,7 +2,7 @@ package mongo
 
 import (
 	"fmt"
-	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/storage"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,7 +23,7 @@ const kiwiConditionAttrPattern = "pattern"
 
 var _ Condition = (*kiwiCondition)(nil)
 
-func encodeKiwiCondition(src model.KiwiCondition) (dst kiwiCondition, kiwis []kiwiSearchData) {
+func encodeKiwiCondition(src condition.KiwiCondition) (dst kiwiCondition, kiwis []kiwiSearchData) {
 	id := uuid.NewString()
 	partial := src.IsPartial()
 	key := src.GetKey()

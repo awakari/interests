@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/model/condition"
+	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/service/kiwi-tree"
 	"github.com/awakari/subscriptions/storage"
 	"reflect"
@@ -13,26 +15,26 @@ import (
 // Service is a model.Subscription CRUDL service.
 type Service interface {
 
-	// Create a new model.Subscription with the specified model.SubscriptionData.
+	// Create a new model.Subscription with the specified model.Data.
 	// Returns ErrConflict if a Subscription with the same name already present in the underlying storage.
-	// Returns model.ErrInvalidSubscription if the specified CreateRequest is invalid.
-	Create(ctx context.Context, sd model.SubscriptionData) (id string, err error)
+	// Returns model.ErrInvalidSubscriptionRoute if the specified CreateRequest is invalid.
+	Create(ctx context.Context, sd subscription.Data) (id string, err error)
 
 	// Read the specified model.Subscription.
 	// Returns ErrNotFound if Subscription is missing in the underlying storage.
-	Read(ctx context.Context, id string) (sd model.SubscriptionData, err error)
+	Read(ctx context.Context, id string) (sd subscription.Data, err error)
 
 	// Delete a model.Subscription and all associated conditions those not in use by any other model.Subscription.
 	// Returns ErrNotFound if model.Subscription with the specified name is missing in the underlying storage.
 	Delete(ctx context.Context, id string) (err error)
 
-	// SearchByCondition returns model.Subscription page where:<br/>
-	// * name is greater than the specified cursor<br/>
-	// * contains a model.Condition specified by the query.
-	SearchByCondition(ctx context.Context, q model.ConditionQuery, cursor string) (page []model.Subscription, err error)
+	// SearchByCondition returns subscription.ConditionMatch page where:<br/>
+	// * subscription id is greater than the specified cursor<br/>
+	// * contains a condition specified by the query.
+	SearchByCondition(ctx context.Context, q condition.Query, cursor string) (page []subscription.ConditionMatch, err error)
 
 	// SearchByMetadata returns all subscriptions those have the metadata matching the query (same keys and values).
-	SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []model.Subscription, err error)
+	SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []subscription.Subscription, err error)
 }
 
 type service struct {
@@ -74,10 +76,10 @@ func NewService(
 	}
 }
 
-func (svc service) Create(ctx context.Context, sd model.SubscriptionData) (id string, err error) {
-	err = sd.Validate()
+func (svc service) Create(ctx context.Context, sd subscription.Data) (id string, err error) {
+	err = sd.Route.Validate()
 	if err == nil {
-		err = svc.createCondition(ctx, sd.Condition)
+		err = svc.createCondition(ctx, sd.Route.Condition)
 		if err == nil {
 			id, err = svc.stor.Create(ctx, sd)
 		}
@@ -86,25 +88,25 @@ func (svc service) Create(ctx context.Context, sd model.SubscriptionData) (id st
 	return
 }
 
-func (svc service) createCondition(ctx context.Context, cond model.Condition) (err error) {
+func (svc service) createCondition(ctx context.Context, cond condition.Condition) (err error) {
 	switch c := cond.(type) {
-	case model.GroupCondition:
+	case condition.GroupCondition:
 		for _, childCond := range c.GetGroup() {
 			err = svc.createCondition(ctx, childCond)
 			if err != nil {
 				break
 			}
 		}
-	case model.KiwiTreeCondition:
+	case condition.KiwiTreeCondition:
 		kiwiTreeSvc := svc.selectKiwiTreeService(c)
 		err = kiwiTreeSvc.Create(ctx, c.GetKey(), c.GetPattern())
 	default:
-		err = fmt.Errorf("%w: unsupported condition type: %s", model.ErrInvalidSubscription, reflect.TypeOf(cond))
+		err = fmt.Errorf("%w: unsupported condition type: %s", subscription.ErrInvalidSubscriptionRoute, reflect.TypeOf(cond))
 	}
 	return
 }
 
-func (svc service) selectKiwiTreeService(ktc model.KiwiTreeCondition) (kiwiTreeSvc kiwiTree.Service) {
+func (svc service) selectKiwiTreeService(ktc condition.KiwiTreeCondition) (kiwiTreeSvc kiwiTree.Service) {
 	if ktc.IsPartial() {
 		kiwiTreeSvc = svc.kiwiPartialTreeSvc
 	} else {
@@ -113,7 +115,7 @@ func (svc service) selectKiwiTreeService(ktc model.KiwiTreeCondition) (kiwiTreeS
 	return
 }
 
-func (svc service) Read(ctx context.Context, id string) (sd model.SubscriptionData, err error) {
+func (svc service) Read(ctx context.Context, id string) (sd subscription.Data, err error) {
 	sd, err = svc.stor.Read(ctx, id)
 	if err != nil {
 		err = translateError(err)
@@ -122,10 +124,10 @@ func (svc service) Read(ctx context.Context, id string) (sd model.SubscriptionDa
 }
 
 func (svc service) Delete(ctx context.Context, id string) (err error) {
-	var sd model.SubscriptionData
+	var sd subscription.Data
 	sd, err = svc.stor.Delete(ctx, id)
 	if err == nil {
-		err = svc.clearUnusedCondition(ctx, sd.Condition)
+		err = svc.clearUnusedCondition(ctx, sd.Route.Condition)
 		if err != nil {
 			err = fmt.Errorf("%w: %s, subscription id: %s", ErrCleanKiwis, err, id)
 		}
@@ -134,24 +136,24 @@ func (svc service) Delete(ctx context.Context, id string) (err error) {
 	return
 }
 
-func (svc service) clearUnusedCondition(ctx context.Context, cond model.Condition) (err error) {
+func (svc service) clearUnusedCondition(ctx context.Context, cond condition.Condition) (err error) {
 	switch c := cond.(type) {
-	case model.GroupCondition:
+	case condition.GroupCondition:
 		for _, childCond := range c.GetGroup() {
 			err = svc.clearUnusedCondition(ctx, childCond)
 			if err != nil {
 				break
 			}
 		}
-	case model.KiwiTreeCondition:
+	case condition.KiwiTreeCondition:
 		err = svc.clearUnusedKiwiTreeCondition(ctx, c)
 	default:
-		err = fmt.Errorf("%w: unsupported condition type: %s", model.ErrInvalidSubscription, reflect.TypeOf(cond))
+		err = fmt.Errorf("%w: unsupported condition type: %s", subscription.ErrInvalidSubscriptionRoute, reflect.TypeOf(cond))
 	}
 	return
 }
 
-func (svc service) clearUnusedKiwiTreeCondition(ctx context.Context, ktc model.KiwiTreeCondition) (err error) {
+func (svc service) clearUnusedKiwiTreeCondition(ctx context.Context, ktc condition.KiwiTreeCondition) (err error) {
 	k := ktc.GetKey()
 	p := ktc.GetPattern()
 	q := storage.KiwiQuery{
@@ -159,7 +161,7 @@ func (svc service) clearUnusedKiwiTreeCondition(ctx context.Context, ktc model.K
 		Key:     k,
 		Pattern: p,
 	}
-	var subs []model.Subscription
+	var subs []subscription.ConditionMatch
 	kiwiTreeSvc := svc.selectKiwiTreeService(ktc)
 	err = kiwiTreeSvc.LockCreate(ctx, k, p)
 	if err == nil {
@@ -178,9 +180,9 @@ func (svc service) clearUnusedKiwiTreeCondition(ctx context.Context, ktc model.K
 	return
 }
 
-func (svc service) SearchByCondition(ctx context.Context, q model.ConditionQuery, cursor string) (page []model.Subscription, err error) {
+func (svc service) SearchByCondition(ctx context.Context, q condition.Query, cursor string) (page []subscription.ConditionMatch, err error) {
 	switch c := q.Condition.(type) {
-	case model.KiwiCondition:
+	case condition.KiwiCondition:
 		kiwiQuery := storage.KiwiQuery{
 			Limit:   q.Limit,
 			Key:     c.GetKey(),
@@ -197,7 +199,7 @@ func (svc service) SearchByCondition(ctx context.Context, q model.ConditionQuery
 	return
 }
 
-func (svc service) SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []model.Subscription, err error) {
+func (svc service) SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []subscription.Subscription, err error) {
 	page, err = svc.stor.SearchByMetadata(ctx, q, cursor)
 	if err != nil {
 		err = translateError(err)
@@ -220,7 +222,7 @@ func translateError(srcErr error) (dstErr error) {
 			dstErr = fmt.Errorf("%w: %s", ErrShouldRetry, srcErr)
 		case errors.Is(srcErr, kiwiTree.ErrInternal):
 			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)
-		case errors.Is(srcErr, model.ErrInvalidSubscription):
+		case errors.Is(srcErr, subscription.ErrInvalidSubscriptionRoute):
 			dstErr = srcErr
 		case errors.Is(srcErr, ErrNotFound):
 			dstErr = srcErr

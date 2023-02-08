@@ -1,6 +1,6 @@
-package model
+package condition
 
-type ConditionQuery struct {
+type Query struct {
 
 	// Limit defines a results page size limit.
 	Limit uint32

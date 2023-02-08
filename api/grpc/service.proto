@@ -7,36 +7,99 @@ option go_package = "./api/grpc";
 import "google/protobuf/empty.proto";
 
 service Service {
-  rpc Create(SubscriptionInputData) returns (CreateResponse);
-  rpc Read(ReadRequest) returns (SubscriptionOutputData);
+  rpc Create(SubscriptionDataInput) returns (CreateResponse);
+  rpc Read(ReadRequest) returns (SubscriptionDataOutput);
   rpc Delete(DeleteRequest) returns (google.protobuf.Empty);
-  rpc SearchByCondition(SearchByConditionRequest) returns (SearchResponse);
-  rpc SearchByMetadata(SearchByMetadataRequest) returns (SearchResponse);
+  rpc SearchByCondition(SearchByConditionRequest) returns (SearchByConditionResponse);
+  rpc SearchByMetadata(SearchByMetadataRequest) returns (SearchByMetadataResponse);
 }
 
-message SubscriptionInputData {
+// Create
+
+message SubscriptionDataInput {
   map<string, string> metadata = 1;
-  repeated string routes = 2;
-  InputCondition condition = 3;
+  RouteInput route = 2;
+}
+
+message RouteInput {
+  repeated string destinations = 1;
+  ConditionInput condition = 2;
+}
+
+message ConditionInput {
+  oneof condition {
+    GroupConditionInput groupCondition = 1;
+    KiwiTreeConditionInput kiwiTreeCondition = 2;
+  }
+}
+
+message GroupConditionInput {
+  bool not = 1;
+  GroupLogic logic = 2;
+  repeated ConditionInput group = 3;
+}
+
+enum GroupLogic {
+  And = 0;
+  Or = 1;
+  Xor = 2;
+}
+
+message KiwiTreeConditionInput { // marker type
+  bool not = 1;
+  string key = 2;
+  string pattern = 3;
+  bool partial = 4;
 }
 
 message CreateResponse {
   string id = 1;
 }
 
+// Read
+
 message ReadRequest {
   string id = 1;
 }
 
-message SubscriptionOutputData {
+message SubscriptionDataOutput {
   map<string, string> metadata = 1;
-  repeated string routes = 2;
-  OutputCondition condition = 3;
+  RouteOutput route = 2;
 }
+
+message RouteOutput {
+  repeated string destinations = 1;
+  ConditionOutput condition = 2;
+}
+
+message ConditionOutput {
+  oneof condition {
+    GroupConditionOutput groupCondition = 1;
+    KiwiConditionOutput kiwiCondition = 2;
+  }
+}
+
+message GroupConditionOutput {
+  bool not = 1;
+  GroupLogic logic = 2;
+  repeated ConditionOutput group = 3;
+}
+
+message KiwiConditionOutput {
+  string id = 1;
+  bool not = 2;
+  string key = 3;
+  string pattern = 4;
+  bool partial = 5;
+}
+
+// Delete
 
 message DeleteRequest {
   string id = 1;
 }
+
+// SearchByCondition
 
 message SearchByConditionRequest {
   string cursor = 1;
@@ -46,75 +109,35 @@ message SearchByConditionRequest {
   }
 }
 
-message SearchResponse {
-  repeated Subscription page = 1;
-}
-
-message Subscription {
-  string id = 1;
-  SubscriptionOutputData data = 2;
-}
-
-message InputCondition {
-  oneof condition {
-    GroupInputCondition groupCondition = 1;
-    KiwiTreeInputCondition kiwiTreeCondition = 2;
-  }
-}
-
-message OutputCondition {
-  oneof condition {
-    GroupOutputCondition groupCondition = 1;
-    KiwiOutputCondition kiwiCondition = 2;
-  }
-}
-
-message OutputConditionBase {
-  string id = 1;
-  bool not = 2;
-}
-
-message GroupInputCondition {
-  bool not = 1;
-  GroupLogic logic = 2;
-  repeated InputCondition group = 3;
-}
-
-message GroupOutputCondition {
-  OutputConditionBase base = 1;
-  GroupLogic logic = 2;
-  repeated OutputCondition group = 3;
-}
-
-enum GroupLogic {
-  And = 0;
-  Or = 1;
-  Xor = 2;
-}
-
 message KiwiConditionQuery {
   string key = 1;
   string pattern = 2;
   bool partial = 3;
 }
 
-// marker type
-message KiwiTreeInputCondition {
-  bool not = 1;
-  string key = 2;
-  string pattern = 3;
-  bool partial = 4;
+message SearchByConditionResponse {
+  repeated ConditionMatch page = 1;
 }
 
-message KiwiOutputCondition {
-  OutputConditionBase base = 1;
-  string key = 2;
-  string pattern = 3;
-  bool partial = 4;
+message ConditionMatch {
+  string subscriptionId = 1;
+  string conditionId = 2;
+  RouteOutput route = 3;
 }
+
+// SearchByMetadata
 
 message SearchByMetadataRequest {
   string cursor = 1;
   uint32 limit = 2;
   map<string, string> metadata = 3;
+}
+
+message SearchByMetadataResponse {
+  repeated Subscription page = 1;
+}
+
+message Subscription {
+  string id = 1;
+  SubscriptionDataOutput data = 2;
 }

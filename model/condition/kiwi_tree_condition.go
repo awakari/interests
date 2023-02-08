@@ -1,4 +1,4 @@
-package model
+package condition
 
 // KiwiTreeCondition is a marker type representing that the pattern is/to be stored in the kiwi-tree storage.
 type KiwiTreeCondition interface {

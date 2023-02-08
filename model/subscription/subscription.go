@@ -1,4 +1,4 @@
-package model
+package subscription
 
 // Subscription represents the subscription entry.
 type Subscription struct {
@@ -7,5 +7,5 @@ type Subscription struct {
 	Id string
 
 	// Data represents the Subscription payload data.
-	Data SubscriptionData
+	Data Data
 }

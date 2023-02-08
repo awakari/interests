@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/awakari/subscriptions/model"
+	"github.com/awakari/subscriptions/model/subscription"
 	"io"
 )
 
@@ -14,22 +15,22 @@ type (
 		io.Closer
 
 		// Create a subscription means subscribing.
-		Create(ctx context.Context, sub model.SubscriptionData) (id string, err error)
+		Create(ctx context.Context, sub subscription.Data) (id string, err error)
 
-		// Read the model.SubscriptionData by the model.Subscription id.
-		Read(ctx context.Context, id string) (sub model.SubscriptionData, err error)
+		// Read the model.Data by the model.Subscription id.
+		Read(ctx context.Context, id string) (sub subscription.Data, err error)
 
 		// Delete removes the model.Subscription specified by its unique id.
-		// Returns the model.SubscriptionData if deleted, error otherwise.
-		Delete(ctx context.Context, name string) (sub model.SubscriptionData, err error)
+		// Returns the model.Data if deleted, error otherwise.
+		Delete(ctx context.Context, name string) (sub subscription.Data, err error)
 
 		// SearchByKiwi returns subscriptions page where:<br/>
 		// * model.Subscription id is greater than the one specified by the cursor<br/>
 		// * subscriptions match the specified model.KiwiQuery.
-		SearchByKiwi(ctx context.Context, q KiwiQuery, cursor string) (page []model.Subscription, err error)
+		SearchByKiwi(ctx context.Context, q KiwiQuery, cursor string) (page []subscription.ConditionMatch, err error)
 
 		// SearchByMetadata returns all subscriptions those have the metadata matching the query (same keys and values).
-		SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []model.Subscription, err error)
+		SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []subscription.Subscription, err error)
 	}
 )
 
