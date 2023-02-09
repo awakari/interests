@@ -49,13 +49,12 @@ func (sm serviceMock) Read(ctx context.Context, id string) (sd subscription.Data
 					"destination",
 				},
 				Condition: condition.NewGroupCondition(
-					condition.NewCondition(false),
+					condition.NewCondition("", false),
 					condition.GroupLogicAnd,
 					[]condition.Condition{
 						condition.NewKiwiCondition(
 							condition.NewKeyCondition(
-								condition.NewCondition(false),
-								"",
+								condition.NewCondition("", false),
 								"key0",
 							),
 							true,
@@ -63,8 +62,7 @@ func (sm serviceMock) Read(ctx context.Context, id string) (sd subscription.Data
 						),
 						condition.NewKiwiCondition(
 							condition.NewKeyCondition(
-								condition.NewCondition(true),
-								"",
+								condition.NewCondition("", true),
 								"key1",
 							),
 							false,
@@ -91,11 +89,37 @@ func (sm serviceMock) SearchByCondition(ctx context.Context, q condition.Query, 
 	if cursor == "" {
 		page = []subscription.ConditionMatch{
 			{
-				Id:          "sub0",
+				Id: "sub0",
+				Route: subscription.Route{
+					Destinations: []string{
+						"dst0",
+					},
+					Condition: condition.NewKiwiCondition(
+						condition.NewKeyCondition(
+							condition.NewCondition("cond0", false),
+							"key0",
+						),
+						false,
+						"pattern0",
+					),
+				},
 				ConditionId: "cond0",
 			},
 			{
-				Id:          "sub1",
+				Id: "sub1",
+				Route: subscription.Route{
+					Destinations: []string{
+						"dst0",
+					},
+					Condition: condition.NewKiwiCondition(
+						condition.NewKeyCondition(
+							condition.NewCondition("cond0", false),
+							"key0",
+						),
+						false,
+						"pattern0",
+					),
+				},
 				ConditionId: "cond0",
 			},
 		}
@@ -110,9 +134,41 @@ func (sm serviceMock) SearchByMetadata(ctx context.Context, q model.MetadataQuer
 		page = []subscription.Subscription{
 			{
 				Id: "sub0",
+				Data: subscription.Data{
+					Metadata: map[string]string{
+						"key0": "value0",
+					},
+					Route: subscription.Route{
+						Destinations: []string{},
+						Condition: condition.NewKiwiCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition("cond0", false),
+								"key0",
+							),
+							false,
+							"pattern0",
+						),
+					},
+				},
 			},
 			{
 				Id: "sub1",
+				Data: subscription.Data{
+					Metadata: map[string]string{
+						"key0": "value0",
+					},
+					Route: subscription.Route{
+						Destinations: []string{},
+						Condition: condition.NewKiwiCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition("cond0", false),
+								"key0",
+							),
+							false,
+							"pattern0",
+						),
+					},
+				},
 			},
 		}
 	} else if cursor == "fail" {

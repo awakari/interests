@@ -13,8 +13,10 @@ func NewKiwiTreeCondition(kc KiwiCondition) KiwiTreeCondition {
 	return kiwiTreeCondition{
 		kiwiCondition{
 			KeyCondition: NewKeyCondition(
-				NewCondition(kc.IsNot()),
-				kc.GetId(),
+				NewCondition(
+					kc.GetId(),
+					kc.IsNot(),
+				),
 				kc.GetKey(),
 			),
 			Partial: kc.IsPartial(),

@@ -16,19 +16,19 @@ func Test_decodeKiwiCondition(t *testing.T) {
 	}{
 		"ok": {
 			base: ConditionBase{
+				Id:  "cond0",
 				Not: true,
 			},
 			raw: bson.M{
-				kiwiConditionAttrId:      "cond0",
 				kiwiConditionAttrPartial: true,
 				kiwiConditionAttrKey:     "key0",
 				kiwiConditionAttrPattern: "pattern0",
 			},
 			out: kiwiCondition{
 				Base: ConditionBase{
+					Id:  "cond0",
 					Not: true,
 				},
-				Id:      "cond0",
 				Key:     "key0",
 				Pattern: "pattern0",
 				Partial: true,
@@ -37,7 +37,6 @@ func Test_decodeKiwiCondition(t *testing.T) {
 		"fails to decode \"partial\" attribute": {
 			base: ConditionBase{},
 			raw: bson.M{
-				kiwiConditionAttrId:      "cond0",
 				kiwiConditionAttrPartial: 1,
 				kiwiConditionAttrKey:     "key0",
 				kiwiConditionAttrPattern: "pattern0",
@@ -47,17 +46,7 @@ func Test_decodeKiwiCondition(t *testing.T) {
 		"fails due to missing \"kiwi\" attribute": {
 			base: ConditionBase{},
 			raw: bson.M{
-				kiwiConditionAttrId:      "cond0",
 				kiwiConditionAttrPartial: false,
-			},
-			err: storage.ErrInternal,
-		},
-		"fails due to missing \"id\" attribute": {
-			base: ConditionBase{},
-			raw: bson.M{
-				kiwiConditionAttrPartial: true,
-				kiwiConditionAttrKey:     "key0",
-				kiwiConditionAttrPattern: "pattern0",
 			},
 			err: storage.ErrInternal,
 		},

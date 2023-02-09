@@ -18,8 +18,7 @@ func Test_encodeCondition(t *testing.T) {
 			src: condition.NewKiwiTreeCondition(
 				condition.NewKiwiCondition(
 					condition.NewKeyCondition(
-						condition.NewCondition(true),
-						"cond0",
+						condition.NewCondition("cond0", true),
 						"key0",
 					),
 					true,
@@ -27,11 +26,11 @@ func Test_encodeCondition(t *testing.T) {
 				),
 			),
 			dst: kiwiCondition{
-				Id:      "cond0",
 				Key:     "key0",
 				Pattern: "pattern0",
 				Partial: true,
 				Base: ConditionBase{
+					Id:  "cond0",
 					Not: true,
 				},
 			},
@@ -46,14 +45,13 @@ func Test_encodeCondition(t *testing.T) {
 		},
 		"group condition": {
 			src: condition.NewGroupCondition(
-				condition.NewCondition(false),
+				condition.NewCondition("cond3", false),
 				condition.GroupLogicOr,
 				[]condition.Condition{
 					condition.NewKiwiTreeCondition(
 						condition.NewKiwiCondition(
 							condition.NewKeyCondition(
-								condition.NewCondition(true),
-								"cond1",
+								condition.NewCondition("cond1", true),
 								"key0",
 							),
 							true,
@@ -63,8 +61,7 @@ func Test_encodeCondition(t *testing.T) {
 					condition.NewKiwiTreeCondition(
 						condition.NewKiwiCondition(
 							condition.NewKeyCondition(
-								condition.NewCondition(false),
-								"cond2",
+								condition.NewCondition("cond2", false),
 								"key1",
 							),
 							false,
@@ -75,24 +72,25 @@ func Test_encodeCondition(t *testing.T) {
 			),
 			dst: groupCondition{
 				Base: ConditionBase{
+					Id:  "cond3",
 					Not: false,
 				},
 				Group: []Condition{
 					kiwiCondition{
-						Id:      "cond1",
 						Key:     "key0",
 						Pattern: "pattern0",
 						Partial: true,
 						Base: ConditionBase{
+							Id:  "cond1",
 							Not: true,
 						},
 					},
 					kiwiCondition{
-						Id:      "cond2",
 						Key:     "key1",
 						Pattern: "pattern1",
 						Partial: false,
 						Base: ConditionBase{
+							Id:  "cond2",
 							Not: false,
 						},
 					},
@@ -101,11 +99,13 @@ func Test_encodeCondition(t *testing.T) {
 			},
 			kiwis: []kiwiSearchData{
 				{
+					Id:      "cond1",
 					Key:     "key0",
 					Pattern: "pattern0",
 					Partial: true,
 				},
 				{
+					Id:      "cond2",
 					Key:     "key1",
 					Pattern: "pattern1",
 					Partial: false,
@@ -193,9 +193,9 @@ func Test_decodeRawCondition(t *testing.T) {
 		"fail on unknown condition type": {
 			raw: bson.M{
 				"base": bson.M{
+					"id":  "cond0",
 					"not": false,
 				},
-				"id":      "cond0",
 				"partial": false,
 				"pattern": "p0",
 			},
@@ -204,19 +204,19 @@ func Test_decodeRawCondition(t *testing.T) {
 		"kiwi condition ok": {
 			raw: bson.M{
 				"base": bson.M{
+					"id":  "cond0",
 					"not": false,
 				},
-				"id":      "cond0",
 				"key":     "k0",
 				"pattern": "p0",
 				"partial": false,
 			},
 			out: kiwiCondition{
-				Id:      "cond0",
 				Key:     "k0",
 				Pattern: "p0",
 				Partial: false,
 				Base: ConditionBase{
+					Id:  "cond0",
 					Not: false,
 				},
 			},
@@ -224,6 +224,7 @@ func Test_decodeRawCondition(t *testing.T) {
 		"fail on invalid group condition": {
 			raw: bson.M{
 				"base": bson.M{
+					"id":  "cond0",
 					"not": false,
 				},
 				"group": bson.M{
@@ -235,39 +236,41 @@ func Test_decodeRawCondition(t *testing.T) {
 		"group condition ok": {
 			raw: bson.M{
 				"base": bson.M{
+					"id":  "cond6",
 					"not": false,
 				},
 				"logic": int32(condition.GroupLogicAnd),
 				"group": bson.A{
 					bson.M{
 						"base": bson.M{
+							"id":  "cond1",
 							"not": true,
 						},
-						"id":      "cond1",
 						"key":     "k0",
 						"pattern": "p0",
 						"partial": false,
 					},
 					bson.M{
 						"base": bson.M{
+							"id":  "cond5",
 							"not": false,
 						},
 						"logic": int32(condition.GroupLogicXor),
 						"group": bson.A{
 							bson.M{
 								"base": bson.M{
+									"id":  "cond3",
 									"not": false,
 								},
-								"id":      "cond3",
 								"key":     "k1",
 								"pattern": "p1",
 								"partial": true,
 							},
 							bson.M{
 								"base": bson.M{
+									"id":  "cond4",
 									"not": false,
 								},
-								"id":      "cond4",
 								"key":     "k2",
 								"pattern": "p2",
 								"partial": false,
@@ -278,38 +281,40 @@ func Test_decodeRawCondition(t *testing.T) {
 			},
 			out: groupCondition{
 				Base: ConditionBase{
+					Id:  "cond6",
 					Not: false,
 				},
 				Group: []Condition{
 					kiwiCondition{
-						Id:      "cond1",
 						Key:     "k0",
 						Pattern: "p0",
 						Partial: false,
 						Base: ConditionBase{
+							Id:  "cond1",
 							Not: true,
 						},
 					},
 					groupCondition{
 						Base: ConditionBase{
+							Id:  "cond5",
 							Not: false,
 						},
 						Group: []Condition{
 							kiwiCondition{
-								Id:      "cond3",
 								Key:     "k1",
 								Pattern: "p1",
 								Partial: true,
 								Base: ConditionBase{
+									Id:  "cond3",
 									Not: false,
 								},
 							},
 							kiwiCondition{
-								Id:      "cond4",
 								Key:     "k2",
 								Pattern: "p2",
 								Partial: false,
 								Base: ConditionBase{
+									Id:  "cond4",
 									Not: false,
 								},
 							},
@@ -341,32 +346,30 @@ func Test_decodeCondition(t *testing.T) {
 		"single Kiwi condition": {
 			dst: condition.NewKiwiCondition(
 				condition.NewKeyCondition(
-					condition.NewCondition(true),
-					"cond0",
+					condition.NewCondition("cond0", true),
 					"key0",
 				),
 				true,
 				"pattern0",
 			),
 			src: kiwiCondition{
-				Id:      "cond0",
 				Key:     "key0",
 				Pattern: "pattern0",
 				Partial: true,
 				Base: ConditionBase{
+					Id:  "cond0",
 					Not: true,
 				},
 			},
 		},
 		"group condition": {
 			dst: condition.NewGroupCondition(
-				condition.NewCondition(false),
+				condition.NewCondition("cond3", false),
 				condition.GroupLogicOr,
 				[]condition.Condition{
 					condition.NewKiwiCondition(
 						condition.NewKeyCondition(
-							condition.NewCondition(true),
-							"cond1",
+							condition.NewCondition("cond1", true),
 							"key0",
 						),
 						true,
@@ -374,8 +377,7 @@ func Test_decodeCondition(t *testing.T) {
 					),
 					condition.NewKiwiCondition(
 						condition.NewKeyCondition(
-							condition.NewCondition(false),
-							"cond2",
+							condition.NewCondition("cond2", false),
 							"key1",
 						),
 						false,
@@ -385,24 +387,25 @@ func Test_decodeCondition(t *testing.T) {
 			),
 			src: groupCondition{
 				Base: ConditionBase{
+					Id:  "cond3",
 					Not: false,
 				},
 				Group: []Condition{
 					kiwiCondition{
-						Id:      "cond1",
 						Key:     "key0",
 						Pattern: "pattern0",
 						Partial: true,
 						Base: ConditionBase{
+							Id:  "cond1",
 							Not: true,
 						},
 					},
 					kiwiCondition{
-						Id:      "cond2",
 						Key:     "key1",
 						Pattern: "pattern1",
 						Partial: false,
 						Base: ConditionBase{
+							Id:  "cond2",
 							Not: false,
 						},
 					},

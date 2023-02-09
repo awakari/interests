@@ -35,6 +35,10 @@ func NewGroupCondition(c Condition, logic GroupLogic, group []Condition) GroupCo
 	}
 }
 
+func (gc groupCondition) GetId() string {
+	return gc.Condition.GetId()
+}
+
 func (gc groupCondition) IsNot() bool {
 	return gc.Condition.IsNot()
 }
@@ -64,7 +68,16 @@ func (gc groupCondition) Validate() error {
 	if len(gc.Group) < 2 {
 		return fmt.Errorf("%w: empty or contains single child condition only", ErrInvalidGroupCondition)
 	}
+	containsNegation := false
+	allNegations := true
 	for i, c1 := range gc.Group {
+		if c1.IsNot() {
+			if !containsNegation {
+				containsNegation = true
+			}
+		} else if allNegations {
+			allNegations = false
+		}
 		if i < len(gc.Group)-1 {
 			for _, c2 := range gc.Group[i+1:] {
 				if c1.Equal(c2) {
@@ -72,6 +85,12 @@ func (gc groupCondition) Validate() error {
 				}
 			}
 		}
+	}
+	if allNegations {
+		return fmt.Errorf("%w: contains negation conditions only", ErrInvalidGroupCondition)
+	}
+	if containsNegation && (gc.Logic == GroupLogicOr || gc.Logic == GroupLogicXor) {
+		return fmt.Errorf("%w: contains a negation with group logic %s", ErrInvalidGroupCondition, gc.Logic)
 	}
 	return nil
 }

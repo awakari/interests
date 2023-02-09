@@ -27,16 +27,16 @@ message RouteInput {
 }
 
 message ConditionInput {
+  bool not = 1;
   oneof condition {
-    GroupConditionInput groupCondition = 1;
-    KiwiTreeConditionInput kiwiTreeCondition = 2;
+    GroupConditionInput groupCondition = 2;
+    KiwiTreeConditionInput kiwiTreeCondition = 3;
   }
 }
 
 message GroupConditionInput {
-  bool not = 1;
-  GroupLogic logic = 2;
-  repeated ConditionInput group = 3;
+  GroupLogic logic = 1;
+  repeated ConditionInput group = 2;
 }
 
 enum GroupLogic {
@@ -46,10 +46,9 @@ enum GroupLogic {
 }
 
 message KiwiTreeConditionInput { // marker type
-  bool not = 1;
-  string key = 2;
-  string pattern = 3;
-  bool partial = 4;
+  string key = 1;
+  string pattern = 2;
+  bool partial = 3;
 }
 
 message CreateResponse {
@@ -73,24 +72,23 @@ message RouteOutput {
 }
 
 message ConditionOutput {
+  string id = 1;
+  bool not = 2;
   oneof condition {
-    GroupConditionOutput groupCondition = 1;
-    KiwiConditionOutput kiwiCondition = 2;
+    GroupConditionOutput groupCondition = 3;
+    KiwiConditionOutput kiwiCondition = 4;
   }
 }
 
 message GroupConditionOutput {
-  bool not = 1;
-  GroupLogic logic = 2;
-  repeated ConditionOutput group = 3;
+  GroupLogic logic = 1;
+  repeated ConditionOutput group = 2;
 }
 
 message KiwiConditionOutput {
-  string id = 1;
-  bool not = 2;
-  string key = 3;
-  string pattern = 4;
-  bool partial = 5;
+  string key = 1;
+  string pattern = 2;
+  bool partial = 3;
 }
 
 // Delete

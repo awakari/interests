@@ -16,13 +16,13 @@ func TestRoute_Validate(t *testing.T) {
 				Destinations: []string{
 					"destination",
 				},
-				Condition: condition.NewGroupCondition(condition.NewCondition(false), condition.GroupLogicAnd, []condition.Condition{}),
+				Condition: condition.NewGroupCondition(condition.NewCondition("", false), condition.GroupLogicAnd, []condition.Condition{}),
 			},
 			err: condition.ErrInvalidGroupCondition,
 		},
 		"empty routes": {
 			route: Route{
-				Condition: condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key0"), false, ""),
+				Condition: condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition("", false), "key0"), false, ""),
 			},
 			err: ErrInvalidSubscriptionRoute,
 		},
@@ -31,7 +31,7 @@ func TestRoute_Validate(t *testing.T) {
 				Destinations: []string{
 					"destination",
 				},
-				Condition: condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key0"), false, ""),
+				Condition: condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition("", false), "key0"), false, ""),
 			},
 		},
 		"negation only condition": {
@@ -39,7 +39,7 @@ func TestRoute_Validate(t *testing.T) {
 				Destinations: []string{
 					"destination",
 				},
-				Condition: condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key0"), false, ""),
+				Condition: condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition("", true), "key0"), false, ""),
 			},
 			err: ErrInvalidSubscriptionRoute,
 		},
@@ -48,7 +48,7 @@ func TestRoute_Validate(t *testing.T) {
 				Destinations: []string{
 					"destination",
 				},
-				Condition: condition.NewKeyCondition(condition.NewCondition(true), "", "key0"),
+				Condition: condition.NewKeyCondition(condition.NewCondition("", true), "key0"),
 			},
 			err: ErrInvalidSubscriptionRoute,
 		},
@@ -58,12 +58,12 @@ func TestRoute_Validate(t *testing.T) {
 					"destination",
 				},
 				Condition: condition.NewGroupCondition(
-					condition.NewCondition(false),
+					condition.NewCondition("", false),
 					condition.GroupLogicAnd,
 					[]condition.Condition{
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key0"), false, ""),
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key1"), false, ""),
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key2"), false, ""),
+						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition("", false), "key0"), false, ""),
+						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition("", true), "key1"), false, ""),
+						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition("", false), "key2"), false, ""),
 					},
 				),
 			},
@@ -74,11 +74,11 @@ func TestRoute_Validate(t *testing.T) {
 					"destination",
 				},
 				Condition: condition.NewGroupCondition(
-					condition.NewCondition(true),
+					condition.NewCondition("", true),
 					condition.GroupLogicAnd,
 					[]condition.Condition{
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key0"), false, ""),
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key1"), false, ""),
+						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition("", false), "key0"), false, ""),
+						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition("", true), "key1"), false, ""),
 					},
 				),
 			},
@@ -90,15 +90,15 @@ func TestRoute_Validate(t *testing.T) {
 					"destination",
 				},
 				Condition: condition.NewGroupCondition(
-					condition.NewCondition(false),
+					condition.NewCondition("", false),
 					condition.GroupLogicAnd,
 					[]condition.Condition{
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key0"), false, ""),
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key1"), false, ""),
+						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition("", true), "key0"), false, ""),
+						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition("", true), "key1"), false, ""),
 					},
 				),
 			},
-			err: ErrInvalidSubscriptionRoute,
+			err: condition.ErrInvalidGroupCondition,
 		},
 		"invalid group root condition: contains less than 2 child rules": {
 			route: Route{
@@ -106,10 +106,10 @@ func TestRoute_Validate(t *testing.T) {
 					"destination",
 				},
 				Condition: condition.NewGroupCondition(
-					condition.NewCondition(false),
+					condition.NewCondition("", false),
 					condition.GroupLogicAnd,
 					[]condition.Condition{
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key0"), false, ""),
+						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition("", true), "key0"), false, ""),
 					},
 				),
 			},

@@ -57,15 +57,15 @@ func TestServiceController_Create(t *testing.T) {
 		},
 		"ok2": {
 			cond: &ConditionInput{
+				Not: false,
 				Condition: &ConditionInput_GroupCondition{
 					GroupCondition: &GroupConditionInput{
-						Not:   false,
 						Logic: GroupLogic_And,
 						Group: []*ConditionInput{
 							{
+								Not: true,
 								Condition: &ConditionInput_KiwiTreeCondition{
 									KiwiTreeCondition: &KiwiTreeConditionInput{
-										Not:     true,
 										Key:     "key0",
 										Pattern: "pattern0",
 										Partial: true,
@@ -73,9 +73,9 @@ func TestServiceController_Create(t *testing.T) {
 								},
 							},
 							{
+								Not: false,
 								Condition: &ConditionInput_KiwiTreeCondition{
 									KiwiTreeCondition: &KiwiTreeConditionInput{
-										Not:     false,
 										Key:     "key1",
 										Pattern: "pattern1",
 										Partial: false,
@@ -166,15 +166,15 @@ func TestServiceController_Read(t *testing.T) {
 						"destination",
 					},
 					Condition: &ConditionOutput{
+						Not: false,
 						Condition: &ConditionOutput_GroupCondition{
 							GroupCondition: &GroupConditionOutput{
-								Not:   false,
 								Logic: GroupLogic_And,
 								Group: []*ConditionOutput{
 									{
+										Not: false,
 										Condition: &ConditionOutput_KiwiCondition{
 											KiwiCondition: &KiwiConditionOutput{
-												Not:     false,
 												Key:     "key0",
 												Pattern: "pattern0",
 												Partial: true,
@@ -182,9 +182,9 @@ func TestServiceController_Read(t *testing.T) {
 										},
 									},
 									{
+										Not: true,
 										Condition: &ConditionOutput_KiwiCondition{
 											KiwiCondition: &KiwiConditionOutput{
-												Not:     true,
 												Key:     "key1",
 												Pattern: "pattern1",
 												Partial: false,
@@ -215,14 +215,14 @@ func TestServiceController_Read(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, c.sub.Metadata, sub.Metadata)
 				assert.Equal(t, c.sub.Route.Destinations, sub.Route.Destinations)
-				assert.Equal(t, c.sub.Route.Condition.GetGroupCondition().Not, sub.Route.Condition.GetGroupCondition().Not)
+				assert.Equal(t, c.sub.Route.Condition.Not, sub.Route.Condition.Not)
 				assert.Equal(t, c.sub.Route.Condition.GetGroupCondition().Logic, sub.Route.Condition.GetGroupCondition().Logic)
 				assert.Equal(t, len(c.sub.Route.Condition.GetGroupCondition().GetGroup()), len(sub.Route.Condition.GetGroupCondition().GetGroup()))
-				assert.Equal(t, c.sub.Route.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Not, sub.Route.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Not)
+				assert.Equal(t, c.sub.Route.Condition.GetGroupCondition().GetGroup()[0].Not, sub.Route.Condition.GetGroupCondition().GetGroup()[0].Not)
 				assert.Equal(t, c.sub.Route.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Key, sub.Route.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Key)
 				assert.Equal(t, c.sub.Route.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Pattern, sub.Route.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Pattern)
 				assert.Equal(t, c.sub.Route.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Partial, sub.Route.Condition.GetGroupCondition().GetGroup()[0].GetKiwiCondition().Partial)
-				assert.Equal(t, c.sub.Route.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Not, sub.Route.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Not)
+				assert.Equal(t, c.sub.Route.Condition.GetGroupCondition().GetGroup()[1].Not, sub.Route.Condition.GetGroupCondition().GetGroup()[1].Not)
 				assert.Equal(t, c.sub.Route.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Key, sub.Route.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Key)
 				assert.Equal(t, c.sub.Route.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Pattern, sub.Route.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Pattern)
 				assert.Equal(t, c.sub.Route.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Partial, sub.Route.Condition.GetGroupCondition().GetGroup()[1].GetKiwiCondition().Partial)

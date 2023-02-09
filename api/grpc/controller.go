@@ -73,8 +73,7 @@ func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchBy
 			Limit: req.Limit,
 			Condition: condition.NewKiwiCondition(
 				condition.NewKeyCondition(
-					condition.NewCondition(false), // not flag is not used
-					"",                            // condition id is not used
+					condition.NewCondition("", false), // these values are not used
 					kcq.Key,
 				),
 				kcq.Partial,
@@ -130,7 +129,7 @@ func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
 		}
 		if err == nil {
 			dst = condition.NewGroupCondition(
-				condition.NewCondition(gc.GetNot()),
+				condition.NewCondition("", src.Not), // id is generated later
 				condition.GroupLogic(gc.GetLogic()),
 				group,
 			)
@@ -139,8 +138,7 @@ func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
 		dst = condition.NewKiwiTreeCondition(
 			condition.NewKiwiCondition(
 				condition.NewKeyCondition(
-					condition.NewCondition(ktc.GetNot()),
-					"", // id is not used, generated later
+					condition.NewCondition("", src.Not), // id is generated later
 					ktc.GetKey(),
 				),
 				ktc.GetPartial(),
@@ -190,7 +188,10 @@ func encodeSubscriptionRoute(src subscription.Route) (dst *RouteOutput, err erro
 }
 
 func encodeCondition(src condition.Condition) (dst *ConditionOutput, err error) {
-	dst = &ConditionOutput{}
+	dst = &ConditionOutput{
+		Id:  src.GetId(),
+		Not: src.IsNot(),
+	}
 	switch c := src.(type) {
 	case condition.GroupCondition:
 		var dstGroup []*ConditionOutput
@@ -205,7 +206,6 @@ func encodeCondition(src condition.Condition) (dst *ConditionOutput, err error) 
 		if err == nil {
 			dst.Condition = &ConditionOutput_GroupCondition{
 				GroupCondition: &GroupConditionOutput{
-					Not:   src.IsNot(),
 					Logic: GroupLogic(c.GetLogic()),
 					Group: dstGroup,
 				},
@@ -214,8 +214,6 @@ func encodeCondition(src condition.Condition) (dst *ConditionOutput, err error) 
 	case condition.KiwiCondition:
 		dst.Condition = &ConditionOutput_KiwiCondition{
 			KiwiCondition: &KiwiConditionOutput{
-				Not:     c.IsNot(),
-				Id:      c.GetId(),
 				Key:     c.GetKey(),
 				Pattern: c.GetPattern(),
 				Partial: c.IsPartial(),
