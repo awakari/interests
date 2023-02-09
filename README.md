@@ -343,9 +343,10 @@ The limit and cursor search parameters are used to support the results' paginati
 
 ## 5.3. Limitations
 
-| #     | Summary                        | Description                                                                                                            |
-|-------|--------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| LIM-1 | Excluding only is not allowed  | A subscription should not have root negation condition. Otherwise the subscription never matches anything in practice. |
+| #     | Summary                                    | Description                                                                                                            |
+|-------|--------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| LIM-1 | Root condition negation is not allowed     | A subscription should not have root negation condition. Otherwise the subscription never matches anything in practice. |
+| LIM-2 | Optional condition negation is not allowed | TODO: A negation condition in the group with "Or"/"Xor" group logic doesn't have any effect                            |
 
 # 6. Contributing
 
