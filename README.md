@@ -4,13 +4,14 @@
    1.1. [Purpose](#11-purpose)<br/>
    1.2. [Definitions](#12-definitions)<br/>
    &nbsp;&nbsp;&nbsp;1.2.1. [Route](#121-route)<br/>
-   &nbsp;&nbsp;&nbsp;1.2.2. [Condition](#122-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.2.1. [Group Condition](#1221-group-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.2.2. [Key Condition](#1222-key-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.2.3. [Kiwi Condition](#1223-kiwi-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.2.4. [Kiwi Tree Condition](#1224-kiwi-tree-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.2.5. [Kiwi Bird Condition](#1225-kiwi-bird-condition)<br/>
-   &nbsp;&nbsp;&nbsp;1.2.3. [Subscription](#123-subscription)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.1. [Destination](#1211-destination)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2. [Condition](#1212-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2.1. [Group Condition](#12121-group-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2.2. [Key Condition](#12122-key-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2.3. [Kiwi Condition](#12123-kiwi-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2.4. [Kiwi Tree Condition](#12124-kiwi-tree-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2.5. [Kiwi Bird Condition](#12125-kiwi-bird-condition)<br/>
+   &nbsp;&nbsp;&nbsp;1.2.2. [Subscription](#122-subscription)<br/>
 2. [Configuration](#2-configuration)<br/>
 3. [Deployment](#3-deployment)<br/>
    3.1. [Prerequisites](#31-prerequisites)<br/>
@@ -30,8 +31,9 @@
    5.2. [Approach](#52-approach)<br/>
    &nbsp;&nbsp;&nbsp;5.2.1. [Data Schema](#521-data-schema)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.1. [Subscription](#5211-subscription)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.2. [Group Condition](#5212-group-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.3. [Kiwi Condition](#5213-kiwi-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.2. [Route](#5212-route)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.3. [Group Condition](#5213-group-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.4. [Kiwi Condition](#5214-kiwi-condition)<br/>
    &nbsp;&nbsp;&nbsp;5.2.2 [Results Pagination](#522-results-pagination)<br/>
    5.3. [Limitations](#53-limitations)<br/>
 6. [Contributing](#6-contributing)<br/>
@@ -57,40 +59,46 @@ condition.
 
 ### 1.2.1. Route
 
-A route is a free-form string describing a delivery destination for a message matching the corresponding subscription.
-Good example is topic or subject where a matching message should be sent.
+A subscription route describes the conditions to match an incoming message and a destination where the matching message 
+should be routed to.
 
-### 1.2.2. Condition
+#### 1.2.1.1. Destination
+
+Destination is a free-form string describing a target (usually topic or subject) for a message matching the 
+corresponding subscription. An incoming message should be routed to the specified destination when and only when 
+subscription condition matches.
+
+#### 1.2.1.2. Condition
 
 A condition represents a message matching criteria. The common property for any type of condition is negation flag 
-(`Not`). When it's set to `true` the condition is treated as a negation.
+(`Not`). When it's set to `true` the condition is treated as a negation, otherwise it's a proposition.
 
-#### 1.2.2.1. Group Condition
+##### 1.2.1.2.1. Group Condition
 
 A group condition represents a group of child conditions coupled with a certain logic: `And`, `Or`, `Xor`.
 
-#### 1.2.2.2. Key Condition
+##### 1.2.1.2.2. Key Condition
 
 A key condition is an abstract condition specifying a key that should match the message metadata key.
 
-#### 1.2.2.3. Kiwi Condition
+##### 1.2.1.2.3. Kiwi Condition
 
 A kiwi (Key-Input WIldcard) condition is a key condition containing the metadata value pattern. Also, kiwi condition has
 a `partial` attribute to represent whether a value part is allowed to match the pattern.
 
-#### 1.2.2.4. Kiwi Tree Condition
+##### 1.2.1.2.4. Kiwi Tree Condition
 
 A [kiwi-tree](https://github.com/awakari/kiwi-tree) specific condition implementation of a kiwi condition.
 It comes with additional [limitations](https://github.com/awakari/kiwi-tree#53-limitations) on the 
 [pattern syntax](https://github.com/awakari/kiwi-tree#122-pattern) but allows resolving a condition by a key/value pair 
 in a O(log(N)) time.
 
-#### 1.2.2.5. Kiwi Bird Condition
+##### 1.2.1.2.5. Kiwi Bird Condition
 
 A specific kiwi condition implementation. It should come without any limitation on the pattern syntax but will resolve a 
 condition in O(N) time. Not implemented yet. 
 
-### 1.2.3. Subscription
+### 1.2.2. Subscription
 
 Subscriptions is an entity linking the [condition](#122-condition) with the [route](#121-route)s. 
 A subscription also has unique id generated on creation and human-readable metadata.
@@ -269,25 +277,26 @@ Example data:
     name: subscription0
     description: Anything related to orders that are not in Helsinki
     user: "e7fae6df-f0e7-4a6b-b8ae-3802a7927f7e"  
-  routes:
-  - /dev/null
-  condition:
-    base:
-      not: false
-    logic: "And"
-    group:
-      - id: "14cadd71-c662-4f1a-8b0f-3b17dfb107f5"
-        base:
-          not: false
-        partial: true
-        key: "subject"
-        pattern: "orders"
-      - id: "c00e1228-fd78-4761-8f59-fbbfa690b9a9"
-        base:
-          not: true
-        partial: false
-        key: "location"
-        pattern: "Helsinki"
+  route:
+    destinations:
+      - /dev/null
+    condition:
+      base:
+        not: false
+      logic: "And"
+      group:
+        - id: "14cadd71-c662-4f1a-8b0f-3b17dfb107f5"
+          base:
+            not: false
+          partial: true
+          key: "subject"
+          pattern: "orders"
+        - id: "c00e1228-fd78-4761-8f59-fbbfa690b9a9"
+          base:
+            not: true
+          partial: false
+          key: "location"
+          pattern: "Helsinki"
 ```
 
 #### 5.2.1.1. Subscription
@@ -299,10 +308,18 @@ subscription they need to delete it 1st and then create again.
 |-----------|--------------------------------------------|--------------------------------------------------------------|
 | id        | String                                     | Subscription UUID (generated on creation)                    |
 | metadata  | Map<String, String>                        | Human readable subscription metadata                         |
+| route     | [Route](#5212-route)                       | Subscription routing data                                    |
 | routes    | Array of String                            | Destination routes to use for the matching messages delivery |
 | condition | Condition (currently may be Group or Kiwi) | Message matching criteria                                    |
 
-#### 5.2.1.2. Group Condition
+#### 5.2.1.2. Route
+
+| Attribute    | Type                                       | Description                                                  |
+|--------------|--------------------------------------------|--------------------------------------------------------------|
+| destinations | Array of String                            | Destination routes to use for the matching messages delivery |
+| condition    | Condition (currently may be Group or Kiwi) | Message matching criteria                                    |
+
+#### 5.2.1.3. Group Condition
 
 | Attribute | Type                      | Description                                                    |
 |-----------|---------------------------|----------------------------------------------------------------|
@@ -310,7 +327,7 @@ subscription they need to delete it 1st and then create again.
 | logic     | Enum of `And`/`Or`/`Xor`  | Defines the grouping logic for the child conditions            |
 | group     | Array of child conditions | Set of conditions in the group                                 |
 
-#### 5.2.1.3. Kiwi Condition
+#### 5.2.1.4. Kiwi Condition
 
 | Attribute | Type    | Description                                                                                                   |
 |-----------|---------|---------------------------------------------------------------------------------------------------------------|
