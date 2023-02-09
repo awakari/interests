@@ -70,8 +70,10 @@ subscription condition matches.
 
 #### 1.2.1.2. Condition
 
-A condition represents a message matching criteria. The common property for any type of condition is negation flag 
-(`Not`). When it's set to `true` the condition is treated as a negation, otherwise it's a proposition.
+A condition represents a message matching criteria. The common properties for any type of condition are:
+* unique id
+* negation flag (`Not`). 
+When the negation flag set to `true` the condition is treated as a negation, otherwise it's a proposition.
 
 ##### 1.2.1.2.1. Group Condition
 
@@ -282,6 +284,7 @@ Example data:
       - /dev/null
     condition:
       base:
+        id: "123e4567-e89b-12d3-a456-426614174000"
         not: false
       logic: "And"
       group:
@@ -323,6 +326,7 @@ subscription they need to delete it 1st and then create again.
 
 | Attribute | Type                      | Description                                                    |
 |-----------|---------------------------|----------------------------------------------------------------|
+| id        | String                    | Condition UUID (generated on creation)                         |
 | not       | Boolean                   | Defines whether the conditions should act as a negation or not |
 | logic     | Enum of `And`/`Or`/`Xor`  | Defines the grouping logic for the child conditions            |
 | group     | Array of child conditions | Set of conditions in the group                                 |
