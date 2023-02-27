@@ -72,10 +72,7 @@ func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchBy
 		q := condition.Query{
 			Limit: req.Limit,
 			Condition: condition.NewKiwiCondition(
-				condition.NewKeyCondition(
-					condition.NewCondition("", false), // these values are not used
-					kcq.Key,
-				),
+				condition.NewKeyCondition(condition.NewCondition(false), "", kcq.Key),
 				kcq.Partial,
 				kcq.Pattern,
 			),
@@ -129,7 +126,7 @@ func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
 		}
 		if err == nil {
 			dst = condition.NewGroupCondition(
-				condition.NewCondition("", src.Not), // id is generated later
+				condition.NewCondition(src.Not),
 				condition.GroupLogic(gc.GetLogic()),
 				group,
 			)
@@ -137,10 +134,7 @@ func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
 	case ktc != nil:
 		dst = condition.NewKiwiTreeCondition(
 			condition.NewKiwiCondition(
-				condition.NewKeyCondition(
-					condition.NewCondition("", src.Not), // id is generated later
-					ktc.GetKey(),
-				),
+				condition.NewKeyCondition(condition.NewCondition(src.Not), "", ktc.GetKey()),
 				ktc.GetPartial(),
 				ktc.GetPattern(),
 			),
@@ -189,7 +183,6 @@ func encodeSubscriptionRoute(src subscription.Route) (dst *RouteOutput, err erro
 
 func encodeCondition(src condition.Condition) (dst *ConditionOutput, err error) {
 	dst = &ConditionOutput{
-		Id:  src.GetId(),
 		Not: src.IsNot(),
 	}
 	switch c := src.(type) {
@@ -214,6 +207,7 @@ func encodeCondition(src condition.Condition) (dst *ConditionOutput, err error) 
 	case condition.KiwiCondition:
 		dst.Condition = &ConditionOutput_KiwiCondition{
 			KiwiCondition: &KiwiConditionOutput{
+				Id:      c.GetId(),
 				Key:     c.GetKey(),
 				Pattern: c.GetPattern(),
 				Partial: c.IsPartial(),

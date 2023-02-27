@@ -9,23 +9,25 @@ type (
 
 	keyCondition struct {
 		Condition Condition
+		Id        string
 		Key       string
 	}
 )
 
-func NewKeyCondition(c Condition, k string) KeyCondition {
+func NewKeyCondition(c Condition, id, k string) KeyCondition {
 	return keyCondition{
 		Condition: c,
+		Id:        id,
 		Key:       k,
 	}
 }
 
-func (kc keyCondition) GetId() string {
-	return kc.Condition.GetId()
-}
-
 func (kc keyCondition) IsNot() bool {
 	return kc.Condition.IsNot()
+}
+
+func (kc keyCondition) GetId() string {
+	return kc.Id
 }
 
 func (kc keyCondition) Equal(another Condition) (equal bool) {

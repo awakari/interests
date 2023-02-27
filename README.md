@@ -70,10 +70,8 @@ subscription condition matches.
 
 #### 1.2.1.2. Condition
 
-A condition represents a message matching criteria. The common properties for any type of condition are:
-* unique id
-* negation flag (`Not`). 
-When the negation flag set to `true` the condition is treated as a negation, otherwise it's a proposition.
+A condition represents a message matching criteria. The common property for any type of condition is a negation flag 
+(`Not`). When the negation flag set to `true` the condition is treated as a negation, otherwise it's a proposition.
 
 ##### 1.2.1.2.1. Group Condition
 
@@ -81,7 +79,8 @@ A group condition represents a group of child conditions coupled with a certain 
 
 ##### 1.2.1.2.2. Key Condition
 
-A key condition is an abstract condition specifying a key that should match the message metadata key.
+A key condition is an abstract condition specifying a key that should match the message metadata key. Also has a unique
+condition id.
 
 ##### 1.2.1.2.3. Kiwi Condition
 
@@ -180,24 +179,53 @@ The service provides basic gRPC interface to perform the operation on subscripti
 
 ## 4.1. Create
 
-Example:
+Example command:
 ```shell
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{"metadata" :{"description": "my subscription"}, "route": { "destinations": ["dst0"], "condition": {"kiwiTreeCondition": {"not" :false, "key": "key0", "pattern": "pattern*", "partial": false}}}}' \
+  -d @ \
   localhost:8080 \
   subscriptions.Service/Create
 ```
 
-Yet another example:
-```shell
-grpcurl \
-  -plaintext \
-  -proto api/grpc/service.proto \
-  -d '{"metadata": {"name": "sub1", "description": "my subscription 1"}, "route": {"destinations": ["dst1"], "condition": {"groupCondition": {"not": false, "logic": 0, "group": [{"kiwiTreeCondition": {"not": false, "key": "key0", "pattern": "pattern?", "partial": false}}, {"kiwiTreeCondition": {"not": true, "key": "key1", "pattern": "pattern1", "partial": true}}]}}}}' \
-  localhost:8080 \
-  subscriptions.Service/Create
+Payload:
+```json
+{
+   "metadata": {
+      "name": "sub1", 
+      "description": "my subscription 1"
+   }, 
+   "route": {
+      "destinations": [
+         "dst1"
+      ], 
+      "condition": {
+         "groupCondition": {
+            "not": false, 
+            "logic": 0, 
+            "group": [
+               {
+                  "kiwiTreeCondition": {
+                     "not": false, 
+                     "key": "key0", 
+                     "pattern": "pattern?", 
+                     "partial": false
+                  }
+               }, 
+               {
+                  "kiwiTreeCondition": {
+                     "not": true, 
+                     "key": "key1", 
+                     "pattern": "pattern1", 
+                     "partial": true
+                  }
+               }
+            ]
+         }
+      }
+   }
+}
 ```
 
 ## 4.2. Read
@@ -284,7 +312,6 @@ Example data:
       - /dev/null
     condition:
       base:
-        id: "123e4567-e89b-12d3-a456-426614174000"
         not: false
       logic: "And"
       group:
@@ -312,7 +339,6 @@ subscription they need to delete it 1st and then create again.
 | id        | String                                     | Subscription UUID (generated on creation)                    |
 | metadata  | Map<String, String>                        | Human readable subscription metadata                         |
 | route     | [Route](#5212-route)                       | Subscription routing data                                    |
-| routes    | Array of String                            | Destination routes to use for the matching messages delivery |
 | condition | Condition (currently may be Group or Kiwi) | Message matching criteria                                    |
 
 #### 5.2.1.2. Route
@@ -326,7 +352,6 @@ subscription they need to delete it 1st and then create again.
 
 | Attribute | Type                      | Description                                                    |
 |-----------|---------------------------|----------------------------------------------------------------|
-| id        | String                    | Condition UUID (generated on creation)                         |
 | not       | Boolean                   | Defines whether the conditions should act as a negation or not |
 | logic     | Enum of `And`/`Or`/`Xor`  | Defines the grouping logic for the child conditions            |
 | group     | Array of child conditions | Set of conditions in the group                                 |

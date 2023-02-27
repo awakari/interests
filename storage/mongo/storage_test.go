@@ -66,10 +66,7 @@ func TestStorageImpl_Create(t *testing.T) {
 				"test route 0",
 			},
 			Condition: condition.NewKiwiCondition(
-				condition.NewKeyCondition(
-					condition.NewCondition("cond0", false),
-					"key0",
-				),
+				condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 				true,
 				"pattern0",
 			),
@@ -93,14 +90,13 @@ func TestStorageImpl_Create(t *testing.T) {
 						"test route 0",
 					},
 					Condition: condition.NewGroupCondition(
-						condition.NewCondition("cond2", false),
+						condition.NewCondition(false),
 						condition.GroupLogicOr,
 						[]condition.Condition{
 							condition.NewKiwiTreeCondition(
 								condition.NewKiwiCondition(
 									condition.NewKeyCondition(
-										condition.NewCondition("cond0", true),
-										"key0",
+										condition.NewCondition(true), "cond0", "key0",
 									),
 									true,
 									"pattern0",
@@ -109,8 +105,7 @@ func TestStorageImpl_Create(t *testing.T) {
 							condition.NewKiwiTreeCondition(
 								condition.NewKiwiCondition(
 									condition.NewKeyCondition(
-										condition.NewCondition("cond1", false),
-										"key1",
+										condition.NewCondition(false), "cond1", "key1",
 									),
 									false,
 									"pattern1",
@@ -128,22 +123,16 @@ func TestStorageImpl_Create(t *testing.T) {
 				},
 				Route: subscription.Route{
 					Condition: condition.NewGroupCondition(
-						condition.NewCondition("cond2", false),
+						condition.NewCondition(false),
 						condition.GroupLogicAnd,
 						[]condition.Condition{
 							condition.NewKiwiCondition(
-								condition.NewKeyCondition(
-									condition.NewCondition("cond0", false),
-									"key0",
-								),
+								condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 								false,
 								"pattern0",
 							),
 							condition.NewKiwiCondition(
-								condition.NewKeyCondition(
-									condition.NewCondition("cond1", false),
-									"key0",
-								),
+								condition.NewKeyCondition(condition.NewCondition(false), "cond1", "key0"),
 								false,
 								"pattern0",
 							),
@@ -183,10 +172,7 @@ func TestStorageImpl_Read(t *testing.T) {
 	defer clear(ctx, t, s.(storageImpl))
 	//
 	cond0 := condition.NewKiwiCondition(
-		condition.NewKeyCondition(
-			condition.NewCondition("", false),
-			"key0",
-		),
+		condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
 		true,
 		"pattern0",
 	)
@@ -258,10 +244,7 @@ func TestStorageImpl_Delete(t *testing.T) {
 	defer clear(ctx, t, s.(storageImpl))
 	//
 	cond0 := condition.NewKiwiCondition(
-		condition.NewKeyCondition(
-			condition.NewCondition("cond0", false),
-			"key0",
-		),
+		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 		true,
 		"pattern0",
 	)
@@ -333,8 +316,7 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		cond := condition.NewKiwiCondition(
 			condition.NewKeyCondition(
-				condition.NewCondition(fmt.Sprintf("cond%d", i), i%4 == 0),
-				fmt.Sprintf("key%d", i%3),
+				condition.NewCondition(i%4 == 0), fmt.Sprintf("cond%d", i), fmt.Sprintf("key%d", i%3),
 			),
 			i%2 == 0,
 			fmt.Sprintf("pattern%d", i%3),
@@ -444,8 +426,7 @@ func TestStorageImpl_SearchByMetadata(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		cond := condition.NewKiwiCondition(
 			condition.NewKeyCondition(
-				condition.NewCondition(fmt.Sprintf("cond%d", i), i%4 == 0),
-				fmt.Sprintf("key%d", i%3),
+				condition.NewCondition(i%4 == 0), fmt.Sprintf("cond%d", i), fmt.Sprintf("key%d", i%3),
 			),
 			i%2 == 0,
 			fmt.Sprintf("pattern%d", i%3),

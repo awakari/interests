@@ -35,10 +35,6 @@ func NewGroupCondition(c Condition, logic GroupLogic, group []Condition) GroupCo
 	}
 }
 
-func (gc groupCondition) GetId() string {
-	return gc.Condition.GetId()
-}
-
 func (gc groupCondition) IsNot() bool {
 	return gc.Condition.IsNot()
 }

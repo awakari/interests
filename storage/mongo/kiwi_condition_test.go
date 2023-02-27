@@ -16,19 +16,19 @@ func Test_decodeKiwiCondition(t *testing.T) {
 	}{
 		"ok": {
 			base: ConditionBase{
-				Id:  "cond0",
 				Not: true,
 			},
 			raw: bson.M{
+				"id":                     "cond0",
 				kiwiConditionAttrPartial: true,
 				kiwiConditionAttrKey:     "key0",
 				kiwiConditionAttrPattern: "pattern0",
 			},
 			out: kiwiCondition{
 				Base: ConditionBase{
-					Id:  "cond0",
 					Not: true,
 				},
+				Id:      "cond0",
 				Key:     "key0",
 				Pattern: "pattern0",
 				Partial: true,

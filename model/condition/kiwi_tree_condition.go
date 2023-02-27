@@ -12,15 +12,9 @@ type kiwiTreeCondition struct {
 func NewKiwiTreeCondition(kc KiwiCondition) KiwiTreeCondition {
 	return kiwiTreeCondition{
 		kiwiCondition{
-			KeyCondition: NewKeyCondition(
-				NewCondition(
-					kc.GetId(),
-					kc.IsNot(),
-				),
-				kc.GetKey(),
-			),
-			Partial: kc.IsPartial(),
-			Pattern: kc.GetPattern(),
+			KeyCondition: NewKeyCondition(NewCondition(kc.IsNot()), kc.GetId(), kc.GetKey()),
+			Partial:      kc.IsPartial(),
+			Pattern:      kc.GetPattern(),
 		},
 	}
 }

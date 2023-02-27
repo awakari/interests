@@ -49,22 +49,16 @@ func (sm serviceMock) Read(ctx context.Context, id string) (sd subscription.Data
 					"destination",
 				},
 				Condition: condition.NewGroupCondition(
-					condition.NewCondition("", false),
+					condition.NewCondition(false),
 					condition.GroupLogicAnd,
 					[]condition.Condition{
 						condition.NewKiwiCondition(
-							condition.NewKeyCondition(
-								condition.NewCondition("", false),
-								"key0",
-							),
+							condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
 							true,
 							"pattern0",
 						),
 						condition.NewKiwiCondition(
-							condition.NewKeyCondition(
-								condition.NewCondition("", true),
-								"key1",
-							),
+							condition.NewKeyCondition(condition.NewCondition(true), "", "key1"),
 							false,
 							"pattern1",
 						),
@@ -95,10 +89,7 @@ func (sm serviceMock) SearchByCondition(ctx context.Context, q condition.Query, 
 						"dst0",
 					},
 					Condition: condition.NewKiwiCondition(
-						condition.NewKeyCondition(
-							condition.NewCondition("cond0", false),
-							"key0",
-						),
+						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 						false,
 						"pattern0",
 					),
@@ -112,10 +103,7 @@ func (sm serviceMock) SearchByCondition(ctx context.Context, q condition.Query, 
 						"dst0",
 					},
 					Condition: condition.NewKiwiCondition(
-						condition.NewKeyCondition(
-							condition.NewCondition("cond0", false),
-							"key0",
-						),
+						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 						false,
 						"pattern0",
 					),
@@ -141,10 +129,7 @@ func (sm serviceMock) SearchByMetadata(ctx context.Context, q model.MetadataQuer
 					Route: subscription.Route{
 						Destinations: []string{},
 						Condition: condition.NewKiwiCondition(
-							condition.NewKeyCondition(
-								condition.NewCondition("cond0", false),
-								"key0",
-							),
+							condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 							false,
 							"pattern0",
 						),
@@ -160,10 +145,7 @@ func (sm serviceMock) SearchByMetadata(ctx context.Context, q model.MetadataQuer
 					Route: subscription.Route{
 						Destinations: []string{},
 						Condition: condition.NewKiwiCondition(
-							condition.NewKeyCondition(
-								condition.NewCondition("cond0", false),
-								"key0",
-							),
+							condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 							false,
 							"pattern0",
 						),

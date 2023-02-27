@@ -72,11 +72,10 @@ message RouteOutput {
 }
 
 message ConditionOutput {
-  string id = 1;
-  bool not = 2;
+  bool not = 1;
   oneof condition {
-    GroupConditionOutput groupCondition = 3;
-    KiwiConditionOutput kiwiCondition = 4;
+    GroupConditionOutput groupCondition = 2;
+    KiwiConditionOutput kiwiCondition = 3;
   }
 }
 
@@ -86,9 +85,10 @@ message GroupConditionOutput {
 }
 
 message KiwiConditionOutput {
-  string key = 1;
-  string pattern = 2;
-  bool partial = 3;
+  string id = 1;
+  string key = 2;
+  string pattern = 3;
+  bool partial = 4;
 }
 
 // Delete

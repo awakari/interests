@@ -6,24 +6,24 @@ import (
 )
 
 func TestKeyCondition_IsNot(t *testing.T) {
-	r1 := NewCondition("", false)
-	r2 := NewCondition("", true)
-	mdr1 := NewKeyCondition(r1, "")
-	mdr2 := NewKeyCondition(r2, "")
+	r1 := NewCondition(false)
+	r2 := NewCondition(true)
+	mdr1 := NewKeyCondition(r1, "", "")
+	mdr2 := NewKeyCondition(r2, "", "")
 	assert.False(t, mdr1.IsNot())
 	assert.True(t, mdr2.IsNot())
 }
 
 func TestKeyCondition_GetKey(t *testing.T) {
-	r1 := NewCondition("", false)
-	mdr1 := NewKeyCondition(r1, "metadata key")
+	r1 := NewCondition(false)
+	mdr1 := NewKeyCondition(r1, "", "metadata key")
 	assert.Equal(t, "metadata key", mdr1.GetKey())
 }
 
 func TestKeyCondition_Equal(t *testing.T) {
-	r1 := NewCondition("", false)
-	r2 := NewCondition("", true)
-	mdr1 := NewKeyCondition(r1, "key1")
+	r1 := NewCondition(false)
+	r2 := NewCondition(true)
+	mdr1 := NewKeyCondition(r1, "", "key1")
 	cases := map[string]struct {
 		in    KeyCondition
 		equal bool
@@ -33,10 +33,10 @@ func TestKeyCondition_Equal(t *testing.T) {
 			equal: true,
 		},
 		"different base condition": {
-			in: NewKeyCondition(r2, "key1"),
+			in: NewKeyCondition(r2, "", "key1"),
 		},
 		"different key": {
-			in: NewKeyCondition(r1, "key2"),
+			in: NewKeyCondition(r1, "", "key2"),
 		},
 	}
 	for k, c := range cases {

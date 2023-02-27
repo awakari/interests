@@ -32,10 +32,7 @@ func TestService_Create(t *testing.T) {
 				},
 				Condition: condition.NewKiwiTreeCondition(
 					condition.NewKiwiCondition(
-						condition.NewKeyCondition(
-							condition.NewCondition("", false),
-							"key0",
-						),
+						condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
 						false,
 						"pattern0",
 					),
@@ -63,10 +60,7 @@ func TestService_Create(t *testing.T) {
 					},
 					Condition: condition.NewKiwiTreeCondition(
 						condition.NewKiwiCondition(
-							condition.NewKeyCondition(
-								condition.NewCondition("", false),
-								"",
-							),
+							condition.NewKeyCondition(condition.NewCondition(false), "", ""),
 							false,
 							"locked",
 						),
@@ -87,8 +81,8 @@ func TestService_Create(t *testing.T) {
 					Condition: condition.NewKiwiTreeCondition(
 						condition.NewKiwiCondition(
 							condition.NewKeyCondition(
-								condition.NewCondition("", false),
-								"fail",
+								condition.NewCondition(false),
+								"", "fail",
 							),
 							false,
 							"fail",
@@ -109,10 +103,7 @@ func TestService_Create(t *testing.T) {
 					},
 					Condition: condition.NewKiwiTreeCondition(
 						condition.NewKiwiCondition(
-							condition.NewKeyCondition(
-								condition.NewCondition("", false),
-								"key0",
-							),
+							condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
 							false,
 							"ok",
 						),
@@ -132,8 +123,8 @@ func TestService_Create(t *testing.T) {
 					Condition: condition.NewKiwiTreeCondition(
 						condition.NewKiwiCondition(
 							condition.NewKeyCondition(
-								condition.NewCondition("", false),
-								"key0",
+								condition.NewCondition(false),
+								"", "key0",
 							),
 							false,
 							"pattern0",
@@ -178,10 +169,7 @@ func TestService_Read(t *testing.T) {
 				},
 				Condition: condition.NewKiwiTreeCondition(
 					condition.NewKiwiCondition(
-						condition.NewKeyCondition(
-							condition.NewCondition("", false),
-							"key0",
-						),
+						condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
 						false,
 						"pattern0",
 					),
@@ -209,10 +197,7 @@ func TestService_Read(t *testing.T) {
 					},
 					Condition: condition.NewKiwiTreeCondition(
 						condition.NewKiwiCondition(
-							condition.NewKeyCondition(
-								condition.NewCondition("", false),
-								"key0",
-							),
+							condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
 							false,
 							"pattern0",
 						),
@@ -256,14 +241,14 @@ func TestService_Delete(t *testing.T) {
 					"route 1",
 				},
 				Condition: condition.NewGroupCondition(
-					condition.NewCondition("", false),
+					condition.NewCondition(false),
 					condition.GroupLogicAnd,
 					[]condition.Condition{
 						condition.NewKiwiTreeCondition(
 							condition.NewKiwiCondition(
 								condition.NewKeyCondition(
-									condition.NewCondition("", false),
-									"key0",
+									condition.NewCondition(false),
+									"", "key0",
 								),
 								false,
 								"pattern0",
@@ -272,8 +257,8 @@ func TestService_Delete(t *testing.T) {
 						condition.NewKiwiTreeCondition(
 							condition.NewKiwiCondition(
 								condition.NewKeyCondition(
-									condition.NewCondition("", true),
-									"key1",
+									condition.NewCondition(true),
+									"", "key1",
 								),
 								true,
 								"pattern1",
@@ -296,14 +281,14 @@ func TestService_Delete(t *testing.T) {
 					"route 2",
 				},
 				Condition: condition.NewGroupCondition(
-					condition.NewCondition("", false),
+					condition.NewCondition(false),
 					condition.GroupLogicAnd,
 					[]condition.Condition{
 						condition.NewKiwiTreeCondition(
 							condition.NewKiwiCondition(
 								condition.NewKeyCondition(
-									condition.NewCondition("", false),
-									"key0",
+									condition.NewCondition(false),
+									"", "key0",
 								),
 								false,
 								"pattern0",
@@ -312,8 +297,8 @@ func TestService_Delete(t *testing.T) {
 						condition.NewKiwiTreeCondition(
 							condition.NewKiwiCondition(
 								condition.NewKeyCondition(
-									condition.NewCondition("", true),
-									"key1",
+									condition.NewCondition(true),
+									"", "key1",
 								),
 								true,
 								"fail",
@@ -377,8 +362,7 @@ func TestService_SearchByKiwi(t *testing.T) {
 				Condition: condition.NewKiwiTreeCondition(
 					condition.NewKiwiCondition(
 						condition.NewKeyCondition(
-							condition.NewCondition("", false),
-							fmt.Sprintf("key%d", i%4),
+							condition.NewCondition(false), "", fmt.Sprintf("key%d", i%4),
 						),
 						i%3 == 2,
 						fmt.Sprintf("pattern%d", i%5),
@@ -400,8 +384,8 @@ func TestService_SearchByKiwi(t *testing.T) {
 				Limit: 10,
 				Condition: condition.NewKiwiCondition(
 					condition.NewKeyCondition(
-						condition.NewCondition("", false),
-						"key0",
+						condition.NewCondition(false),
+						"", "key0",
 					),
 					false,
 					"pattern0",
@@ -414,8 +398,8 @@ func TestService_SearchByKiwi(t *testing.T) {
 				Limit: 2,
 				Condition: condition.NewKiwiCondition(
 					condition.NewKeyCondition(
-						condition.NewCondition("", false),
-						"key1",
+						condition.NewCondition(false),
+						"", "key1",
 					),
 					false,
 					"pattern1",
@@ -427,7 +411,7 @@ func TestService_SearchByKiwi(t *testing.T) {
 			query: condition.Query{
 				Limit: 3,
 				Condition: condition.NewGroupCondition(
-					condition.NewCondition("", false),
+					condition.NewCondition(false),
 					condition.GroupLogicAnd,
 					[]condition.Condition{},
 				),
@@ -437,7 +421,7 @@ func TestService_SearchByKiwi(t *testing.T) {
 		"fail on base condition query": {
 			query: condition.Query{
 				Limit:     3,
-				Condition: condition.NewCondition("", false),
+				Condition: condition.NewCondition(false),
 			},
 			err: ErrInvalidQuery,
 		},
@@ -445,8 +429,8 @@ func TestService_SearchByKiwi(t *testing.T) {
 			query: condition.Query{
 				Limit: 3,
 				Condition: condition.NewKeyCondition(
-					condition.NewCondition("", false),
-					"key0",
+					condition.NewCondition(false),
+					"", "key0",
 				),
 			},
 			err: ErrInvalidQuery,
@@ -489,8 +473,7 @@ func TestService_SearchByMetadata(t *testing.T) {
 				Condition: condition.NewKiwiTreeCondition(
 					condition.NewKiwiCondition(
 						condition.NewKeyCondition(
-							condition.NewCondition("", false),
-							fmt.Sprintf("key%d", i%4),
+							condition.NewCondition(false), "", fmt.Sprintf("key%d", i%4),
 						),
 						i%3 == 2,
 						fmt.Sprintf("pattern%d", i%5),

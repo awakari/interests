@@ -16,7 +16,7 @@ const groupConditionAttrLogic = "logic"
 
 var _ Condition = (*groupCondition)(nil)
 
-func encodeGroupCondition(src condition.GroupCondition, id string) (dst groupCondition, kiwis []kiwiSearchData) {
+func encodeGroupCondition(src condition.GroupCondition) (dst groupCondition, kiwis []kiwiSearchData) {
 	var group []Condition
 	for _, childSrc := range src.GetGroup() {
 		childDst, childKiwis := encodeCondition(childSrc)
@@ -25,7 +25,6 @@ func encodeGroupCondition(src condition.GroupCondition, id string) (dst groupCon
 	}
 	dst = groupCondition{
 		Base: ConditionBase{
-			Id:  id,
 			Not: src.IsNot(),
 		},
 		Group: group,

@@ -6,8 +6,8 @@ import (
 )
 
 func TestGroupCondition_IsNot(t *testing.T) {
-	r1 := NewCondition("", false)
-	r2 := NewCondition("", true)
+	r1 := NewCondition(false)
+	r2 := NewCondition(true)
 	gr1 := NewGroupCondition(r1, GroupLogicAnd, []Condition{})
 	gr2 := NewGroupCondition(r2, GroupLogicAnd, []Condition{})
 	assert.False(t, gr1.IsNot())
@@ -15,7 +15,7 @@ func TestGroupCondition_IsNot(t *testing.T) {
 }
 
 func TestGroupCondition_GetLogic(t *testing.T) {
-	r1 := NewCondition("", false)
+	r1 := NewCondition(false)
 	gr1 := NewGroupCondition(r1, GroupLogicAnd, []Condition{})
 	gr2 := NewGroupCondition(r1, GroupLogicOr, []Condition{})
 	assert.Equal(t, GroupLogicAnd, int(gr1.GetLogic()))
@@ -23,8 +23,8 @@ func TestGroupCondition_GetLogic(t *testing.T) {
 }
 
 func TestGroupCondition_GetGroup(t *testing.T) {
-	r1 := NewCondition("", false)
-	r2 := NewCondition("", true)
+	r1 := NewCondition(false)
+	r2 := NewCondition(true)
 	group := []Condition{
 		r1,
 		r2,
@@ -34,8 +34,8 @@ func TestGroupCondition_GetGroup(t *testing.T) {
 }
 
 func TestGroupCondition_Equal(t *testing.T) {
-	r1 := NewCondition("", false)
-	r2 := NewCondition("", true)
+	r1 := NewCondition(false)
+	r2 := NewCondition(true)
 	gr1 := NewGroupCondition(r1, GroupLogicAnd, []Condition{r1, r2})
 	cases := map[string]struct {
 		in  GroupCondition
@@ -64,9 +64,9 @@ func TestGroupCondition_Equal(t *testing.T) {
 }
 
 func TestGroupCondition_Validate(t *testing.T) {
-	r1 := NewCondition("", false)
-	r2 := NewCondition("", true)
-	r3 := NewCondition("", true)
+	r1 := NewCondition(false)
+	r2 := NewCondition(true)
+	r3 := NewCondition(true)
 	cases := map[string]struct {
 		in  GroupCondition
 		err error

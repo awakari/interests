@@ -27,7 +27,7 @@ type (
 		UnlockCreate(ctx context.Context, k string, pattern string) (err error)
 
 		// Delete removes a specified key/pattern from the underlying storage.
-		// Returns ErrNotFound when the specified model.MatcherData is missing in the underlying storage.
+		// Returns ErrNotFound when the specified key/pattern pair is missing in the underlying storage.
 		Delete(ctx context.Context, k string, pattern string) (err error)
 	}
 
@@ -44,7 +44,7 @@ var (
 	// ErrInternal indicates some unexpected internal failure.
 	ErrInternal = errors.New("internal failure")
 
-	// ErrNotFound indicates the specified Matcher was not found in the underlying storage.
+	// ErrNotFound indicates the specified key/pattern pair was not found in the underlying storage.
 	ErrNotFound = errors.New("not found")
 
 	// ErrShouldRetry indicates a storage entity is locked and the operation should be retried.

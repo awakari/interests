@@ -27,9 +27,9 @@ func Test_decodeSubscription(t *testing.T) {
 				},
 				RawCondition: bson.M{
 					conditionAttrBase: bson.M{
-						conditionAttrId:  "cond0",
 						conditionAttrNot: false,
 					},
+					kiwiConditionAttrId:      "cond0",
 					kiwiConditionAttrPartial: true,
 					kiwiConditionAttrKey:     "key0",
 					kiwiConditionAttrPattern: "pattern0",
@@ -47,10 +47,7 @@ func Test_decodeSubscription(t *testing.T) {
 							"route1",
 						},
 						Condition: condition.NewKiwiCondition(
-							condition.NewKeyCondition(
-								condition.NewCondition("cond0", false),
-								"key0",
-							),
+							condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 							true,
 							"pattern0",
 						),
