@@ -19,6 +19,6 @@ func (c condition) IsNot() bool {
 	return c.Not
 }
 
-func (r condition) Equal(another Condition) bool {
-	return r.Not == another.IsNot()
+func (c condition) Equal(another Condition) bool {
+	return c.Not == another.IsNot()
 }
