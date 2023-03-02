@@ -6,7 +6,6 @@ import (
 	grpcApiKiwi "github.com/awakari/subscriptions/api/grpc/kiwi-tree"
 	"github.com/awakari/subscriptions/config"
 	"github.com/awakari/subscriptions/service"
-	"github.com/awakari/subscriptions/service/kiwi-tree"
 	"github.com/awakari/subscriptions/storage/mongo"
 	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
@@ -39,8 +38,8 @@ func main() {
 		log.Error("failed to connect the kiwiTree service", err)
 	}
 	kiwiTreeClientComplete := grpcApiKiwi.NewServiceClient(kiwiTreeConnComplete)
-	kiwiTreeSvcComplete := kiwiTree.NewService(kiwiTreeClientComplete)
-	kiwiTreeSvcComplete = kiwiTree.NewLoggingMiddleware(kiwiTreeSvcComplete, log)
+	kiwiTreeSvcComplete := grpcApiKiwi.NewService(kiwiTreeClientComplete)
+	kiwiTreeSvcComplete = grpcApiKiwi.NewLoggingMiddleware(kiwiTreeSvcComplete, log)
 	//
 	kiwiTreeConnPartial, err := grpc.Dial(
 		cfg.Api.KiwiTree.PartialUri,
@@ -50,8 +49,8 @@ func main() {
 		log.Error("failed to connect the kiwiTree service", err)
 	}
 	kiwiTreeClientPartial := grpcApiKiwi.NewServiceClient(kiwiTreeConnPartial)
-	kiwiTreeSvcPartial := kiwiTree.NewService(kiwiTreeClientPartial)
-	kiwiTreeSvcPartial = kiwiTree.NewLoggingMiddleware(kiwiTreeSvcPartial, log)
+	kiwiTreeSvcPartial := grpcApiKiwi.NewService(kiwiTreeClientPartial)
+	kiwiTreeSvcPartial = grpcApiKiwi.NewLoggingMiddleware(kiwiTreeSvcPartial, log)
 	//
 	svc := service.NewService(
 		db,

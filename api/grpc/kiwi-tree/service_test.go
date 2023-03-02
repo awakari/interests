@@ -3,7 +3,6 @@ package kiwiTree
 import (
 	"context"
 	"fmt"
-	grpcApi "github.com/awakari/subscriptions/api/grpc/kiwi-tree"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -11,7 +10,7 @@ import (
 )
 
 func TestService_Create(t *testing.T) {
-	client := grpcApi.NewClientMock()
+	client := NewClientMock()
 	svc := NewService(client)
 	cases := []struct {
 		key     string
@@ -46,7 +45,7 @@ func TestService_Create(t *testing.T) {
 }
 
 func TestService_Delete(t *testing.T) {
-	client := grpcApi.NewClientMock()
+	client := NewClientMock()
 	svc := NewService(client)
 	cases := []struct {
 		key     string
@@ -75,7 +74,7 @@ func TestService_Delete(t *testing.T) {
 
 func TestService_LockCreate(t *testing.T) {
 	//
-	client := grpcApi.NewClientMock()
+	client := NewClientMock()
 	svc := NewService(client)
 	//
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -92,7 +91,7 @@ func TestService_LockCreate(t *testing.T) {
 
 func TestService_UnlockCreate(t *testing.T) {
 	//
-	client := grpcApi.NewClientMock()
+	client := NewClientMock()
 	svc := NewService(client)
 	//
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package kiwiTree;
+package kiwi;
 
 option go_package = "./api/grpc/kiwiTree";
 

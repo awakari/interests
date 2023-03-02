@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	kiwiTree "github.com/awakari/subscriptions/api/grpc/kiwi-tree"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -32,7 +31,7 @@ type (
 	}
 
 	service struct {
-		client kiwiTree.ServiceClient
+		client ServiceClient
 	}
 )
 
@@ -51,14 +50,14 @@ var (
 	ErrShouldRetry = errors.New("retry the operation")
 )
 
-func NewService(client kiwiTree.ServiceClient) Service {
+func NewService(client ServiceClient) Service {
 	return service{
 		client: client,
 	}
 }
 
 func (svc service) Create(ctx context.Context, k string, pattern string) (err error) {
-	req := &kiwiTree.KeyPatternRequest{
+	req := &KeyPatternRequest{
 		Key:     k,
 		Pattern: pattern,
 	}
@@ -70,7 +69,7 @@ func (svc service) Create(ctx context.Context, k string, pattern string) (err er
 }
 
 func (svc service) LockCreate(ctx context.Context, k string, pattern string) (err error) {
-	req := &kiwiTree.KeyPatternRequest{
+	req := &KeyPatternRequest{
 		Key:     k,
 		Pattern: pattern,
 	}
@@ -82,7 +81,7 @@ func (svc service) LockCreate(ctx context.Context, k string, pattern string) (er
 }
 
 func (svc service) UnlockCreate(ctx context.Context, k string, pattern string) (err error) {
-	req := &kiwiTree.KeyPatternRequest{
+	req := &KeyPatternRequest{
 		Key:     k,
 		Pattern: pattern,
 	}
@@ -94,7 +93,7 @@ func (svc service) UnlockCreate(ctx context.Context, k string, pattern string) (
 }
 
 func (svc service) Delete(ctx context.Context, k string, pattern string) (err error) {
-	req := &kiwiTree.KeyPatternRequest{
+	req := &KeyPatternRequest{
 		Key:     k,
 		Pattern: pattern,
 	}

@@ -201,21 +201,21 @@ Payload:
          "dst1"
       ], 
       "condition": {
+         "not": false,
          "groupCondition": {
-            "not": false, 
             "logic": 0, 
             "group": [
                {
+                  "not": false,
                   "kiwiTreeCondition": {
-                     "not": false, 
                      "key": "key0", 
                      "pattern": "pattern?", 
                      "partial": false
                   }
                }, 
                {
+                  "not": true,
                   "kiwiTreeCondition": {
-                     "not": true, 
                      "key": "key1", 
                      "pattern": "pattern1", 
                      "partial": true
@@ -235,7 +235,7 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{"id": "3426d090-1b8a-4a09-ac9c-41f2de24d5ac"}' \
+  -d '{"id": "a22a10a2-54be-4b88-acf5-3f3ad7563a9a"}' \
   localhost:8080 \
   subscriptions.Service/Read
 ```
@@ -263,7 +263,7 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{"limit": 100, "kiwiConditionQuery": {"key": "key0", "pattern": "pattern*", "partial": false}}' \
+  -d '{"limit": 100, "kiwiConditionQuery": {"key": "key0", "pattern": "pattern?", "partial": false}}' \
   localhost:8080 \
   subscriptions.Service/SearchByCondition
 ```
@@ -277,7 +277,7 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/service.proto \
-  -d '{"limit": 100, "metadata": {"description": "my subscription"}}' \
+  -d '{"limit": 100, "metadata": {"description": "my subscription 1"}}' \
   localhost:8080 \
   subscriptions.Service/SearchByMetadata
 ```
