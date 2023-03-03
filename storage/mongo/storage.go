@@ -78,7 +78,7 @@ var (
 			Value: 1,
 		},
 		{
-			Key:   attrRoutes,
+			Key:   attrDestinations,
 			Value: 1,
 		},
 		{
@@ -100,7 +100,7 @@ var (
 			Value: 1,
 		},
 		{
-			Key:   attrRoutes,
+			Key:   attrDestinations,
 			Value: 1,
 		},
 		{

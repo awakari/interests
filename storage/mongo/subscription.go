@@ -8,11 +8,11 @@ import (
 type subscriptionWrite struct {
 	Id string `bson:"id"`
 
-	Metadata map[string]string `bson:"metadata"`
+	Metadata map[string]string `bson:"md"`
 
-	Destinations []string `bson:"destinations"`
+	Destinations []string `bson:"dsts"`
 
-	Condition Condition `bson:"condition"`
+	Condition Condition `bson:"cond"`
 
 	// Kiwis contains a flat list of copies of all kiwi conditions.
 	// The Kiwis field is necessary to support the subscriptions search by a "Kiwi".
@@ -30,11 +30,11 @@ type kiwiSearchData struct {
 type subscriptionRec struct {
 	Id string `bson:"id"`
 
-	Metadata map[string]string `bson:"metadata"`
+	Metadata map[string]string `bson:"md"`
 
-	Destinations []string `bson:"destinations"`
+	Destinations []string `bson:"dsts"`
 
-	RawCondition bson.M `bson:"condition"`
+	RawCondition bson.M `bson:"cond"`
 
 	// Kiwis contains a flat list of copies of all kiwi conditions.
 	// The Kiwis field is necessary to support the subscriptions search by a "Kiwi".
@@ -42,10 +42,10 @@ type subscriptionRec struct {
 }
 
 const attrId = "id"
-const attrMetadata = "metadata"
-const attrRoutes = "routes"
+const attrMetadata = "md"
+const attrDestinations = "dsts"
 const attrKiwis = "kiwis"
-const attrCondition = "condition"
+const attrCondition = "cond"
 
 func (rec subscriptionRec) decodeSubscription(sub *subscription.Subscription) (err error) {
 	sub.Id = rec.Id
