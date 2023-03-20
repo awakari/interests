@@ -82,8 +82,7 @@ affinity: {}
 
 # Database related configuration.
 db:
-  # Database connection URI.
-  uri: mongodb+srv://localhost/?retryWrites=true&w=majority
+  hostname: mongodb
   # Database name to use.
   name: subscriptions
   username: ""
