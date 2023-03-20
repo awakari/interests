@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/google/uuid v1.3.0
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.11.0
 	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db

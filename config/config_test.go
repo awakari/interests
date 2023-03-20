@@ -12,7 +12,7 @@ func TestConfig(t *testing.T) {
 	assert.Equal(t, uint16(8080), cfg.Api.Port)
 	assert.Equal(t, "kiwi-tree-complete:8080", cfg.Api.KiwiTree.CompleteUri)
 	assert.Equal(t, "kiwi-tree-partial:8080", cfg.Api.KiwiTree.PartialUri)
-	assert.Equal(t, "mongodb+srv://localhost/?retryWrites=true&w=majority", cfg.Db.Uri)
+	assert.Equal(t, "mongodb://localhost:27017/?retryWrites=true&w=majority", cfg.Db.Uri)
 	assert.Equal(t, "subscriptions", cfg.Db.Name)
 	assert.Equal(t, "subscriptions", cfg.Db.Table.Name)
 	assert.Equal(t, slog.DebugLevel, cfg.Log.Level)

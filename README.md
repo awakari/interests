@@ -108,14 +108,16 @@ A subscription also has unique id generated on creation and human-readable metad
 
 The service is configurable using the environment variables:
 
-| Variable                           | Example value                                          | Description                                                                       |
-|------------------------------------|--------------------------------------------------------|-----------------------------------------------------------------------------------|
-| API_PORT                           | `8080`                                                 | gRPC API port                                                                     |
-| DB_URI                             | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                 |
-| DB_NAME                            | `subscriptions`                                        | DB name to store the data                                                         |
-| DB_TABLE_NAME                      | `subscriptions`                                        | DB table name to store the data                                                   |
-| API_KIWI_TREE_COMPLETE_URI         | `kiwi-tree-complete:8080`                              | Complete [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI |
-| API_KIWI_TREE_PARTIAL_URI          | `kiwi-tree-partial:8080`                               | Partial [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI  |
+| Variable                   | Example value                                          | Description                                                                       |
+|----------------------------|--------------------------------------------------------|-----------------------------------------------------------------------------------|
+| API_PORT                   | `8080`                                                 | gRPC API port                                                                     |
+| DB_URI                     | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                 |
+| DB_NAME                    | `subscriptions`                                        | DB name to store the data                                                         |
+| DB_USERNAME                | `subscriptions`                                        | DB connection username                                                            |
+| DB_PASSWORD                | `subscriptions`                                        | DB connection password                                                            |
+| DB_TABLE_NAME              | `subscriptions`                                        | DB table name to store the data                                                   |
+| API_KIWI_TREE_COMPLETE_URI | `kiwi-tree-complete:8080`                              | Complete [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI |
+| API_KIWI_TREE_PARTIAL_URI  | `kiwi-tree-partial:8080`                               | Partial [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI  |
 
 # 3. Deployment
 

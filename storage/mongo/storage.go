@@ -115,6 +115,14 @@ func NewStorage(ctx context.Context, cfgDb config.Db) (s storage.Storage, err er
 		Client().
 		ApplyURI(cfgDb.Uri).
 		SetServerAPIOptions(optsSrvApi)
+	if len(cfgDb.UserName) > 0 {
+		auth := options.Credential{
+			Username:    cfgDb.UserName,
+			Password:    cfgDb.Password,
+			PasswordSet: len(cfgDb.Password) > 0,
+		}
+		clientOpts = clientOpts.SetAuth(auth)
+	}
 	conn, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		err = fmt.Errorf("%w: %s", storage.ErrInternal, err)
