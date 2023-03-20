@@ -27,7 +27,7 @@ func main() {
 	//
 	db, err := mongo.NewStorage(context.TODO(), cfg.Db)
 	if err != nil {
-		log.Error("failed to connect the DB", err)
+		panic(err)
 	}
 	//
 	kiwiTreeConnComplete, err := grpc.Dial(
@@ -60,6 +60,6 @@ func main() {
 	svc = service.NewLoggingMiddleware(svc, log)
 	log.Info("connected, starting to listen for incoming requests...")
 	if err = grpcApi.Serve(svc, cfg.Api.Port); err != nil {
-		log.Error("", err)
+		panic(err)
 	}
 }
