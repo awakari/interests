@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package awakari.subscriptions.common;
+
+option go_package = "github.com/awakari/subscriptions/api/grpc/common";
+
+enum GroupLogic {
+  And = 0;
+  Or = 1;
+  Xor = 2;
+}

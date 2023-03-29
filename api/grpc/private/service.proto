@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package awakari.subscriptions.private;
+
+option go_package = "./api/grpc/private";
+
+import "api/grpc/common/condition_output.proto";
+
+service Service {
+  rpc SearchByCondition(SearchByConditionRequest) returns (SearchByConditionResponse);
+}
+
+message SearchByConditionRequest {
+  ConditionMatchKey cursor = 1;
+  uint32 limit = 2;
+  oneof cond {
+    KiwiConditionQuery kcq = 3;
+  }
+}
+
+message KiwiConditionQuery {
+  string key = 1;
+  string pattern = 2;
+  bool partial = 3;
+}
+
+message SearchByConditionResponse {
+  repeated ConditionMatch page = 1;
+}
+
+message ConditionMatch {
+  ConditionMatchKey key = 1;
+  string account = 2;
+  string condId = 3;
+  common.ConditionOutput cond = 4;
+}
+
+message ConditionMatchKey {
+  string subId = 1;
+  uint32 priority = 2;
+}

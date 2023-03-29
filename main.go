@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
-	grpcApi "github.com/awakari/subscriptions/api/grpc"
+	"fmt"
 	grpcApiKiwi "github.com/awakari/subscriptions/api/grpc/kiwi-tree"
+	grpcApiPrivate "github.com/awakari/subscriptions/api/grpc/private"
+	grpcApiPublic "github.com/awakari/subscriptions/api/grpc/public"
 	"github.com/awakari/subscriptions/config"
 	"github.com/awakari/subscriptions/service"
 	"github.com/awakari/subscriptions/storage/mongo"
@@ -26,7 +28,9 @@ func main() {
 	log := slog.New(opts.NewTextHandler(os.Stdout))
 	//
 	db, err := mongo.NewStorage(context.TODO(), cfg.Db)
-	if err != nil {
+	if err == nil {
+		log.Info("connected the database")
+	} else {
 		panic(err)
 	}
 	//
@@ -34,7 +38,9 @@ func main() {
 		cfg.Api.KiwiTree.CompleteUri,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-	if err != nil {
+	if err == nil {
+		log.Info("connected kiwi tree complete service")
+	} else {
 		log.Error("failed to connect the kiwiTree service", err)
 	}
 	kiwiTreeClientComplete := grpcApiKiwi.NewServiceClient(kiwiTreeConnComplete)
@@ -45,7 +51,9 @@ func main() {
 		cfg.Api.KiwiTree.PartialUri,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-	if err != nil {
+	if err == nil {
+		log.Info("connected kiwi tree partial service")
+	} else {
 		log.Error("failed to connect the kiwiTree service", err)
 	}
 	kiwiTreeClientPartial := grpcApiKiwi.NewServiceClient(kiwiTreeConnPartial)
@@ -58,8 +66,16 @@ func main() {
 		kiwiTreeSvcPartial,
 	)
 	svc = service.NewLoggingMiddleware(svc, log)
-	log.Info("connected, starting to listen for incoming requests...")
-	if err = grpcApi.Serve(svc, cfg.Api.Port); err != nil {
+	//
+	log.Info(fmt.Sprintf("starting to listen the public API @ port #%d...", cfg.Api.Port.Public))
+	go func() {
+		if err = grpcApiPublic.Serve(svc, cfg.Api.Port.Public); err != nil {
+			panic(err)
+		}
+	}()
+	//
+	log.Info(fmt.Sprintf("starting to listen the private API @ port #%d...", cfg.Api.Port.Private))
+	if err = grpcApiPrivate.Serve(svc, cfg.Api.Port.Private); err != nil {
 		panic(err)
 	}
 }

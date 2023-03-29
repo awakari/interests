@@ -30,10 +30,12 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           env:
-            - name: API_PORT
-              value: "{{ .Values.service.port }}"
+            - name: API_PORT_PUBLIC
+              value: "{{ .Values.service.port.public }}"
+            - name: API_PORT_PRIVATE
+              value: "{{ .Values.service.port.private }}"
             - name: DB_URI
-              value: "mongodb://{{ .Release.Name}}-{{ .Values.db.hostname }}/?retryWrites=true&w=majority"
+              value: "{{ .Values.db.protocol }}://{{ .Release.Name }}-{{ .Values.db.hostname }}/?retryWrites=true&w=majority"
             - name: DB_NAME
               value: {{ .Values.db.name }}
             - name: DB_USERNAME
@@ -61,15 +63,18 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - name: grpc
-              containerPort: {{ .Values.service.port }}
+            - name: grpc-public
+              containerPort: {{ .Values.service.port.public }}
+              protocol: TCP
+            - name: grpc-private
+              containerPort: {{ .Values.service.port.private }}
               protocol: TCP
           livenessProbe:
             grpc:
-              port: {{ .Values.service.port }}
+              port: {{ .Values.service.port.public }}
           readinessProbe:
             grpc:
-              port: {{ .Values.service.port }}
+              port: {{ .Values.service.port.public }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

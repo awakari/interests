@@ -37,14 +37,15 @@ securityContext: {}
 
 service:
   type: ClusterIP
-  port: 8080
+  port:
+    public: 8080
+    private: 8081
 
 ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
   hosts:
     - host: subscriptions.local
       paths:
@@ -82,6 +83,7 @@ affinity: {}
 
 # Database related configuration.
 db:
+  protocol: mongodb
   hostname: mongodb
   # Database name to use.
   name: subscriptions

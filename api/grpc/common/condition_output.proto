@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package awakari.subscriptions.common;
+
+option go_package = "github.com/awakari/subscriptions/api/grpc/common";
+
+import "api/grpc/common/group_logic.proto";
+
+message ConditionOutput {
+  bool not = 1;
+  oneof cond {
+    GroupConditionOutput gc = 2;
+    KiwiConditionOutput kc = 3;
+  }
+}
+
+message GroupConditionOutput {
+  GroupLogic logic = 1;
+  repeated ConditionOutput group = 2;
+}
+
+message KiwiConditionOutput {
+  string id = 1;
+  string key = 2;
+  string pattern = 3;
+  bool partial = 4;
+}
