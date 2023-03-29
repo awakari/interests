@@ -17,14 +17,11 @@ func Test_decodeSubscription(t *testing.T) {
 	}{
 		"ok": {
 			in: subscriptionRec{
-				Id: "sub0",
-				Metadata: map[string]string{
-					"description": "description0",
-				},
-				Destinations: []string{
-					"route0",
-					"route1",
-				},
+				Id:          "sub0",
+				Account:     "acc0",
+				Description: "description0",
+				Priority:    1,
+				Enabled:     true,
 				RawCondition: bson.M{
 					conditionAttrBase: bson.M{
 						conditionAttrNot: false,
@@ -36,35 +33,29 @@ func Test_decodeSubscription(t *testing.T) {
 				},
 			},
 			out: subscription.Subscription{
-				Id: "sub0",
+				Id:      "sub0",
+				Account: "acc0",
 				Data: subscription.Data{
-					Metadata: map[string]string{
-						"description": "description0",
+					Metadata: subscription.Metadata{
+						Description: "description0",
+						Priority:    1,
+						Enabled:     true,
 					},
-					Route: subscription.Route{
-						Destinations: []string{
-							"route0",
-							"route1",
-						},
-						Condition: condition.NewKiwiCondition(
-							condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-							true,
-							"pattern0",
-						),
-					},
+					Condition: condition.NewKiwiCondition(
+						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
+						true,
+						"pattern0",
+					),
 				},
 			},
 		},
 		"fail": {
 			in: subscriptionRec{
-				Id: "sub0",
-				Metadata: map[string]string{
-					"description": "description0",
-				},
-				Destinations: []string{
-					"route0",
-					"route1",
-				},
+				Id:           "sub0",
+				Account:      "acc0",
+				Description:  "description0",
+				Priority:     1,
+				Enabled:      true,
 				RawCondition: bson.M{},
 			},
 			err: storage.ErrInternal,

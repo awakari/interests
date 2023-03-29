@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/awakari/subscriptions/api/grpc/kiwi-tree"
-	"github.com/awakari/subscriptions/model"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/storage"
@@ -47,7 +46,7 @@ func TestService_Create(t *testing.T) {
 		err error
 	}{
 		"empty": {
-			err: subscription.ErrInvalidSubscriptionRoute,
+			err: subscription.ErrInvalidSubscriptionCondition,
 		},
 		"locked": {
 			req: subscription.Data{
@@ -110,29 +109,6 @@ func TestService_Create(t *testing.T) {
 					),
 				},
 			},
-		},
-		"conflict": {
-			req: subscription.Data{
-				Metadata: map[string]string{
-					"description": "conflict",
-				},
-				Route: subscription.Route{
-					Destinations: []string{
-						"route 4",
-					},
-					Condition: condition.NewKiwiTreeCondition(
-						condition.NewKiwiCondition(
-							condition.NewKeyCondition(
-								condition.NewCondition(false),
-								"", "key0",
-							),
-							false,
-							"pattern0",
-						),
-					),
-				},
-			},
-			err: ErrConflict,
 		},
 	}
 	//
@@ -486,12 +462,12 @@ func TestService_SearchByMetadata(t *testing.T) {
 	}
 	//
 	cases := map[string]struct {
-		query    model.MetadataQuery
+		query    subscription.QueryByAccount
 		pageSize int
 		err      error
 	}{
 		"key0/value0 -> 3 subs": {
-			query: model.MetadataQuery{
+			query: subscription.QueryByAccount{
 				Limit: 10,
 				Metadata: map[string]string{
 					"key0": "value0",
@@ -500,7 +476,7 @@ func TestService_SearchByMetadata(t *testing.T) {
 			pageSize: 3,
 		},
 		"key1/value2 -> 3 subs": {
-			query: model.MetadataQuery{
+			query: subscription.QueryByAccount{
 				Limit: 10,
 				Metadata: map[string]string{
 					"key1": "value2",
@@ -514,7 +490,7 @@ func TestService_SearchByMetadata(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			page, err := svc.SearchByMetadata(ctx, c.query, "")
+			page, err := svc.SearchByAccount(ctx, c.query, "")
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.pageSize, len(page))

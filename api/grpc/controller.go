@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"errors"
-	"github.com/awakari/subscriptions/model"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/service"
@@ -12,11 +11,9 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-type (
-	serviceController struct {
-		svc service.Service
-	}
-)
+type serviceController struct {
+	svc service.Service
+}
 
 func NewServiceController(svc service.Service) ServiceServer {
 	return serviceController{
@@ -24,42 +21,73 @@ func NewServiceController(svc service.Service) ServiceServer {
 	}
 }
 
-func (sc serviceController) Create(ctx context.Context, req *SubscriptionDataInput) (resp *CreateResponse, err error) {
-	var id string
-	route := req.Route
+func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (resp *CreateResponse, err error) {
+	resp = &CreateResponse{}
 	var cond condition.Condition
-	cond, err = decodeCondition(route.Condition)
+	cond, err = decodeCondition(req.Cond)
 	if err == nil {
-		sd := subscription.Data{
-			Metadata: req.Metadata,
-			Route: subscription.Route{
-				Destinations: route.Destinations,
-				Condition:    cond,
-			},
+		reqMd := req.Md
+		md := subscription.Metadata{
+			Description: reqMd.Description,
+			Priority:    reqMd.Priority,
+			Enabled:     reqMd.Enabled,
 		}
-		id, err = sc.svc.Create(ctx, sd)
-		err = encodeError(err)
+		sd := subscription.Data{
+			Metadata:  md,
+			Condition: cond,
+		}
+		resp.Id, err = sc.svc.Create(ctx, ctx.Value(keyAccount).(string), sd)
 	}
-	resp = &CreateResponse{
-		Id: id,
+	err = encodeError(err)
+	return
+}
+
+func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *ReadResponse, err error) {
+	resp = &ReadResponse{}
+	var sd subscription.Data
+	sd, err = sc.svc.Read(ctx, req.Id, ctx.Value(keyAccount).(string))
+	if err == nil {
+		resp.Cond = encodeCondition(sd.Condition)
+		md := sd.Metadata
+		resp.Md = &Metadata{
+			Description: md.Description,
+			Priority:    md.Priority,
+			Enabled:     md.Enabled,
+		}
+	}
+	if err != nil {
+		err = encodeError(err)
 	}
 	return
 }
 
-func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *SubscriptionDataOutput, err error) {
-	var sd subscription.Data
-	sd, err = sc.svc.Read(ctx, req.Id)
-	if err != nil {
-		err = encodeError(err)
-	} else {
-		resp, err = encodeSubscriptionData(sd)
+func (sc serviceController) UpdateMetadata(ctx context.Context, req *UpdateMetadataRequest) (resp *emptypb.Empty, err error) {
+	reqMd := req.Md
+	md := subscription.Metadata{
+		Description: reqMd.Description,
+		Priority:    reqMd.Priority,
+		Enabled:     reqMd.Enabled,
 	}
-	return
+	err = sc.svc.UpdateMetadata(ctx, req.Id, ctx.Value(keyAccount).(string), md)
+	return &emptypb.Empty{}, encodeError(err)
 }
 
 func (sc serviceController) Delete(ctx context.Context, req *DeleteRequest) (resp *emptypb.Empty, err error) {
-	err = sc.svc.Delete(ctx, req.Id)
+	err = sc.svc.Delete(ctx, req.Id, ctx.Value(keyAccount).(string))
 	return &emptypb.Empty{}, encodeError(err)
+}
+
+func (sc serviceController) SearchOwn(ctx context.Context, req *SearchOwnRequest) (resp *SearchOwnResponse, err error) {
+	q := subscription.QueryByAccount{
+		Account: ctx.Value(keyAccount).(string),
+		Limit:   req.Limit,
+	}
+	resp = &SearchOwnResponse{}
+	resp.Ids, err = sc.svc.SearchByAccount(ctx, q, req.Cursor)
+	if err != nil {
+		err = encodeError(err)
+	}
+	return
 }
 
 func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchByConditionRequest) (resp *SearchByConditionResponse, err error) {
@@ -78,11 +106,11 @@ func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchBy
 			),
 		}
 		var page []subscription.ConditionMatch
-		var encodedCm *ConditionMatch
+		var respCm *ConditionMatch
 		page, err = sc.svc.SearchByCondition(ctx, q, req.Cursor)
 		for _, cm := range page {
-			encodedCm, err = encodeConditionMatch(cm)
-			resp.Page = append(resp.Page, encodedCm)
+			respCm = encodeConditionMatch(cm)
+			resp.Page = append(resp.Page, respCm)
 		}
 	default:
 		err = status.Error(codes.InvalidArgument, "unsupported condition type")
@@ -90,29 +118,8 @@ func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchBy
 	return
 }
 
-func (sc serviceController) SearchByMetadata(ctx context.Context, req *SearchByMetadataRequest) (resp *SearchByMetadataResponse, err error) {
-	resp = &SearchByMetadataResponse{
-		Page: []*Subscription{},
-	}
-	q := model.MetadataQuery{
-		Limit:    req.Limit,
-		Metadata: req.Metadata,
-	}
-	var page []subscription.Subscription
-	var encodedSub *Subscription
-	page, err = sc.svc.SearchByMetadata(ctx, q, req.Cursor)
-	for _, sub := range page {
-		encodedSub, err = encodeSubscription(sub)
-		resp.Page = append(resp.Page, encodedSub)
-	}
-	if err != nil {
-		err = encodeError(err)
-	}
-	return
-}
-
 func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
-	gc, ktc := src.GetGroupCondition(), src.GetKiwiTreeCondition()
+	gc, ktc := src.GetGc(), src.GetKtc()
 	switch {
 	case gc != nil:
 		var group []condition.Condition
@@ -145,43 +152,7 @@ func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
 	return
 }
 
-func encodeSubscription(src subscription.Subscription) (dst *Subscription, err error) {
-	var dstData *SubscriptionDataOutput
-	dstData, err = encodeSubscriptionData(src.Data)
-	if err == nil {
-		dst = &Subscription{
-			Id:   src.Id,
-			Data: dstData,
-		}
-	}
-	return
-}
-
-func encodeSubscriptionData(src subscription.Data) (dst *SubscriptionDataOutput, err error) {
-	var dstRoute *RouteOutput
-	dstRoute, err = encodeSubscriptionRoute(src.Route)
-	if err == nil {
-		dst = &SubscriptionDataOutput{
-			Metadata: src.Metadata,
-			Route:    dstRoute,
-		}
-	}
-	return
-}
-
-func encodeSubscriptionRoute(src subscription.Route) (dst *RouteOutput, err error) {
-	var dstCond *ConditionOutput
-	dstCond, err = encodeCondition(src.Condition)
-	if err == nil {
-		dst = &RouteOutput{
-			Destinations: src.Destinations,
-			Condition:    dstCond,
-		}
-	}
-	return
-}
-
-func encodeCondition(src condition.Condition) (dst *ConditionOutput, err error) {
+func encodeCondition(src condition.Condition) (dst *ConditionOutput) {
 	dst = &ConditionOutput{
 		Not: src.IsNot(),
 	}
@@ -190,19 +161,14 @@ func encodeCondition(src condition.Condition) (dst *ConditionOutput, err error) 
 		var dstGroup []*ConditionOutput
 		var childDst *ConditionOutput
 		for _, childSrc := range c.GetGroup() {
-			childDst, err = encodeCondition(childSrc)
-			if err != nil {
-				break
-			}
+			childDst = encodeCondition(childSrc)
 			dstGroup = append(dstGroup, childDst)
 		}
-		if err == nil {
-			dst.Condition = &ConditionOutput_GroupCondition{
-				GroupCondition: &GroupConditionOutput{
-					Logic: GroupLogic(c.GetLogic()),
-					Group: dstGroup,
-				},
-			}
+		dst.Condition = &ConditionOutput_GroupCondition{
+			GroupCondition: &GroupConditionOutput{
+				Logic: GroupLogic(c.GetLogic()),
+				Group: dstGroup,
+			},
 		}
 	case condition.KiwiCondition:
 		dst.Condition = &ConditionOutput_KiwiCondition{
@@ -217,15 +183,12 @@ func encodeCondition(src condition.Condition) (dst *ConditionOutput, err error) 
 	return
 }
 
-func encodeConditionMatch(src subscription.ConditionMatch) (dst *ConditionMatch, err error) {
-	var dstRoute *RouteOutput
-	dstRoute, err = encodeSubscriptionRoute(src.Route)
-	dst = &ConditionMatch{
+func encodeConditionMatch(src subscription.ConditionMatch) *ConditionMatch {
+	return &ConditionMatch{
 		SubscriptionId: src.Id,
 		ConditionId:    src.ConditionId,
-		Route:          dstRoute,
+		Condition:      encodeCondition(src.Condition),
 	}
-	return
 }
 
 func encodeError(svcErr error) (err error) {
@@ -234,14 +197,12 @@ func encodeError(svcErr error) (err error) {
 		err = nil
 	case errors.Is(svcErr, service.ErrInternal):
 		err = status.Error(codes.Internal, svcErr.Error())
-	case errors.Is(svcErr, subscription.ErrInvalidSubscriptionRoute):
+	case errors.Is(svcErr, subscription.ErrInvalidSubscriptionCondition):
 		err = status.Error(codes.InvalidArgument, svcErr.Error())
 	case errors.Is(svcErr, service.ErrShouldRetry):
 		err = status.Error(codes.Unavailable, svcErr.Error())
 	case errors.Is(svcErr, service.ErrNotFound):
 		err = status.Error(codes.NotFound, svcErr.Error())
-	case errors.Is(svcErr, service.ErrConflict):
-		err = status.Error(codes.AlreadyExists, svcErr.Error())
 	default:
 		err = status.Error(codes.Internal, svcErr.Error())
 	}

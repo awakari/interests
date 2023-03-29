@@ -6,57 +6,36 @@ import (
 	"testing"
 )
 
-func TestRoute_Validate(t *testing.T) {
+func TestCondition_Validate(t *testing.T) {
 	cases := map[string]struct {
-		route Route
-		err   error
+		d   Data
+		err error
 	}{
 		"empty condition group": {
-			route: Route{
-				Destinations: []string{
-					"destination",
-				},
+			d: Data{
 				Condition: condition.NewGroupCondition(condition.NewCondition(false), condition.GroupLogicAnd, []condition.Condition{}),
 			},
 			err: condition.ErrInvalidGroupCondition,
 		},
-		"empty routes": {
-			route: Route{
-				Condition: condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key0"), false, ""),
-			},
-			err: ErrInvalidSubscriptionRoute,
-		},
 		"ok": {
-			route: Route{
-				Destinations: []string{
-					"destination",
-				},
+			d: Data{
 				Condition: condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key0"), false, ""),
 			},
 		},
 		"negation only condition": {
-			route: Route{
-				Destinations: []string{
-					"destination",
-				},
+			d: Data{
 				Condition: condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key0"), false, ""),
 			},
-			err: ErrInvalidSubscriptionRoute,
+			err: ErrInvalidSubscriptionCondition,
 		},
 		"non pattern neither group root condition": {
-			route: Route{
-				Destinations: []string{
-					"destination",
-				},
+			d: Data{
 				Condition: condition.NewKeyCondition(condition.NewCondition(true), "", "key0"),
 			},
-			err: ErrInvalidSubscriptionRoute,
+			err: ErrInvalidSubscriptionCondition,
 		},
 		"valid group root condition": {
-			route: Route{
-				Destinations: []string{
-					"destination",
-				},
+			d: Data{
 				Condition: condition.NewGroupCondition(
 					condition.NewCondition(false),
 					condition.GroupLogicAnd,
@@ -69,10 +48,7 @@ func TestRoute_Validate(t *testing.T) {
 			},
 		},
 		"invalid group root condition: negation": {
-			route: Route{
-				Destinations: []string{
-					"destination",
-				},
+			d: Data{
 				Condition: condition.NewGroupCondition(
 					condition.NewCondition(true),
 					condition.GroupLogicAnd,
@@ -82,13 +58,10 @@ func TestRoute_Validate(t *testing.T) {
 					},
 				),
 			},
-			err: ErrInvalidSubscriptionRoute,
+			err: ErrInvalidSubscriptionCondition,
 		},
 		"invalid group root condition: contains negation only child rules": {
-			route: Route{
-				Destinations: []string{
-					"destination",
-				},
+			d: Data{
 				Condition: condition.NewGroupCondition(
 					condition.NewCondition(false),
 					condition.GroupLogicAnd,
@@ -101,10 +74,7 @@ func TestRoute_Validate(t *testing.T) {
 			err: condition.ErrInvalidGroupCondition,
 		},
 		"invalid group root condition: contains less than 2 child rules": {
-			route: Route{
-				Destinations: []string{
-					"destination",
-				},
+			d: Data{
 				Condition: condition.NewGroupCondition(
 					condition.NewCondition(false),
 					condition.GroupLogicAnd,
@@ -118,7 +88,7 @@ func TestRoute_Validate(t *testing.T) {
 	}
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			err := c.route.Validate()
+			err := c.d.Validate()
 			if c.err == nil {
 				assert.Nil(t, err)
 			} else {

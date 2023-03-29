@@ -1,14 +1,19 @@
 package subscription
 
-// ConditionMatch represents a subscription routing data with addition of a condition id that matched.
+import "github.com/awakari/subscriptions/model/condition"
+
+// ConditionMatch represents a subscription id and a condition id that matched.
 type ConditionMatch struct {
 
 	// Id represents the unique Subscription Id.
 	Id string
 
-	// Route represents the Subscription routing data.
-	Route Route
+	// Account represents the Subscription owner id.
+	Account string
 
 	// ConditionId represents the id of a Condition that matched.
 	ConditionId string
+
+	// Condition represents the root Subscription condition.
+	Condition condition.Condition
 }

@@ -7,30 +7,36 @@ option go_package = "./api/grpc";
 import "google/protobuf/empty.proto";
 
 service Service {
-  rpc Create(SubscriptionDataInput) returns (CreateResponse);
-  rpc Read(ReadRequest) returns (SubscriptionDataOutput);
+  // public
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Read(ReadRequest) returns (ReadResponse);
+  rpc UpdateMetadata(UpdateMetadataRequest) returns (google.protobuf.Empty);
   rpc Delete(DeleteRequest) returns (google.protobuf.Empty);
+  rpc SearchOwn(SearchOwnRequest) returns (SearchOwnResponse);
+  // internal
   rpc SearchByCondition(SearchByConditionRequest) returns (SearchByConditionResponse);
-  rpc SearchByMetadata(SearchByMetadataRequest) returns (SearchByMetadataResponse);
 }
 
 // Create
 
-message SubscriptionDataInput {
-  map<string, string> metadata = 1;
-  RouteInput route = 2;
+message CreateRequest {
+  Metadata md = 1;
+  ConditionInput cond = 2;
 }
 
-message RouteInput {
-  repeated string destinations = 1;
-  ConditionInput condition = 2;
+// Metadata represents the mutable part of the Subscription data.
+message Metadata {
+  string description = 1;
+  uint32 priority = 2;
+  bool enabled = 3;
 }
 
+// ConditionInput represents the Subscription routing Condition data that is immutable once Subscription is created.
 message ConditionInput {
   bool not = 1;
   oneof condition {
-    GroupConditionInput groupCondition = 2;
-    KiwiTreeConditionInput kiwiTreeCondition = 3;
+    GroupConditionInput gc = 2;
+    KiwiTreeConditionInput ktc = 3;
   }
 }
 
@@ -45,7 +51,8 @@ enum GroupLogic {
   Xor = 2;
 }
 
-message KiwiTreeConditionInput { // marker type
+// marker type
+message KiwiTreeConditionInput {
   string key = 1;
   string pattern = 2;
   bool partial = 3;
@@ -61,14 +68,9 @@ message ReadRequest {
   string id = 1;
 }
 
-message SubscriptionDataOutput {
-  map<string, string> metadata = 1;
-  RouteOutput route = 2;
-}
-
-message RouteOutput {
-  repeated string destinations = 1;
-  ConditionOutput condition = 2;
+message ReadResponse {
+  Metadata md = 1;
+  ConditionOutput cond = 2;
 }
 
 message ConditionOutput {
@@ -91,10 +93,28 @@ message KiwiConditionOutput {
   bool partial = 4;
 }
 
+// Update
+
+message UpdateMetadataRequest {
+  string id = 1;
+  Metadata md = 2;
+}
+
 // Delete
 
 message DeleteRequest {
   string id = 1;
+}
+
+// SearchByAccount
+
+message SearchOwnRequest {
+  string cursor = 1;
+  uint32 limit = 2;
+}
+
+message SearchOwnResponse {
+  repeated string ids = 1;
 }
 
 // SearchByCondition
@@ -119,23 +139,7 @@ message SearchByConditionResponse {
 
 message ConditionMatch {
   string subscriptionId = 1;
-  string conditionId = 2;
-  RouteOutput route = 3;
-}
-
-// SearchByMetadata
-
-message SearchByMetadataRequest {
-  string cursor = 1;
-  uint32 limit = 2;
-  map<string, string> metadata = 3;
-}
-
-message SearchByMetadataResponse {
-  repeated Subscription page = 1;
-}
-
-message Subscription {
-  string id = 1;
-  SubscriptionDataOutput data = 2;
+  string account = 2;
+  string conditionId = 3;
+  ConditionOutput condition = 4;
 }

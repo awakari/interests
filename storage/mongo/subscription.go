@@ -8,9 +8,13 @@ import (
 type subscriptionWrite struct {
 	Id string `bson:"id"`
 
-	Metadata map[string]string `bson:"md"`
+	Account string `bson:"acc"`
 
-	Destinations []string `bson:"dsts"`
+	Description string `bson:"descr"`
+
+	Priority uint32 `bson:"prio"`
+
+	Enabled bool `bson:"enabled"`
 
 	Condition Condition `bson:"cond"`
 
@@ -30,9 +34,13 @@ type kiwiSearchData struct {
 type subscriptionRec struct {
 	Id string `bson:"id"`
 
-	Metadata map[string]string `bson:"md"`
+	Account string `bson:"acc"`
 
-	Destinations []string `bson:"dsts"`
+	Description string `bson:"descr"`
+
+	Priority uint32 `bson:"prio"`
+
+	Enabled bool `bson:"enabled"`
 
 	RawCondition bson.M `bson:"cond"`
 
@@ -42,35 +50,43 @@ type subscriptionRec struct {
 }
 
 const attrId = "id"
-const attrMetadata = "md"
-const attrDestinations = "dsts"
+const attrAcc = "acc"
+const attrDescr = "descr"
+const attrPrio = "prio"
+const attrEnabled = "enabled"
 const attrKiwis = "kiwis"
-const attrCondition = "cond"
+const attrCond = "cond"
 
 func (rec subscriptionRec) decodeSubscription(sub *subscription.Subscription) (err error) {
 	sub.Id = rec.Id
+	sub.Account = rec.Account
 	err = rec.decodeSubscriptionData(&sub.Data)
 	return
 }
 
 func (rec subscriptionRec) decodeSubscriptionData(sd *subscription.Data) (err error) {
-	sd.Metadata = rec.Metadata
-	err = rec.decodeSubscriptionRoute(&sd.Route)
-	return
-}
-
-func (rec subscriptionRec) decodeSubscriptionRoute(sr *subscription.Route) (err error) {
-	sr.Destinations = rec.Destinations
+	rec.decodeSubscriptionMetadata(&sd.Metadata)
 	var condRec Condition
 	condRec, err = decodeRawCondition(rec.RawCondition)
 	if err == nil {
-		sr.Condition = decodeCondition(condRec)
+		sd.Condition = decodeCondition(condRec)
 	}
 	return
 }
 
+func (rec subscriptionRec) decodeSubscriptionMetadata(smd *subscription.Metadata) {
+	smd.Description = rec.Description
+	smd.Priority = rec.Priority
+	smd.Enabled = rec.Enabled
+}
+
 func (rec subscriptionRec) decodeSubscriptionConditionMatch(cm *subscription.ConditionMatch) (err error) {
 	cm.Id = rec.Id
-	err = rec.decodeSubscriptionRoute(&cm.Route)
+	cm.Account = rec.Account
+	var condRec Condition
+	condRec, err = decodeRawCondition(rec.RawCondition)
+	if err == nil {
+		cm.Condition = decodeCondition(condRec)
+	}
 	return
 }
