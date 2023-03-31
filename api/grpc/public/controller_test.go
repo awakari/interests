@@ -152,7 +152,7 @@ func TestServiceController_Create(t *testing.T) {
 		},
 		"invalid user token": {
 			authKey: "X-Endpoint-Api-UserInfo",
-			authVal: "eyAiZW1haWwiOiB7ICJmb28iOiAiYmFyIiB9IH0=",
+			authVal: "eyAiZW1haWwiOiB7ICJmb28iOiAiYmFyIiB9IH0",
 			cond: &ConditionInput{
 				Cond: &ConditionInput_Ktc{
 					Ktc: &KiwiTreeConditionInput{},
@@ -172,7 +172,7 @@ func TestServiceController_Create(t *testing.T) {
 		},
 		"invalid user token json": {
 			authKey: "X-Endpoint-Api-UserInfo",
-			authVal: "bm90IGEganNvbg==",
+			authVal: "bm90IGEganNvbg",
 			cond: &ConditionInput{
 				Cond: &ConditionInput_Ktc{
 					Ktc: &KiwiTreeConditionInput{},
@@ -182,7 +182,7 @@ func TestServiceController_Create(t *testing.T) {
 		},
 		"invalid user token - no email": {
 			authKey: "X-Endpoint-Api-UserInfo",
-			authVal: "eyAic3ViIjogMTIzNDUsICJpc3MiOiAiZ29vZ2xlLmNvbSIgfQ==",
+			authVal: "eyAic3ViIjogMTIzNDUsICJpc3MiOiAiZ29vZ2xlLmNvbSIgfQ",
 			cond: &ConditionInput{
 				Cond: &ConditionInput_Ktc{
 					Ktc: &KiwiTreeConditionInput{},
@@ -198,7 +198,6 @@ func TestServiceController_Create(t *testing.T) {
 			_, err = client.Create(ctx, &CreateRequest{
 				Md: &Metadata{
 					Description: k,
-					Enabled:     true,
 				},
 				Cond: c.cond,
 			})
@@ -279,11 +278,11 @@ func TestServiceController_Read(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			ctx := context.TODO()
 			if c.auth {
-				ctx = metadata.AppendToOutgoingContext(ctx, "X-Endpoint-Api-UserInfo", "eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ==")
+				ctx = metadata.AppendToOutgoingContext(ctx, "X-Endpoint-Api-UserInfo", "eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ")
 			}
 			sub, err := client.Read(ctx, &ReadRequest{Id: k})
 			if c.err == nil {
-				assert.Nil(t, err)
+				require.Nil(t, err)
 				assert.Equal(t, c.sub.Md, sub.Md)
 				assert.Equal(t, c.sub.Cond.Not, sub.Cond.Not)
 				assert.Equal(t, c.sub.Cond.GetGc().Logic, sub.Cond.GetGc().Logic)
@@ -323,7 +322,6 @@ func TestServiceController_UpdateMetadata(t *testing.T) {
 			md: Metadata{
 				Description: "new description",
 				Priority:    1,
-				Enabled:     false,
 			},
 		},
 		"fail": {

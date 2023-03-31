@@ -11,7 +11,6 @@ import (
 
 func Serve(svc service.Service, port uint16) (err error) {
 	c := NewServiceController(svc)
-	c = NewAuthMiddleware(c)
 	srv := grpc.NewServer()
 	RegisterServiceServer(srv, c)
 	grpc_health_v1.RegisterHealthServer(srv, health.NewServer())
