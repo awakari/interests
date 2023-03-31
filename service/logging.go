@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/awakari/subscriptions/model"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
 	"golang.org/x/exp/slog"
@@ -23,37 +22,44 @@ func NewLoggingMiddleware(svc Service, log *slog.Logger) Service {
 	}
 }
 
-func (lm loggingMiddleware) Create(ctx context.Context, sd subscription.Data) (id string, err error) {
+func (lm loggingMiddleware) Create(ctx context.Context, acc string, sd subscription.Data) (id string, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Create(%v): %s, %s", sd, id, err))
+		lm.log.Debug(fmt.Sprintf("Create(%s, %+v): %s, %s", acc, sd, id, err))
 	}()
-	return lm.svc.Create(ctx, sd)
+	return lm.svc.Create(ctx, acc, sd)
 }
 
-func (lm loggingMiddleware) Read(ctx context.Context, id string) (sd subscription.Data, err error) {
+func (lm loggingMiddleware) Read(ctx context.Context, id, acc string) (sd subscription.Data, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Read(%s): (%v, %s)", id, sd, err))
+		lm.log.Debug(fmt.Sprintf("Read(%s, %s): (%v, %s)", id, acc, sd, err))
 	}()
-	return lm.svc.Read(ctx, id)
+	return lm.svc.Read(ctx, id, acc)
 }
 
-func (lm loggingMiddleware) Delete(ctx context.Context, id string) (err error) {
+func (lm loggingMiddleware) UpdateMetadata(ctx context.Context, id, acc string, md subscription.Metadata) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Delete(%s): %s", id, err))
+		lm.log.Debug(fmt.Sprintf("UpdateMetadata(%s, %s, %+v): err=%s", id, acc, md, err))
 	}()
-	return lm.svc.Delete(ctx, id)
+	return lm.svc.UpdateMetadata(ctx, id, acc, md)
 }
 
-func (lm loggingMiddleware) SearchByCondition(ctx context.Context, q condition.Query, cursor string) (page []subscription.ConditionMatch, err error) {
+func (lm loggingMiddleware) Delete(ctx context.Context, id, acc string) (err error) {
+	defer func() {
+		lm.log.Debug(fmt.Sprintf("Delete(%s, %s): %s", id, acc, err))
+	}()
+	return lm.svc.Delete(ctx, id, acc)
+}
+
+func (lm loggingMiddleware) SearchByCondition(ctx context.Context, q condition.Query, cursor subscription.ConditionMatchKey) (page []subscription.ConditionMatch, err error) {
 	defer func() {
 		lm.log.Debug(fmt.Sprintf("SearchByCondition(%v, %v): %s", q, cursor, err))
 	}()
 	return lm.svc.SearchByCondition(ctx, q, cursor)
 }
 
-func (lm loggingMiddleware) SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []subscription.Subscription, err error) {
+func (lm loggingMiddleware) SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("SearchByMetadata(%v, %v): %s", q, cursor, err))
+		lm.log.Debug(fmt.Sprintf("SearchByAccount(%v, %v): %s", q, cursor, err))
 	}()
-	return lm.svc.SearchByMetadata(ctx, q, cursor)
+	return lm.svc.SearchByAccount(ctx, q, cursor)
 }

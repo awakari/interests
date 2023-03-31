@@ -8,7 +8,10 @@ import (
 type (
 	Config struct {
 		Api struct {
-			Port     uint16 `envconfig:"API_PORT" default:"8080" required:"true"`
+			Port struct {
+				Public  uint16 `envconfig:"API_PORT_PUBLIC" default:"8080" required:"true"`
+				Private uint16 `envconfig:"API_PORT_PRIVATE" default:"8081" required:"true"`
+			}
 			KiwiTree KiwiTree
 		}
 		Db  Db

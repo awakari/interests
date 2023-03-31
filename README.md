@@ -3,14 +3,12 @@
 1. [Overview](#1-overview)<br/>
    1.1. [Purpose](#11-purpose)<br/>
    1.2. [Definitions](#12-definitions)<br/>
-   &nbsp;&nbsp;&nbsp;1.2.1. [Route](#121-route)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.1. [Destination](#1211-destination)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2. [Condition](#1212-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2.1. [Group Condition](#12121-group-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2.2. [Key Condition](#12122-key-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2.3. [Kiwi Condition](#12123-kiwi-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2.4. [Kiwi Tree Condition](#12124-kiwi-tree-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2.5. [Kiwi Bird Condition](#12125-kiwi-bird-condition)<br/>
+   &nbsp;&nbsp;&nbsp;1.2.1. [Condition](#121-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.1. [Group Condition](#1211-group-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2. [Key Condition](#1212-key-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.3. [Kiwi Condition](#1213-kiwi-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.4. [Kiwi Tree Condition](#1214-kiwi-tree-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.5. [Kiwi Bird Condition](#1215-kiwi-bird-condition)<br/>
    &nbsp;&nbsp;&nbsp;1.2.2. [Subscription](#122-subscription)<br/>
 2. [Configuration](#2-configuration)<br/>
 3. [Deployment](#3-deployment)<br/>
@@ -22,18 +20,18 @@
 4. [Usage](#4-usage)<br/>
    4.1. [Create](#41-create)<br/>
    4.2. [Read](#42-read)<br/>
-   4.3. [Delete](#43-delete)<br/>
-   4.4. [Search](#44-search)<br/>
-   &nbsp;&nbsp;&nbsp;4.4.1. [By Condition](#441-by-condition)</br>
-   &nbsp;&nbsp;&nbsp;4.4.2. [By Metadata](#442-by-metadata)</br>
+   4.3. [Update Metadata](#43-update-metadata)<br/>
+   4.4. [Delete](#44-delete)<br/>
+   4.5. [Search](#45-search)<br/>
+   &nbsp;&nbsp;&nbsp;4.5.1. [By Condition](#451-by-account)</br>
+   &nbsp;&nbsp;&nbsp;4.5.2. [By Account](#452-by-condition)</br>
 5. [Design](#5-design)<br/>
    5.1. [Requirements](#51-requirements)<br/>
    5.2. [Approach](#52-approach)<br/>
    &nbsp;&nbsp;&nbsp;5.2.1. [Data Schema](#521-data-schema)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.1. [Subscription](#5211-subscription)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.2. [Route](#5212-route)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.3. [Group Condition](#5213-group-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.4. [Kiwi Condition](#5214-kiwi-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.2. [Group Condition](#5212-group-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.3. [Kiwi Condition](#5213-kiwi-condition)<br/>
    &nbsp;&nbsp;&nbsp;5.2.2 [Results Pagination](#522-results-pagination)<br/>
    5.3. [Limitations](#53-limitations)<br/>
 6. [Contributing](#6-contributing)<br/>
@@ -51,58 +49,52 @@ Subscriptions storage service.
 
 ## 1.1. Purpose
 
-The main function of the service is to find all subscriptions by a condition. For example, a message metadata is 
-matching a certain pattern. Then it's necessary to find all subscriptions those have this pattern in the corresponding 
-condition.
+The purpose is to serve both public subscriptions API (CRUD + Search) and internal Search.
+
+The main internal function of the service is to find all subscriptions by a condition. For example, a message metadata 
+is matching a certain pattern. Then it's necessary to find all subscriptions those have this pattern in the 
+corresponding condition.
 
 ## 1.2. Definitions
 
-### 1.2.1. Route
-
-A subscription route describes the conditions to match an incoming message and a destination where the matching message 
-should be routed to.
-
-#### 1.2.1.1. Destination
-
-Destination is a free-form string describing a target (usually topic or subject) for a message matching the 
-corresponding subscription. An incoming message should be routed to the specified destination when and only when 
-subscription condition matches.
-
-#### 1.2.1.2. Condition
+### 1.2.1. Condition
 
 A condition represents a message matching criteria. The common property for any type of condition is a negation flag 
 (`Not`). When the negation flag set to `true` the condition is treated as a negation, otherwise it's a proposition.
 
-##### 1.2.1.2.1. Group Condition
+#### 1.2.1.1. Group Condition
 
 A group condition represents a group of child conditions coupled with a certain logic: `And`, `Or`, `Xor`.
 
-##### 1.2.1.2.2. Key Condition
+#### 1.2.1.2. Key Condition
 
 A key condition is an abstract condition specifying a key that should match the message metadata key. Also has a unique
 condition id.
 
-##### 1.2.1.2.3. Kiwi Condition
+#### 1.2.1.3. Kiwi Condition
 
 A kiwi (Key-Input WIldcard) condition is a key condition containing the metadata value pattern. Also, kiwi condition has
 a `partial` attribute to represent whether a value part is allowed to match the pattern.
 
-##### 1.2.1.2.4. Kiwi Tree Condition
+#### 1.2.1.4. Kiwi Tree Condition
 
 A [kiwi-tree](https://github.com/awakari/kiwi-tree) specific condition implementation of a kiwi condition.
 It comes with additional [limitations](https://github.com/awakari/kiwi-tree#53-limitations) on the 
 [pattern syntax](https://github.com/awakari/kiwi-tree#122-pattern) but allows resolving a condition by a key/value pair 
 in a O(log(N)) time.
 
-##### 1.2.1.2.5. Kiwi Bird Condition
+#### 1.2.1.5. Kiwi Bird Condition
 
 A specific kiwi condition implementation. It should come without any limitation on the pattern syntax but will resolve a 
 condition in O(N) time. Not implemented yet. 
 
 ### 1.2.2. Subscription
 
-Subscriptions is an entity linking the [condition](#122-condition) with the [route](#121-route)s. 
-A subscription also has unique id generated on creation and human-readable metadata.
+Subscription is an entity linking the message matching [condition](#121-condition) with the user account. 
+A subscription also has:
+* unique id generated on creation
+* human-readable description
+* matching priority
 
 # 2. Configuration
 
@@ -110,7 +102,8 @@ The service is configurable using the environment variables:
 
 | Variable                   | Example value                                          | Description                                                                       |
 |----------------------------|--------------------------------------------------------|-----------------------------------------------------------------------------------|
-| API_PORT                   | `8080`                                                 | gRPC API port                                                                     |
+| API_PORT_PUBLIC            | `8080`                                                 | gRPC public API port                                                              |
+| API_PORT_PRIVATE           | `8081`                                                 | gRPC private API port                                                             |
 | DB_URI                     | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                 |
 | DB_NAME                    | `subscriptions`                                        | DB name to store the data                                                         |
 | DB_USERNAME                | `subscriptions`                                        | DB connection username                                                            |
@@ -134,7 +127,7 @@ Preconditions:
 
 Then run the command:
 ```shell
-API_PORT=8080 \
+API_PORT_PUBLIC=8080 \
 DB_URI=mongodb+srv://localhost/\?retryWrites=true\&w=majority \
 DB_NAME=subscriptions \
 DB_TABLE_NAME=subscriptions \
@@ -185,46 +178,42 @@ Example command:
 ```shell
 grpcurl \
   -plaintext \
-  -proto api/grpc/service.proto \
+  -proto api/grpc/public/service.proto \
+  -H 'X-Endpoint-Api-UserInfo: eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ' \
   -d @ \
   localhost:8080 \
-  subscriptions.Service/Create
+  awakari.subscriptions.public.Service/Create
 ```
 
 Payload:
 ```json
 {
-   "metadata": {
-      "name": "sub1", 
-      "description": "my subscription 1"
+   "md": {
+      "description": "my subscription 1",
+      "priority": 1
    }, 
-   "route": {
-      "destinations": [
-         "dst1"
-      ], 
-      "condition": {
-         "not": false,
-         "groupCondition": {
-            "logic": 0, 
-            "group": [
-               {
-                  "not": false,
-                  "kiwiTreeCondition": {
-                     "key": "key0", 
-                     "pattern": "pattern?", 
-                     "partial": false
-                  }
-               }, 
-               {
-                  "not": true,
-                  "kiwiTreeCondition": {
-                     "key": "key1", 
-                     "pattern": "pattern1", 
-                     "partial": true
-                  }
+   "cond": {
+      "not": false,
+      "gc": {
+         "logic": 0, 
+         "group": [
+            {
+               "not": false,
+               "ktc": {
+                  "key": "key0", 
+                  "pattern": "pattern?", 
+                  "partial": false
                }
-            ]
-         }
+            }, 
+            {
+               "not": true,
+               "ktc": {
+                  "key": "key1", 
+                  "pattern": "pattern1", 
+                  "partial": true
+               }
+            }
+         ]
       }
    }
 }
@@ -236,41 +225,53 @@ Example:
 ```shell
 grpcurl \
   -plaintext \
-  -proto api/grpc/service.proto \
-  -d '{"id": "a22a10a2-54be-4b88-acf5-3f3ad7563a9a"}' \
+  -proto api/grpc/public/service.proto \
+  -H 'X-Endpoint-Api-UserInfo: eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ' \
+  -d '{"id": "17861cda-edc0-4655-be5a-e69a8129aff5"}' \
   localhost:8080 \
-  subscriptions.Service/Read
+  awakari.subscriptions.public.Service/Read
 ```
 
-## 4.3. Delete
+## 4.3. Update Metadata
 
 Example:
 ```shell
 grpcurl \
   -plaintext \
-  -proto api/grpc/service.proto \
+  -proto api/grpc/public/service.proto \
+  -H 'X-Endpoint-Api-UserInfo: eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ' \
+  -d @ \
+  localhost:8080 \
+  awakari.subscriptions.public.Service/UpdateMetadata
+```
+
+Payload:
+```json
+{
+   "id": "d3911098-99e7-4a69-94f9-3cea0b236a04",
+   "md": {
+      "description": "my subscription 1 - turned off",
+      "priority": 0
+   }
+}
+```
+
+## 4.4. Delete
+
+Example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/public/service.proto \
+  -H 'X-Endpoint-Api-UserInfo: eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ' \
   -d '{"id": "f7102c87-3ce4-4bb0-8527-b4644f685b13"}' \
   localhost:8080 \
-  subscriptions.Service/Delete
+  awakari.subscriptions.public.Service/Delete
 ```
 
-## 4.4. Search
+## 4.5. Search
 
-### 4.4.1. By Condition
-
-The search by condition purpose is to be used by a resolver to find the matching subscriptions.
-
-Example:
-```shell
-grpcurl \
-  -plaintext \
-  -proto api/grpc/service.proto \
-  -d '{"limit": 100, "kiwiConditionQuery": {"key": "key0", "pattern": "pattern?", "partial": false}}' \
-  localhost:8080 \
-  subscriptions.Service/SearchByCondition
-```
-
-### 4.4.2. By Metadata
+### 4.5.1. By Account
 
 The search by metadata purpose is to be used by a user to find own subscriptions.
 
@@ -278,22 +279,42 @@ Example:
 ```shell
 grpcurl \
   -plaintext \
-  -proto api/grpc/service.proto \
-  -d '{"limit": 100, "metadata": {"description": "my subscription 1"}}' \
+  -proto api/grpc/public/service.proto \
+  -H 'X-Endpoint-Api-UserInfo: eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ' \
+  -d '{"limit": 100, "cursor": "0123456789abcdef"}' \
   localhost:8080 \
-  subscriptions.Service/SearchByMetadata
+  awakari.subscriptions.public.Service/SearchOwn
+```
+
+### 4.5.2. By Condition
+
+The search by condition purpose is to be used by a [resolver](https://github.com/awakari/resolver) to find the matching 
+subscriptions.
+
+Example:
+```shell
+grpcurl \
+  -plaintext \
+  -proto api/grpc/private/service.proto \
+  -d '{"limit": 100, "kcq": {"key": "key0", "pattern": "pattern?", "partial": false}}' \
+  localhost:8081 \
+  awakari.subscriptions.private.Service/SearchByCondition
 ```
 
 # 5. Design
 
 ## 5.1. Requirements
 
-| #     | Summary          | Description                                                                         |
-|-------|------------------|-------------------------------------------------------------------------------------|
-| REQ-1 | Basic matching   | Resolve subscriptions matching the input value                                      |
-| REQ-2 | Logic            | Support subscription logics for the multiple key-value matches (*and*, *or*, *not*) |
-| REQ-3 | Partial matching | Support partial (value might be split to lexemes) value matching                    |
-| REQ-4 | Pagination       | Support query results pagination                                                    |
+| #     | Summary           | Description                                                                              |
+|-------|-------------------|------------------------------------------------------------------------------------------|
+| REQ-1 | Basic matching    | Resolve subscriptions matching the input value                                           |
+| REQ-2 | Logic             | Support subscription logics for the multiple key-value matches (*and*, *or*, *not*)      |
+| REQ-3 | Partial matching  | Support partial (value might be split to lexemes) value matching                         |
+| REQ-4 | Pagination        | Support query results pagination                                                         |
+| REQ-5 | Matching priority | `SearchByCondition` should find the subscriptions having highest priority first          |
+| REQ-6 | On/off switch     | Support subscription disabling for internal query by condition without removing it       |
+| REQ-7 | Metadata update   | Support changing a subscription description, priority and enabled flag                   |
+| REQ-8 | Authentication    | Authenticate public API calls: `Create`, `Read`, `UpdateMetadata`, `Delete`, `SearchOwn` |
 
 ## 5.2. Approach
 
@@ -305,30 +326,26 @@ Example data:
 
 ```yaml
 - id: "2f63ea52-a66c-4b93-92f1-12aa2831cd2c"
-  metadata:
-    name: subscription0
-    description: Anything related to orders that are not in Helsinki
-    user: "e7fae6df-f0e7-4a6b-b8ae-3802a7927f7e"  
-  route:
-    destinations:
-      - /dev/null
-    condition:
+  descr: Anything related to orders that are not in Helsinki
+  acc: "e7fae6df-f0e7-4a6b-b8ae-3802a7927f7e"
+  prio: 0
+  cond:
+    base:
+      not: false
+    logic: "And"
+    group:
+    - id: "14cadd71-c662-4f1a-8b0f-3b17dfb107f5"
       base:
         not: false
-      logic: "And"
-      group:
-        - id: "14cadd71-c662-4f1a-8b0f-3b17dfb107f5"
-          base:
-            not: false
-          partial: true
-          key: "subject"
-          pattern: "orders"
-        - id: "c00e1228-fd78-4761-8f59-fbbfa690b9a9"
-          base:
-            not: true
-          partial: false
-          key: "location"
-          pattern: "Helsinki"
+      partial: true
+      key: "subject"
+      pattern: "orders"
+    - id: "c00e1228-fd78-4761-8f59-fbbfa690b9a9"
+      base:
+        not: true
+      partial: false
+      key: "location"
+      pattern: "Helsinki"
 ```
 
 #### 5.2.1.1. Subscription
@@ -336,21 +353,15 @@ Example data:
 A subscription is immutable by design, hence there's no update operation for this. If a user wants to change a 
 subscription they need to delete it 1st and then create again.
 
-| Attribute | Type                                       | Description                                                  |
-|-----------|--------------------------------------------|--------------------------------------------------------------|
-| id        | String                                     | Subscription UUID (generated on creation)                    |
-| metadata  | Map<String, String>                        | Human readable subscription metadata                         |
-| route     | [Route](#5212-route)                       | Subscription routing data                                    |
-| condition | Condition (currently may be Group or Kiwi) | Message matching criteria                                    |
+| Attribute | Type                                       | Description                                                                                                  |
+|-----------|--------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| id        | String                                     | Subscription UUID (generated on creation)                                                                    |
+| acc       | String                                     | User ID or API token                                                                                         |
+| descr     | String                                     | Human readable description                                                                                   |
+| prio      | Unsigned Int                               | Matching priority. 0 means the subscription is to be excluded from search by condition results (turned off). |
+| cond      | Condition (currently may be Group or Kiwi) | Message matching root immutable criteria                                                                     |
 
-#### 5.2.1.2. Route
-
-| Attribute    | Type                                       | Description                                                  |
-|--------------|--------------------------------------------|--------------------------------------------------------------|
-| destinations | Array of String                            | Destination routes to use for the matching messages delivery |
-| condition    | Condition (currently may be Group or Kiwi) | Message matching criteria                                    |
-
-#### 5.2.1.3. Group Condition
+#### 5.2.1.2. Group Condition
 
 | Attribute | Type                      | Description                                                    |
 |-----------|---------------------------|----------------------------------------------------------------|
@@ -358,7 +369,7 @@ subscription they need to delete it 1st and then create again.
 | logic     | Enum of `And`/`Or`/`Xor`  | Defines the grouping logic for the child conditions            |
 | group     | Array of child conditions | Set of conditions in the group                                 |
 
-#### 5.2.1.4. Kiwi Condition
+#### 5.2.1.3. Kiwi Condition
 
 | Attribute | Type    | Description                                                                                                   |
 |-----------|---------|---------------------------------------------------------------------------------------------------------------|

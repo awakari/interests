@@ -6,6 +6,9 @@ type Subscription struct {
 	// Id represents the unique Subscription Id.
 	Id string
 
-	// Data represents the Subscription payload data.
+	// Account represents an id of the Subscription owner.
+	Account string
+
+	// Data contains the Subscription payload, mutable and immutable parts.
 	Data Data
 }

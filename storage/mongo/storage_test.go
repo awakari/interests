@@ -4,26 +4,23 @@ import (
 	"context"
 	"fmt"
 	"github.com/awakari/subscriptions/config"
-	"github.com/awakari/subscriptions/model"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/storage"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/rand"
 	"os"
+	"sort"
 	"testing"
 	"time"
 )
 
-var (
-	dbUri = os.Getenv("DB_URI_TEST_MONGO")
-)
+var dbUri = os.Getenv("DB_URI_TEST_MONGO")
 
 func TestNewStorage(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", rand.Uint32())
+	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
 	dbCfg := config.Db{
 		Uri:  dbUri,
 		Name: "subscriptions",
@@ -45,7 +42,7 @@ func clear(ctx context.Context, t *testing.T, s storageImpl) {
 
 func TestStorageImpl_Create(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", rand.Uint32())
+	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
 	dbCfg := config.Db{
 		Uri:  dbUri,
 		Name: "subscriptions",
@@ -57,20 +54,16 @@ func TestStorageImpl_Create(t *testing.T) {
 	require.Nil(t, err)
 	defer clear(ctx, t, s.(storageImpl))
 	//
-	id, err := s.Create(ctx, subscription.Data{
-		Metadata: map[string]string{
-			"description": "test subscription 0",
+	id, err := s.Create(ctx, "acc0", subscription.Data{
+		Metadata: subscription.Metadata{
+			Description: "test subscription 0",
+			Priority:    1,
 		},
-		Route: subscription.Route{
-			Destinations: []string{
-				"test route 0",
-			},
-			Condition: condition.NewKiwiCondition(
-				condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-				true,
-				"pattern0",
-			),
-		},
+		Condition: condition.NewKiwiCondition(
+			condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
+			true,
+			"pattern0",
+		),
 	})
 	assert.Nil(t, err)
 	_, err = uuid.Parse(id)
@@ -82,70 +75,65 @@ func TestStorageImpl_Create(t *testing.T) {
 	}{
 		"success": {
 			sd: subscription.Data{
-				Metadata: map[string]string{
-					"description": "test subscription 1",
+				Metadata: subscription.Metadata{
+					Description: "test subscription 1",
+					Priority:    1,
 				},
-				Route: subscription.Route{
-					Destinations: []string{
-						"test route 0",
+				Condition: condition.NewGroupCondition(
+					condition.NewCondition(false),
+					condition.GroupLogicOr,
+					[]condition.Condition{
+						condition.NewKiwiTreeCondition(
+							condition.NewKiwiCondition(
+								condition.NewKeyCondition(
+									condition.NewCondition(true), "cond0", "key0",
+								),
+								true,
+								"pattern0",
+							),
+						),
+						condition.NewKiwiTreeCondition(
+							condition.NewKiwiCondition(
+								condition.NewKeyCondition(
+									condition.NewCondition(false), "cond1", "key1",
+								),
+								false,
+								"pattern1",
+							),
+						),
 					},
-					Condition: condition.NewGroupCondition(
-						condition.NewCondition(false),
-						condition.GroupLogicOr,
-						[]condition.Condition{
-							condition.NewKiwiTreeCondition(
-								condition.NewKiwiCondition(
-									condition.NewKeyCondition(
-										condition.NewCondition(true), "cond0", "key0",
-									),
-									true,
-									"pattern0",
-								),
-							),
-							condition.NewKiwiTreeCondition(
-								condition.NewKiwiCondition(
-									condition.NewKeyCondition(
-										condition.NewCondition(false), "cond1", "key1",
-									),
-									false,
-									"pattern1",
-								),
-							),
-						},
-					),
-				},
+				),
 			},
 		},
 		"index allows duplicate kiwi in the subscription": {
 			sd: subscription.Data{
-				Metadata: map[string]string{
-					"description": "test subscription 2",
+				Metadata: subscription.Metadata{
+					Description: "test subscription 2",
+					Priority:    1,
 				},
-				Route: subscription.Route{
-					Condition: condition.NewGroupCondition(
-						condition.NewCondition(false),
-						condition.GroupLogicAnd,
-						[]condition.Condition{
-							condition.NewKiwiCondition(
-								condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-								false,
-								"pattern0",
-							),
-							condition.NewKiwiCondition(
-								condition.NewKeyCondition(condition.NewCondition(false), "cond1", "key0"),
-								false,
-								"pattern0",
-							),
-						},
-					),
-				},
+				Condition: condition.NewGroupCondition(
+					condition.NewCondition(false),
+					condition.GroupLogicAnd,
+					[]condition.Condition{
+						condition.NewKiwiCondition(
+							condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
+							false,
+							"pattern0",
+						),
+						condition.NewKiwiCondition(
+							condition.NewKeyCondition(condition.NewCondition(false), "cond1", "key0"),
+							false,
+							"pattern0",
+						),
+					},
+				),
 			},
 		},
 	}
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			id, err = s.Create(ctx, c.sd)
+			id, err = s.Create(ctx, "acc0", c.sd)
 			if c.err == nil {
 				assert.Nil(t, err)
 				_, err = uuid.Parse(id)
@@ -159,10 +147,10 @@ func TestStorageImpl_Create(t *testing.T) {
 
 func TestStorageImpl_Read(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", rand.Uint32())
+	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
 	dbCfg := config.Db{
 		Uri:  dbUri,
-		Name: "subscriptions-dev",
+		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -176,52 +164,51 @@ func TestStorageImpl_Read(t *testing.T) {
 		true,
 		"pattern0",
 	)
-	id0, err := s.Create(ctx, subscription.Data{
-		Metadata: map[string]string{
-			"description": "test subscription 0",
+	id0, err := s.Create(ctx, "acc0", subscription.Data{
+		Metadata: subscription.Metadata{
+			Description: "test subscription 0",
+			Priority:    1,
 		},
-		Route: subscription.Route{
-			Destinations: []string{
-				"test route 0",
-			},
-			Condition: cond0,
-		},
+		Condition: cond0,
 	})
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
-		name string
-		sd   subscription.Data
-		err  error
+		id  string
+		acc string
+		sd  subscription.Data
+		err error
 	}{
 		"success": {
-			name: id0,
+			id:  id0,
+			acc: "acc0",
 			sd: subscription.Data{
-				Metadata: map[string]string{
-					"description": "test subscription 0",
+				Metadata: subscription.Metadata{
+					Description: "test subscription 0",
+					Priority:    1,
 				},
-				Route: subscription.Route{
-					Destinations: []string{
-						"test route 0",
-					},
-					Condition: cond0,
-				},
+				Condition: cond0,
 			},
 		},
-		"not found": {
-			name: "sub1",
-			err:  storage.ErrNotFound,
+		"not found by id": {
+			id:  "sub1",
+			acc: "acc0",
+			err: storage.ErrNotFound,
+		},
+		"not found by acc": {
+			id:  id0,
+			acc: "acc1",
+			err: storage.ErrNotFound,
 		},
 	}
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			sd, err := s.Read(ctx, c.name)
+			sd, err := s.Read(ctx, c.id, c.acc)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.sd.Metadata, sd.Metadata)
-				assert.Equal(t, c.sd.Route.Destinations, sd.Route.Destinations)
-				assert.True(t, c.sd.Route.Condition.Equal(sd.Route.Condition))
+				assert.True(t, c.sd.Condition.Equal(sd.Condition))
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}
@@ -229,12 +216,12 @@ func TestStorageImpl_Read(t *testing.T) {
 	}
 }
 
-func TestStorageImpl_Delete(t *testing.T) {
+func TestStorageImpl_UpdateMetadata(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", rand.Uint32())
+	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
 	dbCfg := config.Db{
 		Uri:  dbUri,
-		Name: "subscriptions-dev",
+		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -248,48 +235,50 @@ func TestStorageImpl_Delete(t *testing.T) {
 		true,
 		"pattern0",
 	)
-	id0, err := s.Create(ctx, subscription.Data{
-		Metadata: map[string]string{},
-		Route: subscription.Route{
-			Destinations: []string{
-				"test route 0",
-			},
-			Condition: cond0,
-		},
+	id0, err := s.Create(ctx, "acc0", subscription.Data{
+		Condition: cond0,
 	})
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
-		name string
-		sd   subscription.Data
-		err  error
+		id  string
+		acc string
+		err error
+		md  subscription.Metadata
 	}{
-		"success": {
-			name: id0,
-			sd: subscription.Data{
-				Metadata: map[string]string{},
-				Route: subscription.Route{
-					Destinations: []string{
-						"test route 0",
-					},
-					Condition: cond0,
-				},
+		"ok": {
+			id:  id0,
+			acc: "acc0",
+			md: subscription.Metadata{
+				Description: "new description",
+				Priority:    1,
 			},
 		},
-		"not found": {
-			name: "sub1",
-			err:  storage.ErrNotFound,
+		"id mismatch": {
+			id:  "id0",
+			acc: "acc0",
+			md: subscription.Metadata{
+				Description: "new description",
+				Priority:    1,
+			},
+			err: storage.ErrNotFound,
+		},
+		"acc mismatch": {
+			id:  id0,
+			acc: "acc1",
+			md: subscription.Metadata{
+				Description: "new description",
+				Priority:    1,
+			},
+			err: storage.ErrNotFound,
 		},
 	}
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			sd, err := s.Delete(ctx, c.name)
+			err = s.UpdateMetadata(ctx, c.id, c.acc, c.md)
 			if c.err == nil {
 				assert.Nil(t, err)
-				assert.Equal(t, c.sd.Metadata, sd.Metadata)
-				assert.Equal(t, c.sd.Route.Destinations, sd.Route.Destinations)
-				assert.True(t, c.sd.Route.Condition.Equal(sd.Route.Condition))
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}
@@ -297,12 +286,75 @@ func TestStorageImpl_Delete(t *testing.T) {
 	}
 }
 
-func TestStorageImpl_SearchByKiwi(t *testing.T) {
+func TestStorageImpl_Delete(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", rand.Uint32())
+	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
 	dbCfg := config.Db{
 		Uri:  dbUri,
-		Name: "subscriptions-dev",
+		Name: "subscriptions",
+	}
+	dbCfg.Table.Name = collName
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	s, err := NewStorage(ctx, dbCfg)
+	require.Nil(t, err)
+	defer clear(ctx, t, s.(storageImpl))
+	//
+	cond0 := condition.NewKiwiCondition(
+		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
+		true,
+		"pattern0",
+	)
+	id0, err := s.Create(ctx, "acc0", subscription.Data{
+		Condition: cond0,
+	})
+	require.Nil(t, err)
+	//
+	cases := map[string]struct {
+		id  string
+		acc string
+		sd  subscription.Data
+		err error
+	}{
+		"success": {
+			id:  id0,
+			acc: "acc0",
+			sd: subscription.Data{
+				Condition: cond0,
+			},
+		},
+		"not found by id": {
+			id:  "sub1",
+			acc: "acc0",
+			err: storage.ErrNotFound,
+		},
+		"not found by acc": {
+			id:  id0,
+			acc: "acc1",
+			err: storage.ErrNotFound,
+		},
+	}
+	//
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			sd, err := s.Delete(ctx, c.id, c.acc)
+			if c.err == nil {
+				assert.Nil(t, err)
+				assert.Equal(t, c.sd.Metadata, sd.Metadata)
+				assert.True(t, c.sd.Condition.Equal(sd.Condition))
+			} else {
+				assert.ErrorIs(t, err, c.err)
+			}
+		})
+	}
+}
+
+func TestStorageImpl_SearchByAccount(t *testing.T) {
+	//
+	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	dbCfg := config.Db{
+		Uri:  dbUri,
+		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -322,15 +374,99 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 			fmt.Sprintf("pattern%d", i%3),
 		)
 		sub := subscription.Data{
-			Metadata: map[string]string{},
-			Route: subscription.Route{
-				Destinations: []string{
-					fmt.Sprintf("test route %d", i),
-				},
-				Condition: cond,
+			Metadata: subscription.Metadata{
+				Description: fmt.Sprintf("description%d", i%2),
 			},
+			Condition: cond,
 		}
-		id, err := s.Create(ctx, sub)
+		id, err := s.Create(ctx, fmt.Sprintf("acc%d", i%2), sub)
+		require.Nil(t, err)
+		rootConditions = append(rootConditions, cond)
+		ids = append(ids, id)
+	}
+	acc0Ids := []string{
+		ids[0],
+		ids[2],
+		ids[4],
+		ids[6],
+		ids[8],
+	}
+	sort.Strings(acc0Ids)
+	acc1Ids := []string{
+		ids[1],
+		ids[3],
+		ids[5],
+		ids[7],
+		ids[9],
+	}
+	sort.Strings(acc1Ids)
+	//
+	cases := map[string]struct {
+		q      subscription.QueryByAccount
+		cursor string
+		ids    []string
+		err    error
+	}{
+		"acc0": {
+			q: subscription.QueryByAccount{
+				Limit:   100,
+				Account: "acc0",
+			},
+			ids: acc0Ids,
+		},
+		"acc1": {
+			q: subscription.QueryByAccount{
+				Limit:   3,
+				Account: "acc1",
+			},
+			ids: acc1Ids[:3],
+		},
+	}
+	//
+	for k, c := range cases {
+		t.Run(k, func(t *testing.T) {
+			p, err := s.SearchByAccount(ctx, c.q, c.cursor)
+			if c.err == nil {
+				assert.Nil(t, err)
+				assert.Equal(t, c.ids, p)
+			} else {
+				assert.ErrorIs(t, err, c.err)
+			}
+		})
+	}
+}
+
+func TestStorageImpl_SearchByKiwi(t *testing.T) {
+	//
+	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	dbCfg := config.Db{
+		Uri:  dbUri,
+		Name: "subscriptions",
+	}
+	dbCfg.Table.Name = collName
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	s, err := NewStorage(ctx, dbCfg)
+	require.Nil(t, err)
+	defer clear(ctx, t, s.(storageImpl))
+	//
+	var rootConditions []condition.Condition
+	var ids []string
+	for i := 0; i < 10; i++ {
+		cond := condition.NewKiwiCondition(
+			condition.NewKeyCondition(
+				condition.NewCondition(i%4 == 0), fmt.Sprintf("cond%d", i), fmt.Sprintf("key%d", i%3),
+			),
+			i%2 == 0,
+			fmt.Sprintf("pattern%d", i%3),
+		)
+		sub := subscription.Data{
+			Metadata: subscription.Metadata{
+				Priority: uint32(i),
+			},
+			Condition: cond,
+		}
+		id, err := s.Create(ctx, "acc0", sub)
 		require.Nil(t, err)
 		rootConditions = append(rootConditions, cond)
 		ids = append(ids, id)
@@ -338,7 +474,7 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 	//
 	cases := map[string]struct {
 		q      storage.KiwiQuery
-		cursor string
+		cursor subscription.ConditionMatchKey
 		page   []subscription.ConditionMatch
 		err    error
 	}{
@@ -351,41 +487,73 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 			},
 			page: []subscription.ConditionMatch{
 				{
-					Id: ids[4],
-					Route: subscription.Route{
-						Destinations: []string{
-							"test route 4",
-						},
-						Condition: rootConditions[4],
+					Key: subscription.ConditionMatchKey{
+						Id:       ids[4],
+						Priority: 4,
 					},
+					Condition: rootConditions[4],
 				},
 			},
 		},
 		"2": {
 			q: storage.KiwiQuery{
 				Limit:   100,
-				Key:     "key0",
-				Pattern: "pattern0",
-				Partial: false,
+				Key:     "key2",
+				Pattern: "pattern2",
+				Partial: true,
 			},
 			page: []subscription.ConditionMatch{
 				{
-					Id: ids[3],
-					Route: subscription.Route{
-						Destinations: []string{
-							"test route 3",
-						},
-						Condition: rootConditions[3],
+					Key: subscription.ConditionMatchKey{
+						Id:       ids[8],
+						Priority: 8,
 					},
+					Condition: rootConditions[8],
 				},
 				{
-					Id: ids[9],
-					Route: subscription.Route{
-						Destinations: []string{
-							"test route 9",
-						},
-						Condition: rootConditions[9],
+					Key: subscription.ConditionMatchKey{
+						Id:       ids[2],
+						Priority: 2,
 					},
+					Condition: rootConditions[2],
+				},
+			},
+		},
+		"w/ cursor": {
+			q: storage.KiwiQuery{
+				Limit:   100,
+				Key:     "key2",
+				Pattern: "pattern2",
+				Partial: true,
+			},
+			cursor: subscription.ConditionMatchKey{
+				Id:       ids[8],
+				Priority: 8,
+			},
+			page: []subscription.ConditionMatch{
+				{
+					Key: subscription.ConditionMatchKey{
+						Id:       ids[2],
+						Priority: 2,
+					},
+					Condition: rootConditions[2],
+				},
+			},
+		},
+		"skip results with zero priority": {
+			q: storage.KiwiQuery{
+				Limit:   100,
+				Key:     "key0",
+				Pattern: "pattern0",
+				Partial: true,
+			},
+			page: []subscription.ConditionMatch{
+				{
+					Key: subscription.ConditionMatchKey{
+						Id:       ids[6],
+						Priority: 6,
+					},
+					Condition: rootConditions[6],
 				},
 			},
 		},
@@ -394,94 +562,14 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
 			p, err := s.SearchByKiwi(ctx, c.q, c.cursor)
+			fmt.Println(ids)
 			if c.err == nil {
-				assert.Nil(t, err)
-				assert.Equal(t, len(c.page), len(p))
+				require.Nil(t, err)
+				require.Equal(t, len(c.page), len(p))
 				for i, cm := range c.page {
-					assert.True(t, cm.Route.Condition.Equal(p[i].Route.Condition))
-				}
-			} else {
-				assert.ErrorIs(t, err, c.err)
-			}
-		})
-	}
-}
-
-func TestStorageImpl_SearchByMetadata(t *testing.T) {
-	//
-	collName := fmt.Sprintf("subscriptions-test-%d", rand.Uint32())
-	dbCfg := config.Db{
-		Uri:  dbUri,
-		Name: "subscriptions-dev",
-	}
-	dbCfg.Table.Name = collName
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer cancel()
-	s, err := NewStorage(ctx, dbCfg)
-	require.Nil(t, err)
-	defer clear(ctx, t, s.(storageImpl))
-	//
-	var rootConditions []condition.Condition
-	var ids []string
-	for i := 0; i < 10; i++ {
-		cond := condition.NewKiwiCondition(
-			condition.NewKeyCondition(
-				condition.NewCondition(i%4 == 0), fmt.Sprintf("cond%d", i), fmt.Sprintf("key%d", i%3),
-			),
-			i%2 == 0,
-			fmt.Sprintf("pattern%d", i%3),
-		)
-		sub := subscription.Data{
-			Metadata: map[string]string{
-				fmt.Sprintf("key%d", i%2): fmt.Sprintf("value%d", i%3),
-			},
-			Route: subscription.Route{
-				Destinations: []string{
-					fmt.Sprintf("test route %d", i),
-				},
-				Condition: cond,
-			},
-		}
-		id, err := s.Create(ctx, sub)
-		require.Nil(t, err)
-		rootConditions = append(rootConditions, cond)
-		ids = append(ids, id)
-	}
-	//
-	cases := map[string]struct {
-		q        model.MetadataQuery
-		cursor   string
-		pageSize int
-		err      error
-	}{
-		"1": {
-			q: model.MetadataQuery{
-				Limit: 100,
-				Metadata: map[string]string{
-					"key0": "value1",
-				},
-			},
-			pageSize: 1,
-		},
-		"0": {
-			q: model.MetadataQuery{
-				Limit: 100,
-				Metadata: map[string]string{
-					"key1": "value3",
-				},
-			},
-			pageSize: 0,
-		},
-	}
-	//
-	for k, c := range cases {
-		t.Run(k, func(t *testing.T) {
-			p, err := s.SearchByMetadata(ctx, c.q, c.cursor)
-			if c.err == nil {
-				assert.Nil(t, err)
-				assert.Equal(t, c.pageSize, len(p))
-				for _, sub := range p {
-					assert.Equal(t, c.q.Metadata, sub.Data.Metadata)
+					assert.Equal(t, cm.Key, p[i].Key)
+					assert.True(t, cm.Condition.Equal(p[i].Condition))
+					assert.Equal(t, p[i].ConditionId, p[i].Condition.(condition.KiwiCondition).GetId())
 				}
 			} else {
 				assert.ErrorIs(t, err, c.err)

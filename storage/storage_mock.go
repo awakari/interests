@@ -3,10 +3,10 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/awakari/subscriptions/model"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/google/uuid"
+	"strings"
 )
 
 type (
@@ -25,42 +25,65 @@ func (s storageMock) Close() error {
 	return nil
 }
 
-func (s storageMock) Create(ctx context.Context, sd subscription.Data) (id string, err error) {
-	if sd.Metadata["description"] == "conflict" {
-		err = ErrConflict
-	} else {
-		id = uuid.NewString()
-		s.storage[id] = sd
-	}
+func (s storageMock) Create(ctx context.Context, acc string, sd subscription.Data) (id string, err error) {
+	id = uuid.NewString()
+	s.storage[id+acc] = sd
 	return
 }
 
-func (s storageMock) Read(ctx context.Context, id string) (sub subscription.Data, err error) {
+func (s storageMock) Read(ctx context.Context, id, acc string) (sub subscription.Data, err error) {
 	var found bool
-	sub, found = s.storage[id]
+	sub, found = s.storage[id+acc]
 	if !found {
 		err = fmt.Errorf("%w by id: %s", ErrNotFound, id)
 	}
 	return
 }
 
-func (s storageMock) Delete(ctx context.Context, id string) (sd subscription.Data, err error) {
-	var found bool
-	sd, found = s.storage[id]
+func (s storageMock) UpdateMetadata(ctx context.Context, id, acc string, md subscription.Metadata) (err error) {
+	sd, found := s.storage[id+acc]
 	if found {
-		delete(s.storage, id)
+		sd.Metadata = md
+		s.storage[id+acc] = sd
 	} else {
 		err = fmt.Errorf("%w by id: %s", ErrNotFound, id)
 	}
 	return
 }
 
-func (s storageMock) SearchByKiwi(ctx context.Context, q KiwiQuery, cursor string) (page []subscription.ConditionMatch, err error) {
+func (s storageMock) Delete(ctx context.Context, id, acc string) (sd subscription.Data, err error) {
+	var found bool
+	sd, found = s.storage[id+acc]
+	if found {
+		delete(s.storage, id+acc)
+	} else {
+		err = fmt.Errorf("%w by id: %s", ErrNotFound, id)
+	}
+	return
+}
+
+func (s storageMock) SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error) {
+	for id, _ := range s.storage {
+		if strings.HasSuffix(id, q.Account) && id > cursor {
+			ids = append(ids, id[:len(q.Account)])
+		}
+		if uint32(len(ids)) == q.Limit {
+			break
+		}
+	}
+	return
+}
+
+func (s storageMock) SearchByKiwi(ctx context.Context, q KiwiQuery, cursor subscription.ConditionMatchKey) (page []subscription.ConditionMatch, err error) {
 	for id, sd := range s.storage {
-		if containsKiwi(sd.Route.Condition, q.Key, q.Pattern) && id > cursor {
+		if containsKiwi(sd.Condition, q.Key, q.Pattern) && id > cursor.Id {
 			cm := subscription.ConditionMatch{
-				Id:    id,
-				Route: sd.Route,
+				Key: subscription.ConditionMatchKey{
+					Id:       id,
+					Priority: sd.Metadata.Priority,
+				},
+				Account:   id,
+				Condition: sd.Condition,
 			}
 			page = append(page, cm)
 		}
@@ -84,33 +107,4 @@ func containsKiwi(c condition.Condition, k, p string) (contains bool) {
 		contains = cond.GetKey() == k && cond.GetPattern() == p
 	}
 	return
-}
-
-func (s storageMock) SearchByMetadata(ctx context.Context, q model.MetadataQuery, cursor string) (page []subscription.Subscription, err error) {
-	for id, sd := range s.storage {
-		if contains(sd.Metadata, q.Metadata) && id > cursor {
-			sub := subscription.Subscription{
-				Id:   id,
-				Data: sd,
-			}
-			page = append(page, sub)
-		}
-		if uint32(len(page)) == q.Limit {
-			break
-		}
-	}
-	return
-}
-
-func contains(a, b map[string]string) bool {
-	for k, bv := range b {
-		av, present := a[k]
-		if !present {
-			return false
-		}
-		if av != bv {
-			return false
-		}
-	}
-	return true
 }
