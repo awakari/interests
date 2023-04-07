@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -36,45 +37,56 @@ func TestMain(m *testing.M) {
 func TestServiceController_SearchByCondition(t *testing.T) {
 	//
 	addr := fmt.Sprintf("localhost:%d", port)
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.Nil(t, err)
-	client := NewServiceClient(conn)
 	//
-	cases := map[string]struct {
-		condition isSearchByConditionRequest_Cond
-		err       error
-		count     int
-	}{
-		"": {
-			condition: &SearchByConditionRequest_Kcq{
-				Kcq: &KiwiConditionQuery{},
-			},
-			count: 2,
-		},
-		"fail": {
-			err: status.Error(codes.InvalidArgument, "unsupported condition type"),
+	req := &SearchByConditionRequest{
+		Cond: &SearchByConditionRequest_Kcq{
+			Kcq: &KiwiConditionQuery{},
 		},
 	}
 	//
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
+	cases := map[string]struct {
+		timeout  time.Duration
+		minCount int
+		maxCount int
+		err      error
+	}{
+		"1 millisecond is not enough to read 10_000 items": {
+			timeout:  1 * time.Millisecond,
+			minCount: 1,
+			maxCount: 10_000,
+			err:      status.Error(codes.DeadlineExceeded, "context deadline exceeded"),
+		},
+		"1 second is more than enough to read 10_000 items": {
+			timeout:  1 * time.Second,
+			minCount: 10_000,
+			maxCount: 10_000,
+		},
+	}
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			resp, err := client.SearchByCondition(
-				ctx,
-				&SearchByConditionRequest{
-					Cond: c.condition,
-					Cursor: &ConditionMatchKey{
-						SubId: k,
-					},
-				},
-			)
-			if c.err == nil {
-				assert.Nil(t, err)
-				assert.Equal(t, c.count, len(resp.Page))
-			} else {
-				assert.ErrorIs(t, err, c.err)
+			conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			require.Nil(t, err)
+			defer conn.Close()
+			client := NewServiceClient(conn)
+			ctx, cancel := context.WithTimeout(context.TODO(), c.timeout)
+			defer cancel()
+			stream, err := client.SearchByCondition(ctx, req)
+			require.Nil(t, err)
+			count := 0
+			for {
+				_, err = stream.Recv()
+				if err == io.EOF {
+					err = nil
+					break
+				}
+				if err != nil {
+					break
+				}
+				count++
 			}
+			assert.ErrorIs(t, err, c.err)
+			assert.True(t, count >= c.minCount, count)
+			assert.True(t, count <= c.maxCount, count)
 		})
 	}
 }

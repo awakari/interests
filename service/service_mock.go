@@ -2,15 +2,15 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
+	"github.com/awakari/subscriptions/util"
 	"github.com/google/uuid"
 )
 
-type (
-	serviceMock struct {
-	}
-)
+type serviceMock struct {
+}
 
 func NewServiceMock() Service {
 	return serviceMock{}
@@ -92,36 +92,24 @@ func (sm serviceMock) SearchByAccount(ctx context.Context, q subscription.QueryB
 	return
 }
 
-func (sm serviceMock) SearchByCondition(ctx context.Context, q condition.Query, cursor subscription.ConditionMatchKey) (page []subscription.ConditionMatch, err error) {
-	if cursor.Id == "" && cursor.Priority == 0 {
-		page = []subscription.ConditionMatch{
-			{
-				Key: subscription.ConditionMatchKey{
-					Id: "sub0",
-				},
-				Account: "acc0",
-				Condition: condition.NewKiwiCondition(
-					condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-					false,
-					"pattern0",
-				),
-				ConditionId: "cond0",
+func (sm serviceMock) SearchByCondition(ctx context.Context, cond condition.Condition, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
+	for i := 0; i < 10_000; i++ {
+		cm := subscription.ConditionMatch{
+			Key: subscription.ConditionMatchKey{
+				Id: fmt.Sprintf("sub%d", i),
 			},
-			{
-				Key: subscription.ConditionMatchKey{
-					Id: "sub1",
-				},
-				Account: "acc1",
-				Condition: condition.NewKiwiCondition(
-					condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-					false,
-					"pattern0",
-				),
-				ConditionId: "cond0",
-			},
+			Account: fmt.Sprintf("acc%d", i),
+			Condition: condition.NewKiwiCondition(
+				condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
+				false,
+				"pattern0",
+			),
+			ConditionId: "cond0",
 		}
-	} else if cursor.Id == "fail" {
-		err = ErrInternal
+		err = consumeFunc(&cm)
+		if err != nil {
+			break
+		}
 	}
 	return
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/awakari/subscriptions/config"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/storage"
+	"github.com/awakari/subscriptions/util"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -55,10 +56,6 @@ var (
 		// query by id (cursor) and kiwi
 		{
 			Keys: bson.D{
-				{
-					Key:   attrId,
-					Value: 1,
-				},
 				{
 					Key:   attrPrio,
 					Value: 1,
@@ -301,7 +298,7 @@ func (s storageImpl) SearchByAccount(ctx context.Context, q subscription.QueryBy
 	return
 }
 
-func (s storageImpl) SearchByKiwi(ctx context.Context, q storage.KiwiQuery, cursor subscription.ConditionMatchKey) (page []subscription.ConditionMatch, err error) {
+func (s storageImpl) SearchByKiwi(ctx context.Context, q storage.KiwiQuery, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
 	dbQuery := bson.M{
 		attrKiwis + "." + kiwiConditionAttrKey:     q.Key,
 		attrKiwis + "." + kiwiConditionAttrPattern: q.Pattern,
@@ -310,53 +307,41 @@ func (s storageImpl) SearchByKiwi(ctx context.Context, q storage.KiwiQuery, curs
 			"$gt": 0,
 		},
 	}
-	if cursor.Id != "" {
-		dbQuery["$or"] = []bson.M{
-			{
-				attrPrio: bson.M{
-					"$lt": cursor.Priority,
-				},
-			},
-			{
-				attrPrio: cursor.Priority,
-				attrId: bson.M{
-					"$gt": cursor.Id,
-				},
-			},
-		}
-	}
 	opts := options.
 		Find().
-		SetLimit(int64(q.Limit)).
 		SetProjection(searchByKiwiProjection).
 		SetShowRecordID(false).
 		SetSort(searchByKiwiSortProjection)
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, dbQuery, opts)
 	if err != nil {
-		err = fmt.Errorf("%w: failed to find: query=%v, cursor=%+v, %s", storage.ErrInternal, dbQuery, cursor, err)
+		err = fmt.Errorf("%w: failed to find: query=%+v, %s", storage.ErrInternal, dbQuery, err)
 	} else {
 		defer cur.Close(ctx)
-		var recs []subscriptionRec
-		err = cur.All(ctx, &recs)
-		if err != nil {
-			err = fmt.Errorf("%w: failed to decode: %s", storage.ErrInternal, err)
-		} else {
-			for _, rec := range recs {
-				var cm subscription.ConditionMatch
-				err = rec.decodeSubscriptionConditionMatch(&cm)
-				var condId string
-				for _, kiwi := range rec.Kiwis {
-					if kiwi.Key == q.Key && kiwi.Pattern == q.Pattern && kiwi.Partial == q.Partial {
-						condId = kiwi.Id
-					}
+		for cur.Next(ctx) {
+			var rec subscriptionRec
+			err = cur.Decode(&rec)
+			if err != nil {
+				err = fmt.Errorf("%w: failed to decode subscription record @ cursor %v: %s", storage.ErrInternal, cur.Current, err)
+				break
+			}
+			var cm subscription.ConditionMatch
+			err = rec.decodeSubscriptionConditionMatch(&cm)
+			var condId string
+			for _, kiwi := range rec.Kiwis {
+				if kiwi.Key == q.Key && kiwi.Pattern == q.Pattern && kiwi.Partial == q.Partial {
+					condId = kiwi.Id
 				}
-				cm.ConditionId = condId
-				if err != nil {
-					err = fmt.Errorf("%w: failed to decode subscription record %v: %s", storage.ErrInternal, rec, err)
-					break
-				}
-				page = append(page, cm)
+			}
+			cm.ConditionId = condId
+			if err != nil {
+				err = fmt.Errorf("%w: failed to decode subscription record %v: %s", storage.ErrInternal, rec, err)
+				break
+			}
+			err = consumeFunc(&cm)
+			if err != nil {
+				err = fmt.Errorf("%w: failed to consume condition match %v: %s", storage.ErrInternal, cm, err)
+				break
 			}
 		}
 	}

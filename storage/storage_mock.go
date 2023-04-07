@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
+	"github.com/awakari/subscriptions/util"
 	"github.com/google/uuid"
 	"strings"
 )
@@ -74,20 +75,22 @@ func (s storageMock) SearchByAccount(ctx context.Context, q subscription.QueryBy
 	return
 }
 
-func (s storageMock) SearchByKiwi(ctx context.Context, q KiwiQuery, cursor subscription.ConditionMatchKey) (page []subscription.ConditionMatch, err error) {
-	for id, sd := range s.storage {
-		if containsKiwi(sd.Condition, q.Key, q.Pattern) && id > cursor.Id {
-			cm := subscription.ConditionMatch{
-				Key: subscription.ConditionMatchKey{
-					Id:       id,
-					Priority: sd.Metadata.Priority,
-				},
-				Account:   id,
-				Condition: sd.Condition,
-			}
-			page = append(page, cm)
+func (s storageMock) SearchByKiwi(ctx context.Context, q KiwiQuery, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
+	for i := 0; i < 10_000; i++ {
+		cm := subscription.ConditionMatch{
+			Key: subscription.ConditionMatchKey{
+				Id: fmt.Sprintf("sub%d", i),
+			},
+			Account: fmt.Sprintf("acc%d", i),
+			Condition: condition.NewKiwiCondition(
+				condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
+				false,
+				"pattern0",
+			),
+			ConditionId: "cond0",
 		}
-		if uint32(len(page)) == q.Limit {
+		err = consumeFunc(&cm)
+		if err != nil {
 			break
 		}
 	}

@@ -309,64 +309,38 @@ func TestService_SearchByKiwi(t *testing.T) {
 	}
 	//
 	cases := map[string]struct {
-		query    condition.Query
+		query    condition.Condition
 		pageSize int
 		err      error
 	}{
 		"key0/pattern0 -> 5 subs": {
-			query: condition.Query{
-				Limit: 10,
-				Condition: condition.NewKiwiCondition(
-					condition.NewKeyCondition(
-						condition.NewCondition(false),
-						"", "key0",
-					),
-					false,
-					"pattern0",
-				),
-			},
-			pageSize: 5,
-		},
-		"key1/pattern1, limit=2": {
-			query: condition.Query{
-				Limit: 2,
-				Condition: condition.NewKiwiCondition(
-					condition.NewKeyCondition(
-						condition.NewCondition(false),
-						"", "key1",
-					),
-					false,
-					"pattern1",
-				),
-			},
-			pageSize: 2,
-		},
-		"fail on group condition query": {
-			query: condition.Query{
-				Limit: 3,
-				Condition: condition.NewGroupCondition(
-					condition.NewCondition(false),
-					condition.GroupLogicAnd,
-					[]condition.Condition{},
-				),
-			},
-			err: ErrInvalidQuery,
-		},
-		"fail on base condition query": {
-			query: condition.Query{
-				Limit:     3,
-				Condition: condition.NewCondition(false),
-			},
-			err: ErrInvalidQuery,
-		},
-		"fail on key condition query": {
-			query: condition.Query{
-				Limit: 3,
-				Condition: condition.NewKeyCondition(
+			query: condition.NewKiwiCondition(
+				condition.NewKeyCondition(
 					condition.NewCondition(false),
 					"", "key0",
 				),
-			},
+				false,
+				"pattern0",
+			),
+			pageSize: 10000,
+		},
+		"fail on group condition query": {
+			query: condition.NewGroupCondition(
+				condition.NewCondition(false),
+				condition.GroupLogicAnd,
+				[]condition.Condition{},
+			),
+			err: ErrInvalidQuery,
+		},
+		"fail on base condition query": {
+			query: condition.NewCondition(false),
+			err:   ErrInvalidQuery,
+		},
+		"fail on key condition query": {
+			query: condition.NewKeyCondition(
+				condition.NewCondition(false),
+				"", "key0",
+			),
 			err: ErrInvalidQuery,
 		},
 	}
@@ -375,7 +349,12 @@ func TestService_SearchByKiwi(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			page, err := svc.SearchByCondition(ctx, c.query, subscription.ConditionMatchKey{})
+			var page []*subscription.ConditionMatch
+			consume := func(match *subscription.ConditionMatch) (err error) {
+				page = append(page, match)
+				return
+			}
+			err := svc.SearchByCondition(ctx, c.query, consume)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.pageSize, len(page))

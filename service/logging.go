@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
+	"github.com/awakari/subscriptions/util"
 	"golang.org/x/exp/slog"
 )
 
@@ -50,11 +51,11 @@ func (lm loggingMiddleware) Delete(ctx context.Context, id, acc string) (err err
 	return lm.svc.Delete(ctx, id, acc)
 }
 
-func (lm loggingMiddleware) SearchByCondition(ctx context.Context, q condition.Query, cursor subscription.ConditionMatchKey) (page []subscription.ConditionMatch, err error) {
+func (lm loggingMiddleware) SearchByCondition(ctx context.Context, cond condition.Condition, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("SearchByCondition(%v, %v): %s", q, cursor, err))
+		lm.log.Debug(fmt.Sprintf("StreamByCondition(%+v): %s", cond, err))
 	}()
-	return lm.svc.SearchByCondition(ctx, q, cursor)
+	return lm.svc.SearchByCondition(ctx, cond, consumeFunc)
 }
 
 func (lm loggingMiddleware) SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error) {

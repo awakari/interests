@@ -475,17 +475,16 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 	cases := map[string]struct {
 		q      storage.KiwiQuery
 		cursor subscription.ConditionMatchKey
-		page   []subscription.ConditionMatch
+		out    []*subscription.ConditionMatch
 		err    error
 	}{
 		"1": {
 			q: storage.KiwiQuery{
-				Limit:   100,
 				Key:     "key1",
 				Pattern: "pattern1",
 				Partial: true,
 			},
-			page: []subscription.ConditionMatch{
+			out: []*subscription.ConditionMatch{
 				{
 					Key: subscription.ConditionMatchKey{
 						Id:       ids[4],
@@ -497,12 +496,11 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 		},
 		"2": {
 			q: storage.KiwiQuery{
-				Limit:   100,
 				Key:     "key2",
 				Pattern: "pattern2",
 				Partial: true,
 			},
-			page: []subscription.ConditionMatch{
+			out: []*subscription.ConditionMatch{
 				{
 					Key: subscription.ConditionMatchKey{
 						Id:       ids[8],
@@ -519,35 +517,13 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 				},
 			},
 		},
-		"w/ cursor": {
-			q: storage.KiwiQuery{
-				Limit:   100,
-				Key:     "key2",
-				Pattern: "pattern2",
-				Partial: true,
-			},
-			cursor: subscription.ConditionMatchKey{
-				Id:       ids[8],
-				Priority: 8,
-			},
-			page: []subscription.ConditionMatch{
-				{
-					Key: subscription.ConditionMatchKey{
-						Id:       ids[2],
-						Priority: 2,
-					},
-					Condition: rootConditions[2],
-				},
-			},
-		},
 		"skip results with zero priority": {
 			q: storage.KiwiQuery{
-				Limit:   100,
 				Key:     "key0",
 				Pattern: "pattern0",
 				Partial: true,
 			},
-			page: []subscription.ConditionMatch{
+			out: []*subscription.ConditionMatch{
 				{
 					Key: subscription.ConditionMatchKey{
 						Id:       ids[6],
@@ -561,15 +537,19 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 	//
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			p, err := s.SearchByKiwi(ctx, c.q, c.cursor)
-			fmt.Println(ids)
+			var out []*subscription.ConditionMatch
+			consumer := func(cm *subscription.ConditionMatch) (err error) {
+				out = append(out, cm)
+				return
+			}
+			err = s.SearchByKiwi(ctx, c.q, consumer)
 			if c.err == nil {
 				require.Nil(t, err)
-				require.Equal(t, len(c.page), len(p))
-				for i, cm := range c.page {
-					assert.Equal(t, cm.Key, p[i].Key)
-					assert.True(t, cm.Condition.Equal(p[i].Condition))
-					assert.Equal(t, p[i].ConditionId, p[i].Condition.(condition.KiwiCondition).GetId())
+				require.Equal(t, len(c.out), len(out))
+				for i, cm := range c.out {
+					assert.Equal(t, cm.Key, out[i].Key)
+					assert.True(t, cm.Condition.Equal(out[i].Condition))
+					assert.Equal(t, out[i].ConditionId, out[i].Condition.(condition.KiwiCondition).GetId())
 				}
 			} else {
 				assert.ErrorIs(t, err, c.err)

@@ -8,6 +8,7 @@ import (
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/storage"
+	"github.com/awakari/subscriptions/util"
 	"reflect"
 )
 
@@ -32,10 +33,8 @@ type Service interface {
 	// SearchByAccount returns all subscription ids those have the account matching the query.
 	SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error)
 
-	// SearchByCondition returns subscription.ConditionMatch page where:<br/>
-	// * subscription id is greater than the specified cursor<br/>
-	// * contains a condition specified by the query.
-	SearchByCondition(ctx context.Context, q condition.Query, cursor subscription.ConditionMatchKey) (page []subscription.ConditionMatch, err error)
+	// SearchByCondition sends the matches to the specified consumer func those contain a condition specified by the query.
+	SearchByCondition(ctx context.Context, cond condition.Condition, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error)
 }
 
 type service struct {
@@ -163,11 +162,9 @@ func (svc service) clearUnusedKiwiTreeCondition(ctx context.Context, ktc conditi
 	k := ktc.GetKey()
 	p := ktc.GetPattern()
 	q := storage.KiwiQuery{
-		Limit:   1,
 		Key:     k,
 		Pattern: p,
 	}
-	var subs []subscription.ConditionMatch
 	kiwiTreeSvc := svc.selectKiwiTreeService(ktc)
 	err = kiwiTreeSvc.LockCreate(ctx, k, p)
 	if err == nil {
@@ -175,9 +172,14 @@ func (svc service) clearUnusedKiwiTreeCondition(ctx context.Context, ktc conditi
 			_ = kiwiTreeSvc.UnlockCreate(ctx, k, p)
 		}()
 		// find any subscription that is also using this kiwi condition
-		subs, err = svc.stor.SearchByKiwi(ctx, q, subscription.ConditionMatchKey{})
+		var matches []*subscription.ConditionMatch
+		consumeFunc := func(match *subscription.ConditionMatch) (err error) {
+			matches = append(matches, match)
+			return
+		}
+		err = svc.stor.SearchByKiwi(ctx, q, consumeFunc)
 		if err == nil {
-			if len(subs) == 0 {
+			if len(matches) == 0 {
 				// no other subscriptions found, let's delete the kiwi condition from the tree
 				err = kiwiTreeSvc.Delete(ctx, k, p)
 			}
@@ -194,18 +196,17 @@ func (svc service) SearchByAccount(ctx context.Context, q subscription.QueryByAc
 	return
 }
 
-func (svc service) SearchByCondition(ctx context.Context, q condition.Query, cursor subscription.ConditionMatchKey) (page []subscription.ConditionMatch, err error) {
-	switch c := q.Condition.(type) {
+func (svc service) SearchByCondition(ctx context.Context, cond condition.Condition, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
+	switch condT := cond.(type) {
 	case condition.KiwiCondition:
 		kiwiQuery := storage.KiwiQuery{
-			Limit:   q.Limit,
-			Key:     c.GetKey(),
-			Pattern: c.GetPattern(),
-			Partial: c.IsPartial(),
+			Key:     condT.GetKey(),
+			Pattern: condT.GetPattern(),
+			Partial: condT.IsPartial(),
 		}
-		page, err = svc.stor.SearchByKiwi(ctx, kiwiQuery, cursor)
+		err = svc.stor.SearchByKiwi(ctx, kiwiQuery, consumeFunc)
 	default:
-		err = fmt.Errorf("%w: unsupported condition type: %s", ErrInvalidQuery, reflect.TypeOf(c))
+		err = fmt.Errorf("%w: unsupported condition type: %s", ErrInvalidQuery, reflect.TypeOf(condT))
 	}
 	if err != nil {
 		err = translateError(err)
