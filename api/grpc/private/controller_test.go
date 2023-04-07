@@ -50,8 +50,8 @@ func TestServiceController_SearchByCondition(t *testing.T) {
 		maxCount int
 		err      error
 	}{
-		"1 millisecond is not enough to read 10_000 items": {
-			timeout:  1 * time.Millisecond,
+		"10 milliseconds is not enough to read 10_000 items": {
+			timeout:  10 * time.Millisecond,
 			minCount: 1,
 			maxCount: 10_000,
 			err:      status.Error(codes.DeadlineExceeded, "context deadline exceeded"),
