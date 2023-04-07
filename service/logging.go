@@ -53,7 +53,7 @@ func (lm loggingMiddleware) Delete(ctx context.Context, id, acc string) (err err
 
 func (lm loggingMiddleware) SearchByCondition(ctx context.Context, cond condition.Condition, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("StreamByCondition(%+v): %s", cond, err))
+		lm.log.Debug(fmt.Sprintf("SearchByCondition(%+v): %s", cond, err))
 	}()
 	return lm.svc.SearchByCondition(ctx, cond, consumeFunc)
 }

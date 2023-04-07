@@ -296,7 +296,7 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/private/service.proto \
-  -d '{"limit": 100, "kcq": {"key": "key0", "pattern": "pattern?", "partial": false}}' \
+  -d '{"kcq": {"key": "key0", "pattern": "pattern?", "partial": false}}' \
   localhost:8081 \
   awakari.subscriptions.private.Service/SearchByCondition
 ```
