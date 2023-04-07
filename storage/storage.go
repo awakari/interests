@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/awakari/subscriptions/model/subscription"
+	"github.com/awakari/subscriptions/util"
 	"io"
 )
 
@@ -30,10 +31,9 @@ type (
 		// SearchByAccount returns all subscription ids those have the account matching the query.
 		SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error)
 
-		// SearchByKiwi returns subscriptions page where:<br/>
-		// * model.Subscription id is greater than the one specified by the cursor<br/>
-		// * subscriptions match the specified model.KiwiQuery.
-		SearchByKiwi(ctx context.Context, q KiwiQuery, cursor subscription.ConditionMatchKey) (page []subscription.ConditionMatch, err error)
+		// SearchByKiwi finds all subscriptions those match the specified KiwiQuery and feeds these to the specified
+		// consumer func.
+		SearchByKiwi(ctx context.Context, q KiwiQuery, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error)
 	}
 )
 

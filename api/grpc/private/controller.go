@@ -1,7 +1,6 @@
 package private
 
 import (
-	"context"
 	"github.com/awakari/subscriptions/api/grpc/common"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
@@ -20,41 +19,35 @@ func NewServiceController(svc service.Service) ServiceServer {
 	}
 }
 
-func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchByConditionRequest) (resp *SearchByConditionResponse, err error) {
-	resp = &SearchByConditionResponse{
-		Page: []*ConditionMatch{},
-	}
+func (sc serviceController) SearchByCondition(req *SearchByConditionRequest, server Service_SearchByConditionServer) (err error) {
+	var cond condition.Condition
 	kcq := req.GetKcq()
 	switch {
 	case kcq != nil:
-		q := condition.Query{
-			Limit: req.Limit,
-			Condition: condition.NewKiwiCondition(
-				condition.NewKeyCondition(condition.NewCondition(false), "", kcq.Key),
-				kcq.Partial,
-				kcq.Pattern,
-			),
-		}
-		var page []subscription.ConditionMatch
-		var respCm *ConditionMatch
-		var cursor subscription.ConditionMatchKey
-		reqCursor := req.Cursor
-		if reqCursor != nil {
-			cursor.Id = reqCursor.SubId
-			cursor.Priority = reqCursor.Priority
-		}
-		page, err = sc.svc.SearchByCondition(ctx, q, cursor)
-		if err != nil {
-			err = status.Error(codes.Internal, err.Error())
-		} else {
-			for _, cm := range page {
-				respCm = encodeConditionMatch(cm)
-				resp.Page = append(resp.Page, respCm)
-			}
-		}
+		cond = condition.NewKiwiCondition(
+			condition.NewKeyCondition(condition.NewCondition(false), "", kcq.Key),
+			kcq.Partial,
+			kcq.Pattern,
+		)
 	default:
 		err = status.Error(codes.InvalidArgument, "unsupported condition type")
 	}
+	if err == nil {
+		ctx := server.Context()
+		sendToStreamFunc := func(cm *subscription.ConditionMatch) (err error) {
+			return sendToStream(cm, server)
+		}
+		err = sc.svc.SearchByCondition(ctx, cond, sendToStreamFunc)
+	}
+	if err != nil {
+		err = status.Error(codes.Internal, err.Error())
+	}
+	return
+}
+
+func sendToStream(cm *subscription.ConditionMatch, server Service_SearchByConditionServer) (err error) {
+	respCm := encodeConditionMatch(cm)
+	err = server.Send(respCm)
 	return
 }
 
@@ -89,7 +82,7 @@ func encodeCondition(src condition.Condition) (dst *common.ConditionOutput) {
 	return
 }
 
-func encodeConditionMatch(src subscription.ConditionMatch) (dst *ConditionMatch) {
+func encodeConditionMatch(src *subscription.ConditionMatch) (dst *ConditionMatch) {
 	srcKey := src.Key
 	dstKey := &ConditionMatchKey{
 		SubId:    srcKey.Id,
