@@ -32,7 +32,9 @@
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.1. [Subscription](#5211-subscription)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.2. [Group Condition](#5212-group-condition)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.3. [Kiwi Condition](#5213-kiwi-condition)<br/>
-   &nbsp;&nbsp;&nbsp;5.2.2 [Results Pagination](#522-results-pagination)<br/>
+   &nbsp;&nbsp;&nbsp;5.2.2 [Flow](#522-flow)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.2.1. [Create](#5221-create)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.2.2. [Delete](#5222-delete)<br/>
    5.3. [Limitations](#53-limitations)<br/>
 6. [Contributing](#6-contributing)<br/>
    6.1. [Versioning](#61-versioning)<br/>
@@ -379,9 +381,92 @@ subscription they need to delete it 1st and then create again.
 | pattern   | String  | Metadata value matching pattern                                                                               |
 | partial   | Boolean | If `true`, then allowed match any lexeme in a tokenized metadata value. Otherwise, entire value should match. |
 
-### 5.2.2. Results Pagination
+### 5.2.2. Flow
 
-The limit and cursor search parameters are used to support the results' pagination.
+#### 5.2.2.1. Create
+
+```mermaid
+%%{init: {'theme': 'neutral' } }%%
+sequenceDiagram
+
+    autonumber
+
+    actor API Gateway
+    participant Subscriptions
+    participant Conditions
+
+    API Gateway->>Subscriptions: Create
+
+    activate Subscriptions
+    Subscriptions->>Subscriptions: Insert to Storage
+    loop Condition and its children
+    
+        Subscriptions->>Conditions: Create
+        deactivate Subscriptions
+        
+        activate Conditions
+        Conditions->>Conditions: Upsert
+        Conditions-->>Subscriptions: Ack
+        deactivate Conditions
+        
+        activate  Subscriptions
+    
+    end
+    Subscription-->>API Gateway: Ack
+    deactivate Subscriptions
+```
+
+#### 5.2.2.2. Delete
+
+```mermaid
+%%{init: {'theme': 'neutral' } }%%
+sequenceDiagram
+
+    autonumber
+
+    actor API Gateway
+    participant Subscriptions
+    participant Conditions
+
+    API Gateway->>Subscriptions: Delete
+
+    activate Subscriptions
+    Subscriptions->>Subscriptions: Delete from Storage
+    loop Condition and its children
+    
+        Subscriptions->>Conditions: Lock Create
+        deactivate Subscriptions
+        
+        activate Conditions
+        Conditions->>Conditions: Lock Create in Storage
+        Conditions-->>Subscriptions: Ack
+        deactivate Conditions
+        
+        activate Subscriptions
+        Subscriptions->>Subscriptions: Check Condition not in use
+        Subscriptions->>Conditions: Delete
+        deactivate Subscriptions
+        
+        activate Conditions
+        Conditions-->>Subscriptions: Ack
+        deactivate Conditions
+        
+        activate Subscriptions
+        Subscriptions->>Conditions: Unlock Create
+        deactivate Subscriptions
+        
+        activate Conditions
+        Conditions->>Conditions: Unlock Create in Storage
+        Conditions-->>Subscriptions: Ack
+        deactivate Conditions
+        
+        activate Subscriptions
+        
+    end
+    Subscription-->>API Gateway: Ack
+    deactivate Subscriptions
+```
+
 
 ## 5.3. Limitations
 
