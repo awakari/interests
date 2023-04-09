@@ -46,22 +46,21 @@ func (sc serviceController) SearchByCondition(req *SearchByConditionRequest, ser
 }
 
 func sendToStream(cm *subscription.ConditionMatch, server Service_SearchByConditionServer) (err error) {
-	respCm := encodeConditionMatch(cm)
-	err = server.Send(respCm)
+	var respCm ConditionMatch
+	encodeConditionMatch(cm, &respCm)
+	err = server.Send(&respCm)
 	return
 }
 
-func encodeCondition(src condition.Condition) (dst *common.ConditionOutput) {
-	dst = &common.ConditionOutput{
-		Not: src.IsNot(),
-	}
+func encodeCondition(src condition.Condition, dst *common.ConditionOutput) {
+	dst.Not = src.IsNot()
 	switch c := src.(type) {
 	case condition.GroupCondition:
 		var dstGroup []*common.ConditionOutput
-		var childDst *common.ConditionOutput
 		for _, childSrc := range c.GetGroup() {
-			childDst = encodeCondition(childSrc)
-			dstGroup = append(dstGroup, childDst)
+			var childDst common.ConditionOutput
+			encodeCondition(childSrc, &childDst)
+			dstGroup = append(dstGroup, &childDst)
 		}
 		dst.Cond = &common.ConditionOutput_Gc{
 			Gc: &common.GroupConditionOutput{
@@ -82,16 +81,9 @@ func encodeCondition(src condition.Condition) (dst *common.ConditionOutput) {
 	return
 }
 
-func encodeConditionMatch(src *subscription.ConditionMatch) (dst *ConditionMatch) {
-	srcKey := src.Key
-	dstKey := &ConditionMatchKey{
-		SubId:    srcKey.Id,
-		Priority: srcKey.Priority,
-	}
-	return &ConditionMatch{
-		Key:     dstKey,
-		Account: src.Account,
-		CondId:  src.ConditionId,
-		Cond:    encodeCondition(src.Condition),
-	}
+func encodeConditionMatch(src *subscription.ConditionMatch, dst *ConditionMatch) {
+	dst.SubId = src.SubscriptionId
+	dst.CondId = src.ConditionId
+	dst.Cond = &common.ConditionOutput{}
+	encodeCondition(src.Condition, dst.Cond)
 }

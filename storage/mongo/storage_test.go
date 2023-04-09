@@ -57,7 +57,6 @@ func TestStorageImpl_Create(t *testing.T) {
 	id, err := s.Create(ctx, "acc0", subscription.Data{
 		Metadata: subscription.Metadata{
 			Description: "test subscription 0",
-			Priority:    1,
 		},
 		Condition: condition.NewKiwiCondition(
 			condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
@@ -77,7 +76,6 @@ func TestStorageImpl_Create(t *testing.T) {
 			sd: subscription.Data{
 				Metadata: subscription.Metadata{
 					Description: "test subscription 1",
-					Priority:    1,
 				},
 				Condition: condition.NewGroupCondition(
 					condition.NewCondition(false),
@@ -109,7 +107,6 @@ func TestStorageImpl_Create(t *testing.T) {
 			sd: subscription.Data{
 				Metadata: subscription.Metadata{
 					Description: "test subscription 2",
-					Priority:    1,
 				},
 				Condition: condition.NewGroupCondition(
 					condition.NewCondition(false),
@@ -167,7 +164,6 @@ func TestStorageImpl_Read(t *testing.T) {
 	id0, err := s.Create(ctx, "acc0", subscription.Data{
 		Metadata: subscription.Metadata{
 			Description: "test subscription 0",
-			Priority:    1,
 		},
 		Condition: cond0,
 	})
@@ -185,7 +181,6 @@ func TestStorageImpl_Read(t *testing.T) {
 			sd: subscription.Data{
 				Metadata: subscription.Metadata{
 					Description: "test subscription 0",
-					Priority:    1,
 				},
 				Condition: cond0,
 			},
@@ -251,7 +246,6 @@ func TestStorageImpl_UpdateMetadata(t *testing.T) {
 			acc: "acc0",
 			md: subscription.Metadata{
 				Description: "new description",
-				Priority:    1,
 			},
 		},
 		"id mismatch": {
@@ -259,7 +253,6 @@ func TestStorageImpl_UpdateMetadata(t *testing.T) {
 			acc: "acc0",
 			md: subscription.Metadata{
 				Description: "new description",
-				Priority:    1,
 			},
 			err: storage.ErrNotFound,
 		},
@@ -268,7 +261,6 @@ func TestStorageImpl_UpdateMetadata(t *testing.T) {
 			acc: "acc1",
 			md: subscription.Metadata{
 				Description: "new description",
-				Priority:    1,
 			},
 			err: storage.ErrNotFound,
 		},
@@ -462,7 +454,7 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 		)
 		sub := subscription.Data{
 			Metadata: subscription.Metadata{
-				Priority: uint32(i),
+				Enabled: i > 0,
 			},
 			Condition: cond,
 		}
@@ -473,10 +465,9 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 	}
 	//
 	cases := map[string]struct {
-		q      storage.KiwiQuery
-		cursor subscription.ConditionMatchKey
-		out    []*subscription.ConditionMatch
-		err    error
+		q   storage.KiwiQuery
+		out []*subscription.ConditionMatch
+		err error
 	}{
 		"1": {
 			q: storage.KiwiQuery{
@@ -486,11 +477,8 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 			},
 			out: []*subscription.ConditionMatch{
 				{
-					Key: subscription.ConditionMatchKey{
-						Id:       ids[4],
-						Priority: 4,
-					},
-					Condition: rootConditions[4],
+					SubscriptionId: ids[4],
+					Condition:      rootConditions[4],
 				},
 			},
 		},
@@ -502,22 +490,16 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 			},
 			out: []*subscription.ConditionMatch{
 				{
-					Key: subscription.ConditionMatchKey{
-						Id:       ids[8],
-						Priority: 8,
-					},
-					Condition: rootConditions[8],
+					SubscriptionId: ids[2],
+					Condition:      rootConditions[2],
 				},
 				{
-					Key: subscription.ConditionMatchKey{
-						Id:       ids[2],
-						Priority: 2,
-					},
-					Condition: rootConditions[2],
+					SubscriptionId: ids[8],
+					Condition:      rootConditions[8],
 				},
 			},
 		},
-		"skip results with zero priority": {
+		"skip disabled subscriptions": {
 			q: storage.KiwiQuery{
 				Key:     "key0",
 				Pattern: "pattern0",
@@ -525,11 +507,8 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 			},
 			out: []*subscription.ConditionMatch{
 				{
-					Key: subscription.ConditionMatchKey{
-						Id:       ids[6],
-						Priority: 6,
-					},
-					Condition: rootConditions[6],
+					SubscriptionId: ids[6],
+					Condition:      rootConditions[6],
 				},
 			},
 		},
@@ -547,9 +526,9 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 				require.Nil(t, err)
 				require.Equal(t, len(c.out), len(out))
 				for i, cm := range c.out {
-					assert.Equal(t, cm.Key, out[i].Key)
-					assert.True(t, cm.Condition.Equal(out[i].Condition))
+					assert.Equal(t, cm.SubscriptionId, out[i].SubscriptionId)
 					assert.Equal(t, out[i].ConditionId, out[i].Condition.(condition.KiwiCondition).GetId())
+					assert.True(t, cm.Condition.Equal(out[i].Condition))
 				}
 			} else {
 				assert.ErrorIs(t, err, c.err)

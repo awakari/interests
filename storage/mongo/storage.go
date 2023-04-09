@@ -53,11 +53,11 @@ var (
 				Index().
 				SetUnique(true),
 		},
-		// query by id (cursor) and kiwi
+		// query by enabled flag and kiwi
 		{
 			Keys: bson.D{
 				{
-					Key:   attrPrio,
+					Key:   attrEnabled,
 					Value: 1,
 				},
 				{
@@ -86,10 +86,6 @@ var (
 			Value: 1,
 		},
 		{
-			Key:   attrPrio,
-			Value: 1,
-		},
-		{
 			Key:   attrCond,
 			Value: 1,
 		},
@@ -106,27 +102,9 @@ var (
 			Value: 1,
 		},
 	}
-	searchByKiwiSortProjection = bson.D{
-		{
-			Key:   attrPrio,
-			Value: -1,
-		},
-		{
-			Key:   attrId,
-			Value: -1,
-		},
-	}
 	searchByKiwiProjection = bson.D{
 		{
 			Key:   attrId,
-			Value: 1,
-		},
-		{
-			Key:   attrAcc,
-			Value: 1,
-		},
-		{
-			Key:   attrPrio,
 			Value: 1,
 		},
 		{
@@ -190,7 +168,7 @@ func (s storageImpl) Create(ctx context.Context, acc string, sd subscription.Dat
 		Id:          uuid.NewString(),
 		Account:     acc,
 		Description: md.Description,
-		Priority:    md.Priority,
+		Enabled:     md.Enabled,
 		Condition:   recCondition,
 		Kiwis:       recKiwis,
 	}
@@ -241,8 +219,8 @@ func (s storageImpl) UpdateMetadata(ctx context.Context, id, acc string, md subs
 	}
 	u := bson.M{
 		"$set": bson.M{
-			attrDescr: md.Description,
-			attrPrio:  md.Priority,
+			attrDescr:   md.Description,
+			attrEnabled: md.Enabled,
 		},
 	}
 	var result *mongo.UpdateResult
@@ -303,15 +281,12 @@ func (s storageImpl) SearchByKiwi(ctx context.Context, q storage.KiwiQuery, cons
 		attrKiwis + "." + kiwiConditionAttrKey:     q.Key,
 		attrKiwis + "." + kiwiConditionAttrPattern: q.Pattern,
 		attrKiwis + "." + kiwiConditionAttrPartial: q.Partial,
-		attrPrio: bson.M{
-			"$gt": 0,
-		},
+		attrEnabled: true,
 	}
 	opts := options.
 		Find().
 		SetProjection(searchByKiwiProjection).
-		SetShowRecordID(false).
-		SetSort(searchByKiwiSortProjection)
+		SetShowRecordID(false)
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, dbQuery, opts)
 	if err != nil {

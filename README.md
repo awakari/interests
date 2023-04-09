@@ -96,7 +96,6 @@ Subscription is an entity linking the message matching [condition](#121-conditio
 A subscription also has:
 * unique id generated on creation
 * human-readable description
-* matching priority
 
 # 2. Configuration
 
@@ -192,7 +191,7 @@ Payload:
 {
    "md": {
       "description": "my subscription 1",
-      "priority": 1
+      "enabled": true,
    }, 
    "cond": {
       "not": false,
@@ -252,8 +251,7 @@ Payload:
 {
    "id": "d3911098-99e7-4a69-94f9-3cea0b236a04",
    "md": {
-      "description": "my subscription 1 - turned off",
-      "priority": 0
+      "description": "my subscription 1 updated"
    }
 }
 ```
@@ -313,10 +311,9 @@ grpcurl \
 | REQ-2 | Logic             | Support subscription logics for the multiple key-value matches (*and*, *or*, *not*)      |
 | REQ-3 | Partial matching  | Support partial (value might be split to lexemes) value matching                         |
 | REQ-4 | Pagination        | Support query results pagination                                                         |
-| REQ-5 | Matching priority | `SearchByCondition` should find the subscriptions having highest priority first          |
-| REQ-6 | On/off switch     | Support subscription disabling for internal query by condition without removing it       |
-| REQ-7 | Metadata update   | Support changing a subscription description, priority and enabled flag                   |
-| REQ-8 | Authentication    | Authenticate public API calls: `Create`, `Read`, `UpdateMetadata`, `Delete`, `SearchOwn` |
+| REQ-5 | On/off switch     | Support subscription disabling for internal query by condition without removing it       |
+| REQ-6 | Metadata update   | Support changing a subscription description, priority and enabled flag                   |
+| REQ-7 | Authentication    | Authenticate public API calls: `Create`, `Read`, `UpdateMetadata`, `Delete`, `SearchOwn` |
 
 ## 5.2. Approach
 
@@ -329,8 +326,8 @@ Example data:
 ```yaml
 - id: "2f63ea52-a66c-4b93-92f1-12aa2831cd2c"
   descr: Anything related to orders that are not in Helsinki
+  enabled: true
   acc: "e7fae6df-f0e7-4a6b-b8ae-3802a7927f7e"
-  prio: 0
   cond:
     base:
       not: false
@@ -355,13 +352,13 @@ Example data:
 A subscription is immutable by design, hence there's no update operation for this. If a user wants to change a 
 subscription they need to delete it 1st and then create again.
 
-| Attribute | Type                                       | Description                                                                                                  |
-|-----------|--------------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| id        | String                                     | Subscription UUID (generated on creation)                                                                    |
-| acc       | String                                     | User ID or API token                                                                                         |
-| descr     | String                                     | Human readable description                                                                                   |
-| prio      | Unsigned Int                               | Matching priority. 0 means the subscription is to be excluded from search by condition results (turned off). |
-| cond      | Condition (currently may be Group or Kiwi) | Message matching root immutable criteria                                                                     |
+| Attribute | Type                                       | Description                                                             |
+|-----------|--------------------------------------------|-------------------------------------------------------------------------|
+| id        | String                                     | Subscription UUID (generated on creation)                               |
+| acc       | String                                     | User ID or API token                                                    |
+| descr     | String                                     | Human readable description                                              |
+| enabled   | Boolean                                    | Defines whether the subscription is searchable for a condition matching |
+| cond      | Condition (currently may be Group or Kiwi) | Message matching root immutable criteria                                |
 
 #### 5.2.1.2. Group Condition
 
@@ -412,7 +409,7 @@ sequenceDiagram
         activate  Subscriptions
     
     end
-    Subscription-->>API Gateway: Ack
+    Subscriptions-->>API Gateway: Ack
     deactivate Subscriptions
 ```
 
@@ -463,7 +460,7 @@ sequenceDiagram
         activate Subscriptions
         
     end
-    Subscription-->>API Gateway: Ack
+    Subscriptions-->>API Gateway: Ack
     deactivate Subscriptions
 ```
 

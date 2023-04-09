@@ -10,11 +10,9 @@ import (
 	"strings"
 )
 
-type (
-	storageMock struct {
-		storage map[string]subscription.Data
-	}
-)
+type storageMock struct {
+	storage map[string]subscription.Data
+}
 
 func NewStorageMock(storage map[string]subscription.Data) Storage {
 	return storageMock{
@@ -78,36 +76,18 @@ func (s storageMock) SearchByAccount(ctx context.Context, q subscription.QueryBy
 func (s storageMock) SearchByKiwi(ctx context.Context, q KiwiQuery, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
 	for i := 0; i < 10_000; i++ {
 		cm := subscription.ConditionMatch{
-			Key: subscription.ConditionMatchKey{
-				Id: fmt.Sprintf("sub%d", i),
-			},
-			Account: fmt.Sprintf("acc%d", i),
+			SubscriptionId: fmt.Sprintf("sub%d", i),
+			ConditionId:    "cond0",
 			Condition: condition.NewKiwiCondition(
 				condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 				false,
 				"pattern0",
 			),
-			ConditionId: "cond0",
 		}
 		err = consumeFunc(&cm)
 		if err != nil {
 			break
 		}
-	}
-	return
-}
-
-func containsKiwi(c condition.Condition, k, p string) (contains bool) {
-	switch cond := c.(type) {
-	case condition.GroupCondition:
-		for _, childCond := range cond.GetGroup() {
-			contains = containsKiwi(childCond, k, p)
-			if contains {
-				break
-			}
-		}
-	case condition.KiwiCondition:
-		contains = cond.GetKey() == k && cond.GetPattern() == p
 	}
 	return
 }

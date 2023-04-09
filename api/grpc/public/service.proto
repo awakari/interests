@@ -26,7 +26,7 @@ message CreateRequest {
 // Metadata represents the mutable part of the Subscription data.
 message Metadata {
   string description = 1;
-  uint32 priority = 2;
+  bool enabled = 2;
 }
 
 // ConditionInput represents the Subscription routing Condition data that is immutable once Subscription is created.

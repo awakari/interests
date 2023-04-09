@@ -20,7 +20,6 @@ func Test_decodeSubscription(t *testing.T) {
 				Id:          "sub0",
 				Account:     "acc0",
 				Description: "description0",
-				Priority:    1,
 				RawCondition: bson.M{
 					conditionAttrBase: bson.M{
 						conditionAttrNot: false,
@@ -37,7 +36,6 @@ func Test_decodeSubscription(t *testing.T) {
 				Data: subscription.Data{
 					Metadata: subscription.Metadata{
 						Description: "description0",
-						Priority:    1,
 					},
 					Condition: condition.NewKiwiCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
@@ -52,7 +50,6 @@ func Test_decodeSubscription(t *testing.T) {
 				Id:           "sub0",
 				Account:      "acc0",
 				Description:  "description0",
-				Priority:     1,
 				RawCondition: bson.M{},
 			},
 			err: storage.ErrInternal,

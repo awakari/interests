@@ -95,10 +95,7 @@ func (sm serviceMock) SearchByAccount(ctx context.Context, q subscription.QueryB
 func (sm serviceMock) SearchByCondition(ctx context.Context, cond condition.Condition, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
 	for i := 0; i < 10_000; i++ {
 		cm := subscription.ConditionMatch{
-			Key: subscription.ConditionMatchKey{
-				Id: fmt.Sprintf("sub%d", i),
-			},
-			Account: fmt.Sprintf("acc%d", i),
+			SubscriptionId: fmt.Sprintf("sub%d", i),
 			Condition: condition.NewKiwiCondition(
 				condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 				false,

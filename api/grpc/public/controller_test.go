@@ -321,7 +321,7 @@ func TestServiceController_UpdateMetadata(t *testing.T) {
 			auth: true,
 			md: Metadata{
 				Description: "new description",
-				Priority:    1,
+				Enabled:     true,
 			},
 		},
 		"fail": {

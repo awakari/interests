@@ -12,7 +12,7 @@ type subscriptionWrite struct {
 
 	Description string `bson:"descr"`
 
-	Priority uint32 `bson:"prio"`
+	Enabled bool `bson:"enabled"`
 
 	Condition Condition `bson:"cond"`
 
@@ -36,7 +36,7 @@ type subscriptionRec struct {
 
 	Description string `bson:"descr"`
 
-	Priority uint32 `bson:"prio"`
+	Enabled bool `bson:"enabled"`
 
 	RawCondition bson.M `bson:"cond"`
 
@@ -48,7 +48,7 @@ type subscriptionRec struct {
 const attrId = "id"
 const attrAcc = "acc"
 const attrDescr = "descr"
-const attrPrio = "prio"
+const attrEnabled = "enabled"
 const attrKiwis = "kiwis"
 const attrCond = "cond"
 
@@ -71,15 +71,11 @@ func (rec subscriptionRec) decodeSubscriptionData(sd *subscription.Data) (err er
 
 func (rec subscriptionRec) decodeSubscriptionMetadata(smd *subscription.Metadata) {
 	smd.Description = rec.Description
-	smd.Priority = rec.Priority
+	smd.Enabled = rec.Enabled
 }
 
 func (rec subscriptionRec) decodeSubscriptionConditionMatch(cm *subscription.ConditionMatch) (err error) {
-	cm.Key = subscription.ConditionMatchKey{
-		Id:       rec.Id,
-		Priority: rec.Priority,
-	}
-	cm.Account = rec.Account
+	cm.SubscriptionId = rec.Id
 	var condRec Condition
 	condRec, err = decodeRawCondition(rec.RawCondition)
 	if err == nil {

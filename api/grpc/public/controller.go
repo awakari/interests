@@ -30,7 +30,7 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 		reqMd := req.Md
 		md := subscription.Metadata{
 			Description: reqMd.Description,
-			Priority:    reqMd.Priority,
+			Enabled:     reqMd.Enabled,
 		}
 		sd := subscription.Data{
 			Metadata:  md,
@@ -51,7 +51,7 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 		md := sd.Metadata
 		resp.Md = &Metadata{
 			Description: md.Description,
-			Priority:    md.Priority,
+			Enabled:     md.Enabled,
 		}
 	}
 	if err != nil {
@@ -64,7 +64,7 @@ func (sc serviceController) UpdateMetadata(ctx context.Context, req *UpdateMetad
 	reqMd := req.Md
 	md := subscription.Metadata{
 		Description: reqMd.Description,
-		Priority:    reqMd.Priority,
+		Enabled:     reqMd.Enabled,
 	}
 	err = sc.svc.UpdateMetadata(ctx, req.Id, ctx.Value(keyAccount).(string), md)
 	return &emptypb.Empty{}, encodeError(err)

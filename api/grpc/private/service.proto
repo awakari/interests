@@ -23,13 +23,7 @@ message KiwiConditionQuery {
 }
 
 message ConditionMatch {
-  ConditionMatchKey key = 1;
-  string account = 2;
-  string condId = 3;
-  common.ConditionOutput cond = 4;
-}
-
-message ConditionMatchKey {
   string subId = 1;
-  uint32 priority = 2;
+  string condId = 2;
+  common.ConditionOutput cond = 3;
 }
