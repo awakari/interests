@@ -412,7 +412,7 @@ sequenceDiagram
         activate  Subscriptions
     
     end
-    Subscription-->>API Gateway: Ack
+    Subscriptions-->>API Gateway: Ack
     deactivate Subscriptions
 ```
 
@@ -463,7 +463,7 @@ sequenceDiagram
         activate Subscriptions
         
     end
-    Subscription-->>API Gateway: Ack
+    Subscriptions-->>API Gateway: Ack
     deactivate Subscriptions
 ```
 
