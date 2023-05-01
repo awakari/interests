@@ -8,10 +8,7 @@ import (
 type (
 	Config struct {
 		Api struct {
-			Port struct {
-				Public  uint16 `envconfig:"API_PORT_PUBLIC" default:"8080" required:"true"`
-				Private uint16 `envconfig:"API_PORT_PRIVATE" default:"8081" required:"true"`
-			}
+			Port     uint16 `envconfig:"API_PORT" default:"50051" required:"true"`
 			KiwiTree KiwiTree
 		}
 		Db  Db
@@ -21,8 +18,8 @@ type (
 	}
 
 	KiwiTree struct {
-		CompleteUri string `envconfig:"API_KIWI_TREE_COMPLETE_URI" default:"kiwi-tree-complete:8080" required:"true"`
-		PartialUri  string `envconfig:"API_KIWI_TREE_PARTIAL_URI" default:"kiwi-tree-partial:8080" required:"true"`
+		CompleteUri string `envconfig:"API_KIWI_TREE_COMPLETE_URI" default:"kiwi-tree-complete:50051" required:"true"`
+		PartialUri  string `envconfig:"API_KIWI_TREE_PARTIAL_URI" default:"kiwi-tree-partial:50051" required:"true"`
 	}
 
 	Db struct {

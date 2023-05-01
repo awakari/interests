@@ -8,7 +8,9 @@ import (
 type subscriptionWrite struct {
 	Id string `bson:"id"`
 
-	Account string `bson:"acc"`
+	GroupId string `bson:"groupId"`
+
+	UserId string `bson:"userId"`
 
 	Description string `bson:"descr"`
 
@@ -32,7 +34,9 @@ type kiwiSearchData struct {
 type subscriptionRec struct {
 	Id string `bson:"id"`
 
-	Account string `bson:"acc"`
+	GroupId string `bson:"groupId"`
+
+	UserId string `bson:"userId"`
 
 	Description string `bson:"descr"`
 
@@ -46,7 +50,8 @@ type subscriptionRec struct {
 }
 
 const attrId = "id"
-const attrAcc = "acc"
+const attrGroupId = "groupId"
+const attrUserId = "userId"
 const attrDescr = "descr"
 const attrEnabled = "enabled"
 const attrKiwis = "kiwis"
@@ -54,7 +59,8 @@ const attrCond = "cond"
 
 func (rec subscriptionRec) decodeSubscription(sub *subscription.Subscription) (err error) {
 	sub.Id = rec.Id
-	sub.Account = rec.Account
+	sub.GroupId = rec.GroupId
+	sub.UserId = rec.UserId
 	err = rec.decodeSubscriptionData(&sub.Data)
 	return
 }

@@ -37,12 +37,10 @@ securityContext: {}
 
 service:
   type: ClusterIP
-  port:
-    public: 8080
-    private: 8081
+  port: 50051
 
 ingress:
-  enabled: true
+  enabled: false
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
@@ -102,8 +100,8 @@ api:
   uri:
     kiwi:
       tree:
-        complete: "kiwi-tree-complete:8080"
-        partial: "kiwi-tree-partial:8080"
+        complete: "kiwi-tree-complete:50051"
+        partial: "kiwi-tree-partial:50051"
 log:
   # https://pkg.go.dev/golang.org/x/exp/slog#Level
   level: -4

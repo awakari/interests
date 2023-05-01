@@ -22,6 +22,7 @@ func TestService_Create(t *testing.T) {
 	_, err := svc.Create(
 		nil,
 		"acc0",
+		"user0",
 		subscription.Data{
 			Metadata: subscription.Metadata{
 				Description: "pre-existing",
@@ -97,7 +98,7 @@ func TestService_Create(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			id, err := svc.Create(ctx, "acc0", c.req)
+			id, err := svc.Create(ctx, "acc0", "user0", c.req)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.NotEmpty(t, id)
@@ -117,6 +118,7 @@ func TestService_Read(t *testing.T) {
 	id1, err := svc.Create(
 		nil,
 		"acc0",
+		"user0",
 		subscription.Data{
 			Metadata: subscription.Metadata{
 				Description: "pre existing",
@@ -159,7 +161,7 @@ func TestService_Read(t *testing.T) {
 		t.Run(id, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			sd, err := svc.Read(ctx, id, "acc0")
+			sd, err := svc.Read(ctx, id, "acc0", "user0")
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.sd.Metadata, sd.Metadata)
@@ -180,6 +182,7 @@ func TestService_Delete(t *testing.T) {
 	id1, err := svc.Create(
 		nil,
 		"acc0",
+		"user0",
 		subscription.Data{
 			Metadata: subscription.Metadata{
 				Description: "pre-existing",
@@ -216,6 +219,7 @@ func TestService_Delete(t *testing.T) {
 	id2, err := svc.Create(
 		nil,
 		"acc0",
+		"user0",
 		subscription.Data{
 			Metadata: subscription.Metadata{
 				Description: "fails to clean up kiwi",
@@ -271,7 +275,7 @@ func TestService_Delete(t *testing.T) {
 		t.Run(id, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			err := svc.Delete(ctx, id, "acc0")
+			err := svc.Delete(ctx, id, "acc0", "user0")
 			if c.err == nil {
 				assert.Nil(t, err)
 			} else {
@@ -304,7 +308,7 @@ func TestService_SearchByKiwi(t *testing.T) {
 				),
 			),
 		}
-		_, err := svc.Create(ctx, "acc0", req)
+		_, err := svc.Create(ctx, "acc0", "user0", req)
 		require.Nil(t, err)
 	}
 	//
@@ -389,7 +393,7 @@ func TestService_SearchByAccount(t *testing.T) {
 				),
 			),
 		}
-		_, err := svc.Create(ctx, fmt.Sprintf("acc%d", i%3), req)
+		_, err := svc.Create(ctx, fmt.Sprintf("acc%d", i%3), fmt.Sprintf("user%d", i%3), req)
 		require.Nil(t, err)
 	}
 	//
@@ -401,14 +405,16 @@ func TestService_SearchByAccount(t *testing.T) {
 		"key0/value0 -> 3 subs": {
 			query: subscription.QueryByAccount{
 				Limit:   100,
-				Account: "acc0",
+				GroupId: "acc0",
+				UserId:  "user0",
 			},
 			pageSize: 34,
 		},
 		"key1/value2 -> 3 subs": {
 			query: subscription.QueryByAccount{
 				Limit:   10,
-				Account: "acc1",
+				GroupId: "acc1",
+				UserId:  "user1",
 			},
 			pageSize: 10,
 		},

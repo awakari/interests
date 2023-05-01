@@ -103,15 +103,14 @@ The service is configurable using the environment variables:
 
 | Variable                   | Example value                                          | Description                                                                       |
 |----------------------------|--------------------------------------------------------|-----------------------------------------------------------------------------------|
-| API_PORT_PUBLIC            | `8080`                                                 | gRPC public API port                                                              |
-| API_PORT_PRIVATE           | `8081`                                                 | gRPC private API port                                                             |
+| API_PORT                   | `50051`                                                | gRPC API port                                                                     |
 | DB_URI                     | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                 |
 | DB_NAME                    | `subscriptions`                                        | DB name to store the data                                                         |
 | DB_USERNAME                | `subscriptions`                                        | DB connection username                                                            |
 | DB_PASSWORD                | `subscriptions`                                        | DB connection password                                                            |
 | DB_TABLE_NAME              | `subscriptions`                                        | DB table name to store the data                                                   |
-| API_KIWI_TREE_COMPLETE_URI | `kiwi-tree-complete:8080`                              | Complete [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI |
-| API_KIWI_TREE_PARTIAL_URI  | `kiwi-tree-partial:8080`                               | Partial [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI  |
+| API_KIWI_TREE_COMPLETE_URI | `kiwi-tree-complete:50051`                             | Complete [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI |
+| API_KIWI_TREE_PARTIAL_URI  | `kiwi-tree-partial:50051`                              | Partial [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI  |
 
 # 3. Deployment
 
@@ -128,12 +127,12 @@ Preconditions:
 
 Then run the command:
 ```shell
-API_PORT_PUBLIC=8080 \
+API_PORT=50051 \
 DB_URI=mongodb+srv://localhost/\?retryWrites=true\&w=majority \
 DB_NAME=subscriptions \
 DB_TABLE_NAME=subscriptions \
-API_KIWI_TREE_COMPLETE_URI=http://localhost:8081 \
-API_KIWI_TREE_PARTIAL_URI=http://localhost:8082 \
+API_KIWI_TREE_COMPLETE_URI=http://localhost:50051 \
+API_KIWI_TREE_PARTIAL_URI=http://localhost:50052 \
 ./subscriptions
 ```
 
@@ -180,9 +179,10 @@ Example command:
 grpcurl \
   -plaintext \
   -proto api/grpc/public/service.proto \
-  -H 'X-Endpoint-Api-UserInfo: eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ' \
+  -H 'X-Awakari-Group-Id: producer-rss' \
+  -H 'X-Awakari-User-Id: producer-rss' \
   -d @ \
-  localhost:8080 \
+  localhost:50051 \
   awakari.subscriptions.public.Service/Create
 ```
 
@@ -191,7 +191,7 @@ Payload:
 {
    "md": {
       "description": "my subscription 1",
-      "enabled": true,
+      "enabled": true
    }, 
    "cond": {
       "not": false,
@@ -227,9 +227,10 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/public/service.proto \
-  -H 'X-Endpoint-Api-UserInfo: eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ' \
+  -H 'X-Awakari-Group-Id: producer-rss' \
+  -H 'X-Awakari-User-Id: producer-rss' \
   -d '{"id": "17861cda-edc0-4655-be5a-e69a8129aff5"}' \
-  localhost:8080 \
+  localhost:50051 \
   awakari.subscriptions.public.Service/Read
 ```
 
@@ -240,9 +241,10 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/public/service.proto \
-  -H 'X-Endpoint-Api-UserInfo: eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ' \
+  -H 'X-Awakari-Group-Id: producer-rss' \
+  -H 'X-Awakari-User-Id: producer-rss' \
   -d @ \
-  localhost:8080 \
+  localhost:50051 \
   awakari.subscriptions.public.Service/UpdateMetadata
 ```
 
@@ -263,9 +265,10 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/public/service.proto \
-  -H 'X-Endpoint-Api-UserInfo: eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ' \
+  -H 'X-Awakari-Group-Id: producer-rss' \
+  -H 'X-Awakari-User-Id: producer-rss' \
   -d '{"id": "f7102c87-3ce4-4bb0-8527-b4644f685b13"}' \
-  localhost:8080 \
+  localhost:50051 \
   awakari.subscriptions.public.Service/Delete
 ```
 
@@ -280,9 +283,10 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/public/service.proto \
-  -H 'X-Endpoint-Api-UserInfo: eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ' \
+  -H 'X-Awakari-Group-Id: producer-rss' \
+  -H 'X-Awakari-User-Id: producer-rss' \
   -d '{"limit": 100, "cursor": "0123456789abcdef"}' \
-  localhost:8080 \
+  localhost:50051 \
   awakari.subscriptions.public.Service/SearchOwn
 ```
 
@@ -297,7 +301,7 @@ grpcurl \
   -plaintext \
   -proto api/grpc/private/service.proto \
   -d '{"kcq": {"key": "key0", "pattern": "pattern?", "partial": false}}' \
-  localhost:8081 \
+  localhost:50051 \
   awakari.subscriptions.private.Service/SearchByCondition
 ```
 
@@ -327,7 +331,8 @@ Example data:
 - id: "2f63ea52-a66c-4b93-92f1-12aa2831cd2c"
   descr: Anything related to orders that are not in Helsinki
   enabled: true
-  acc: "e7fae6df-f0e7-4a6b-b8ae-3802a7927f7e"
+  groupId: "producer-rss"
+  userId: "e7fae6df-f0e7-4a6b-b8ae-3802a7927f7e"
   cond:
     base:
       not: false
@@ -355,7 +360,8 @@ subscription they need to delete it 1st and then create again.
 | Attribute | Type                                       | Description                                                             |
 |-----------|--------------------------------------------|-------------------------------------------------------------------------|
 | id        | String                                     | Subscription UUID (generated on creation)                               |
-| acc       | String                                     | User ID or API token                                                    |
+| groupId   | String                                     | User Group Id                                                           |
+| userId    | String                                     | User Id                                                                 |
 | descr     | String                                     | Human readable description                                              |
 | enabled   | Boolean                                    | Defines whether the subscription is searchable for a condition matching |
 | cond      | Condition (currently may be Group or Kiwi) | Message matching root immutable criteria                                |

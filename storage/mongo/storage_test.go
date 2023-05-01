@@ -54,7 +54,7 @@ func TestStorageImpl_Create(t *testing.T) {
 	require.Nil(t, err)
 	defer clear(ctx, t, s.(storageImpl))
 	//
-	id, err := s.Create(ctx, "acc0", subscription.Data{
+	id, err := s.Create(ctx, "group0", "acc0", subscription.Data{
 		Metadata: subscription.Metadata{
 			Description: "test subscription 0",
 		},
@@ -130,7 +130,7 @@ func TestStorageImpl_Create(t *testing.T) {
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			id, err = s.Create(ctx, "acc0", c.sd)
+			id, err = s.Create(ctx, "group0", "acc0", c.sd)
 			if c.err == nil {
 				assert.Nil(t, err)
 				_, err = uuid.Parse(id)
@@ -161,7 +161,7 @@ func TestStorageImpl_Read(t *testing.T) {
 		true,
 		"pattern0",
 	)
-	id0, err := s.Create(ctx, "acc0", subscription.Data{
+	id0, err := s.Create(ctx, "group0", "user0", subscription.Data{
 		Metadata: subscription.Metadata{
 			Description: "test subscription 0",
 		},
@@ -170,14 +170,16 @@ func TestStorageImpl_Read(t *testing.T) {
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
-		id  string
-		acc string
-		sd  subscription.Data
-		err error
+		id      string
+		groupId string
+		userId  string
+		sd      subscription.Data
+		err     error
 	}{
 		"success": {
-			id:  id0,
-			acc: "acc0",
+			id:      id0,
+			groupId: "group0",
+			userId:  "user0",
 			sd: subscription.Data{
 				Metadata: subscription.Metadata{
 					Description: "test subscription 0",
@@ -186,20 +188,28 @@ func TestStorageImpl_Read(t *testing.T) {
 			},
 		},
 		"not found by id": {
-			id:  "sub1",
-			acc: "acc0",
-			err: storage.ErrNotFound,
+			id:      "sub1",
+			groupId: "group0",
+			userId:  "user0",
+			err:     storage.ErrNotFound,
 		},
-		"not found by acc": {
-			id:  id0,
-			acc: "acc1",
-			err: storage.ErrNotFound,
+		"not found by group": {
+			id:      id0,
+			groupId: "group1",
+			userId:  "user0",
+			err:     storage.ErrNotFound,
+		},
+		"not found by user": {
+			id:      id0,
+			groupId: "group0",
+			userId:  "user1",
+			err:     storage.ErrNotFound,
 		},
 	}
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			sd, err := s.Read(ctx, c.id, c.acc)
+			sd, err := s.Read(ctx, c.id, c.groupId, c.userId)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.sd.Metadata, sd.Metadata)
@@ -230,35 +240,39 @@ func TestStorageImpl_UpdateMetadata(t *testing.T) {
 		true,
 		"pattern0",
 	)
-	id0, err := s.Create(ctx, "acc0", subscription.Data{
+	id0, err := s.Create(ctx, "group0", "user0", subscription.Data{
 		Condition: cond0,
 	})
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
-		id  string
-		acc string
-		err error
-		md  subscription.Metadata
+		id      string
+		groupId string
+		userId  string
+		err     error
+		md      subscription.Metadata
 	}{
 		"ok": {
-			id:  id0,
-			acc: "acc0",
+			id:      id0,
+			groupId: "group0",
+			userId:  "user0",
 			md: subscription.Metadata{
 				Description: "new description",
 			},
 		},
 		"id mismatch": {
-			id:  "id0",
-			acc: "acc0",
+			id:      "id0",
+			groupId: "group0",
+			userId:  "user0",
 			md: subscription.Metadata{
 				Description: "new description",
 			},
 			err: storage.ErrNotFound,
 		},
 		"acc mismatch": {
-			id:  id0,
-			acc: "acc1",
+			id:      id0,
+			groupId: "group1",
+			userId:  "user0",
 			md: subscription.Metadata{
 				Description: "new description",
 			},
@@ -268,7 +282,7 @@ func TestStorageImpl_UpdateMetadata(t *testing.T) {
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			err = s.UpdateMetadata(ctx, c.id, c.acc, c.md)
+			err = s.UpdateMetadata(ctx, c.id, c.groupId, c.userId, c.md)
 			if c.err == nil {
 				assert.Nil(t, err)
 			} else {
@@ -297,39 +311,43 @@ func TestStorageImpl_Delete(t *testing.T) {
 		true,
 		"pattern0",
 	)
-	id0, err := s.Create(ctx, "acc0", subscription.Data{
+	id0, err := s.Create(ctx, "acc0", "user0", subscription.Data{
 		Condition: cond0,
 	})
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
-		id  string
-		acc string
-		sd  subscription.Data
-		err error
+		id      string
+		groupId string
+		userId  string
+		sd      subscription.Data
+		err     error
 	}{
 		"success": {
-			id:  id0,
-			acc: "acc0",
+			id:      id0,
+			groupId: "acc0",
+			userId:  "user0",
 			sd: subscription.Data{
 				Condition: cond0,
 			},
 		},
 		"not found by id": {
-			id:  "sub1",
-			acc: "acc0",
-			err: storage.ErrNotFound,
+			id:      "sub1",
+			groupId: "acc0",
+			userId:  "user0",
+			err:     storage.ErrNotFound,
 		},
 		"not found by acc": {
-			id:  id0,
-			acc: "acc1",
-			err: storage.ErrNotFound,
+			id:      id0,
+			groupId: "acc1",
+			userId:  "user0",
+			err:     storage.ErrNotFound,
 		},
 	}
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			sd, err := s.Delete(ctx, c.id, c.acc)
+			sd, err := s.Delete(ctx, c.id, c.groupId, c.userId)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.sd.Metadata, sd.Metadata)
@@ -371,7 +389,7 @@ func TestStorageImpl_SearchByAccount(t *testing.T) {
 			},
 			Condition: cond,
 		}
-		id, err := s.Create(ctx, fmt.Sprintf("acc%d", i%2), sub)
+		id, err := s.Create(ctx, fmt.Sprintf("acc%d", i%2), fmt.Sprintf("user%d", i%2), sub)
 		require.Nil(t, err)
 		rootConditions = append(rootConditions, cond)
 		ids = append(ids, id)
@@ -402,14 +420,16 @@ func TestStorageImpl_SearchByAccount(t *testing.T) {
 		"acc0": {
 			q: subscription.QueryByAccount{
 				Limit:   100,
-				Account: "acc0",
+				GroupId: "acc0",
+				UserId:  "user0",
 			},
 			ids: acc0Ids,
 		},
 		"acc1": {
 			q: subscription.QueryByAccount{
 				Limit:   3,
-				Account: "acc1",
+				GroupId: "acc1",
+				UserId:  "user1",
 			},
 			ids: acc1Ids[:3],
 		},
@@ -458,7 +478,7 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 			},
 			Condition: cond,
 		}
-		id, err := s.Create(ctx, "acc0", sub)
+		id, err := s.Create(ctx, "acc0", "user0", sub)
 		require.Nil(t, err)
 		rootConditions = append(rootConditions, cond)
 		ids = append(ids, id)

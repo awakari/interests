@@ -16,17 +16,17 @@ type (
 
 		// Create a subscription with the specified account and data.
 		// Returns a created subscription id if successful.
-		Create(ctx context.Context, acc string, sd subscription.Data) (id string, err error)
+		Create(ctx context.Context, groupId, userId string, sd subscription.Data) (id string, err error)
 
 		// Read the subscription.Data by the subscription.Subscription id.
-		Read(ctx context.Context, id, acc string) (sd subscription.Data, err error)
+		Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error)
 
 		// UpdateMetadata updates the mutable part of the subscription.Data
-		UpdateMetadata(ctx context.Context, id, acc string, md subscription.Metadata) (err error)
+		UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error)
 
 		// Delete removes the subscription.Subscription specified by its unique id.
 		// Returns the subscription.Data if deleted, error otherwise.
-		Delete(ctx context.Context, id, acc string) (sd subscription.Data, err error)
+		Delete(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error)
 
 		// SearchByAccount returns all subscription ids those have the account matching the query.
 		SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error)
