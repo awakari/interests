@@ -23,32 +23,32 @@ func NewLoggingMiddleware(svc Service, log *slog.Logger) Service {
 	}
 }
 
-func (lm loggingMiddleware) Create(ctx context.Context, acc string, sd subscription.Data) (id string, err error) {
+func (lm loggingMiddleware) Create(ctx context.Context, groupId, userId string, sd subscription.Data) (id string, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Create(%s, %+v): %s, %s", acc, sd, id, err))
+		lm.log.Debug(fmt.Sprintf("Create(%s, %s, %+v): %s, %s", groupId, userId, sd, id, err))
 	}()
-	return lm.svc.Create(ctx, acc, sd)
+	return lm.svc.Create(ctx, groupId, userId, sd)
 }
 
-func (lm loggingMiddleware) Read(ctx context.Context, id, acc string) (sd subscription.Data, err error) {
+func (lm loggingMiddleware) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Read(%s, %s): (%v, %s)", id, acc, sd, err))
+		lm.log.Debug(fmt.Sprintf("Read(%s, %s, %s): (%v, %s)", id, groupId, userId, sd, err))
 	}()
-	return lm.svc.Read(ctx, id, acc)
+	return lm.svc.Read(ctx, id, groupId, userId)
 }
 
-func (lm loggingMiddleware) UpdateMetadata(ctx context.Context, id, acc string, md subscription.Metadata) (err error) {
+func (lm loggingMiddleware) UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("UpdateMetadata(%s, %s, %+v): err=%s", id, acc, md, err))
+		lm.log.Debug(fmt.Sprintf("UpdateMetadata(%s, %s, %s, %+v): err=%s", id, groupId, userId, md, err))
 	}()
-	return lm.svc.UpdateMetadata(ctx, id, acc, md)
+	return lm.svc.UpdateMetadata(ctx, id, groupId, userId, md)
 }
 
-func (lm loggingMiddleware) Delete(ctx context.Context, id, acc string) (err error) {
+func (lm loggingMiddleware) Delete(ctx context.Context, id, groupId, userId string) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Delete(%s, %s): %s", id, acc, err))
+		lm.log.Debug(fmt.Sprintf("Delete(%s, %s, %s): %s", id, groupId, userId, err))
 	}()
-	return lm.svc.Delete(ctx, id, acc)
+	return lm.svc.Delete(ctx, id, groupId, userId)
 }
 
 func (lm loggingMiddleware) SearchByCondition(ctx context.Context, cond condition.Condition, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {

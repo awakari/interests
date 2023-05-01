@@ -1,4 +1,4 @@
-package public
+package grpc
 
 import (
 	"context"
@@ -24,66 +24,119 @@ func NewServiceController(svc service.Service) ServiceServer {
 
 func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (resp *CreateResponse, err error) {
 	resp = &CreateResponse{}
-	var cond condition.Condition
-	cond, err = decodeCondition(req.Cond)
+	var groupId string
+	var userId string
+	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
-		reqMd := req.Md
-		md := subscription.Metadata{
-			Description: reqMd.Description,
-			Enabled:     reqMd.Enabled,
+		var cond condition.Condition
+		cond, err = decodeCondition(req.Cond)
+		if err == nil {
+			reqMd := req.Md
+			md := subscription.Metadata{
+				Description: reqMd.Description,
+				Enabled:     reqMd.Enabled,
+			}
+			sd := subscription.Data{
+				Metadata:  md,
+				Condition: cond,
+			}
+			resp.Id, err = sc.svc.Create(ctx, groupId, userId, sd)
 		}
-		sd := subscription.Data{
-			Metadata:  md,
-			Condition: cond,
-		}
-		resp.Id, err = sc.svc.Create(ctx, ctx.Value(keyAccount).(string), sd)
+		err = encodeError(err)
 	}
-	err = encodeError(err)
 	return
 }
 
 func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *ReadResponse, err error) {
 	resp = &ReadResponse{}
-	var sd subscription.Data
-	sd, err = sc.svc.Read(ctx, req.Id, ctx.Value(keyAccount).(string))
+	var groupId string
+	var userId string
+	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
-		resp.Cond = encodeCondition(sd.Condition)
-		md := sd.Metadata
-		resp.Md = &Metadata{
-			Description: md.Description,
-			Enabled:     md.Enabled,
+		var sd subscription.Data
+		sd, err = sc.svc.Read(ctx, req.Id, groupId, userId)
+		if err == nil {
+			resp.Cond = &common.ConditionOutput{}
+			encodeCondition(sd.Condition, resp.Cond)
+			md := sd.Metadata
+			resp.Md = &Metadata{
+				Description: md.Description,
+				Enabled:     md.Enabled,
+			}
 		}
-	}
-	if err != nil {
 		err = encodeError(err)
 	}
 	return
 }
 
 func (sc serviceController) UpdateMetadata(ctx context.Context, req *UpdateMetadataRequest) (resp *emptypb.Empty, err error) {
-	reqMd := req.Md
-	md := subscription.Metadata{
-		Description: reqMd.Description,
-		Enabled:     reqMd.Enabled,
+	resp = &emptypb.Empty{}
+	var groupId string
+	var userId string
+	groupId, userId, err = getAuthInfo(ctx)
+	if err == nil {
+		reqMd := req.Md
+		md := subscription.Metadata{
+			Description: reqMd.Description,
+			Enabled:     reqMd.Enabled,
+		}
+		err = sc.svc.UpdateMetadata(ctx, req.Id, groupId, userId, md)
+		err = encodeError(err)
 	}
-	err = sc.svc.UpdateMetadata(ctx, req.Id, ctx.Value(keyAccount).(string), md)
-	return &emptypb.Empty{}, encodeError(err)
+	return
 }
 
 func (sc serviceController) Delete(ctx context.Context, req *DeleteRequest) (resp *emptypb.Empty, err error) {
-	err = sc.svc.Delete(ctx, req.Id, ctx.Value(keyAccount).(string))
-	return &emptypb.Empty{}, encodeError(err)
+	resp = &emptypb.Empty{}
+	var groupId string
+	var userId string
+	groupId, userId, err = getAuthInfo(ctx)
+	if err == nil {
+		err = sc.svc.Delete(ctx, req.Id, groupId, userId)
+		err = encodeError(err)
+	}
+	return
 }
 
 func (sc serviceController) SearchOwn(ctx context.Context, req *SearchOwnRequest) (resp *SearchOwnResponse, err error) {
-	q := subscription.QueryByAccount{
-		Account: ctx.Value(keyAccount).(string),
-		Limit:   req.Limit,
-	}
 	resp = &SearchOwnResponse{}
-	resp.Ids, err = sc.svc.SearchByAccount(ctx, q, req.Cursor)
-	if err != nil {
+	var groupId string
+	var userId string
+	groupId, userId, err = getAuthInfo(ctx)
+	if err == nil {
+		q := subscription.QueryByAccount{
+			GroupId: groupId,
+			UserId:  userId,
+			Limit:   req.Limit,
+		}
+		resp.Ids, err = sc.svc.SearchByAccount(ctx, q, req.Cursor)
 		err = encodeError(err)
+	}
+	return
+}
+
+func (sc serviceController) SearchByCondition(req *SearchByConditionRequest, server Service_SearchByConditionServer) (err error) {
+	var cond condition.Condition
+	kcq := req.GetKcq()
+	switch {
+	case kcq != nil:
+		cond = condition.NewKiwiCondition(
+			condition.NewKeyCondition(condition.NewCondition(false), "", kcq.Key),
+			kcq.Partial,
+			kcq.Pattern,
+		)
+	default:
+		err = status.Error(codes.InvalidArgument, "unsupported condition type")
+	}
+	if err == nil {
+		ctx := server.Context()
+		sendToStreamFunc := func(cm *subscription.ConditionMatch) (err error) {
+			return sendToStream(cm, server)
+		}
+		err = sc.svc.SearchByCondition(ctx, cond, sendToStreamFunc)
+	}
+	if err != nil {
+		err = status.Error(codes.Internal, err.Error())
 	}
 	return
 }
@@ -122,17 +175,22 @@ func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
 	return
 }
 
-func encodeCondition(src condition.Condition) (dst *common.ConditionOutput) {
-	dst = &common.ConditionOutput{
-		Not: src.IsNot(),
-	}
+func sendToStream(cm *subscription.ConditionMatch, server Service_SearchByConditionServer) (err error) {
+	var respCm ConditionMatch
+	encodeConditionMatch(cm, &respCm)
+	err = server.Send(&respCm)
+	return
+}
+
+func encodeCondition(src condition.Condition, dst *common.ConditionOutput) {
+	dst.Not = src.IsNot()
 	switch c := src.(type) {
 	case condition.GroupCondition:
 		var dstGroup []*common.ConditionOutput
-		var childDst *common.ConditionOutput
 		for _, childSrc := range c.GetGroup() {
-			childDst = encodeCondition(childSrc)
-			dstGroup = append(dstGroup, childDst)
+			var childDst common.ConditionOutput
+			encodeCondition(childSrc, &childDst)
+			dstGroup = append(dstGroup, &childDst)
 		}
 		dst.Cond = &common.ConditionOutput_Gc{
 			Gc: &common.GroupConditionOutput{
@@ -151,6 +209,13 @@ func encodeCondition(src condition.Condition) (dst *common.ConditionOutput) {
 		}
 	}
 	return
+}
+
+func encodeConditionMatch(src *subscription.ConditionMatch, dst *ConditionMatch) {
+	dst.SubId = src.SubscriptionId
+	dst.CondId = src.ConditionId
+	dst.Cond = &common.ConditionOutput{}
+	encodeCondition(src.Condition, dst.Cond)
 }
 
 func encodeError(svcErr error) (err error) {

@@ -7,13 +7,9 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.port.public }}
-      targetPort: grpc-public
+    - port: {{ .Values.service.port }}
+      targetPort: grpc
       protocol: TCP
-      name: grpc-public
-    - port: {{ .Values.service.port.private }}
-      targetPort: grpc-private
-      protocol: TCP
-      name: grpc-private
+      name: grpc
   selector:
     {{- include "subscriptions.selectorLabels" . | nindent 4 }}

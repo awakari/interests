@@ -1,4 +1,4 @@
-package public
+package grpc
 
 import (
 	"context"
@@ -13,11 +13,13 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"io"
 	"os"
 	"testing"
+	"time"
 )
 
-const port = 8080
+const port = 50051
 
 var log = slog.Default()
 
@@ -42,14 +44,15 @@ func TestServiceController_Create(t *testing.T) {
 	client := NewServiceClient(conn)
 	//
 	cases := map[string]struct {
-		authKey string
-		authVal string
-		cond    *ConditionInput
-		err     error
+		md   []string
+		cond *ConditionInput
+		err  error
 	}{
 		"ok1": {
-			authKey: "X-APi-Key",
-			authVal: "yohoho",
+			md: []string{
+				"x-awakari-group-id", "group0",
+				"X-Awakari-User-ID", "user0",
+			},
 			cond: &ConditionInput{
 				Cond: &ConditionInput_Ktc{
 					Ktc: &KiwiTreeConditionInput{},
@@ -57,8 +60,10 @@ func TestServiceController_Create(t *testing.T) {
 			},
 		},
 		"ok2": {
-			authKey: "X-Endpoint-Api-Userinfo",
-			authVal: "eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ",
+			md: []string{
+				"x-awakari-group-id", "group0",
+				"X-Awakari-User-ID", "user0",
+			},
 			cond: &ConditionInput{
 				Not: false,
 				Cond: &ConditionInput_Gc{
@@ -91,8 +96,11 @@ func TestServiceController_Create(t *testing.T) {
 			},
 		},
 		"fail": {
-			authKey: "X-APi-Key",
-			authVal: "yohoho",
+			md: []string{
+				"x-awakari-group-id", "group0",
+				"X-Awakari-User-ID", "user0",
+			},
+
 			cond: &ConditionInput{
 				Cond: &ConditionInput_Ktc{
 					Ktc: &KiwiTreeConditionInput{},
@@ -101,8 +109,10 @@ func TestServiceController_Create(t *testing.T) {
 			err: status.Error(codes.Internal, "internal failure"),
 		},
 		"invalid": {
-			authKey: "X-APi-Key",
-			authVal: "yohoho",
+			md: []string{
+				"x-awakari-group-id", "group0",
+				"X-Awakari-User-ID", "user0",
+			},
 			cond: &ConditionInput{
 				Cond: &ConditionInput_Ktc{
 					Ktc: &KiwiTreeConditionInput{},
@@ -111,8 +121,10 @@ func TestServiceController_Create(t *testing.T) {
 			err: status.Error(codes.InvalidArgument, "invalid subscription condition"),
 		},
 		"busy": {
-			authKey: "X-APi-Key",
-			authVal: "yohoho",
+			md: []string{
+				"x-awakari-group-id", "group0",
+				"X-Awakari-User-ID", "user0",
+			},
 			cond: &ConditionInput{
 				Cond: &ConditionInput_Ktc{
 					Ktc: &KiwiTreeConditionInput{},
@@ -120,81 +132,43 @@ func TestServiceController_Create(t *testing.T) {
 			},
 			err: status.Error(codes.Unavailable, "retry the operation"),
 		},
-		"empty api key token": {
-			authKey: "X-Api-Key",
-			authVal: "",
+		"empty group": {
+			md: []string{
+				"x-awakari-group-id", "",
+				"X-Awakari-User-ID", "user0",
+			},
 			cond: &ConditionInput{
 				Cond: &ConditionInput_Ktc{
 					Ktc: &KiwiTreeConditionInput{},
 				},
 			},
-			err: status.Error(codes.Unauthenticated, "missing request metadata, neither \"x-api-key\" nor \"x-endpoint-api-userinfo\" set"),
+			err: status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
 		},
-		"empty user token": {
-			authKey: "X-Endpoint-Api-UserInfo",
-			authVal: "",
+		"empty user": {
+			md: []string{
+				"x-awakari-group-id", "group0",
+				"X-Awakari-User-ID", "",
+			},
 			cond: &ConditionInput{
 				Cond: &ConditionInput_Ktc{
 					Ktc: &KiwiTreeConditionInput{},
 				},
 			},
-			err: status.Error(codes.Unauthenticated, "missing request metadata, neither \"x-api-key\" nor \"x-endpoint-api-userinfo\" set"),
+			err: status.Error(codes.Unauthenticated, "missing value for x-awakari-user-id in request metadata"),
 		},
-		"no auth tokens": {
-			authKey: "foo",
-			authVal: "",
+		"no auth info": {
 			cond: &ConditionInput{
 				Cond: &ConditionInput_Ktc{
 					Ktc: &KiwiTreeConditionInput{},
 				},
 			},
-			err: status.Error(codes.Unauthenticated, "missing request metadata, neither \"x-api-key\" nor \"x-endpoint-api-userinfo\" set"),
-		},
-		"invalid user token": {
-			authKey: "X-Endpoint-Api-UserInfo",
-			authVal: "eyAiZW1haWwiOiB7ICJmb28iOiAiYmFyIiB9IH0",
-			cond: &ConditionInput{
-				Cond: &ConditionInput_Ktc{
-					Ktc: &KiwiTreeConditionInput{},
-				},
-			},
-			err: status.Error(codes.Unauthenticated, "invalid user token, \"email\" claim value type: map[string]interface {}"),
-		},
-		"invalid user token base64": {
-			authKey: "X-Endpoint-Api-UserInfo",
-			authVal: "Z",
-			cond: &ConditionInput{
-				Cond: &ConditionInput_Ktc{
-					Ktc: &KiwiTreeConditionInput{},
-				},
-			},
-			err: status.Error(codes.Unauthenticated, "invalid user token, failed to decode as Base64 encoded string: illegal base64 data at input byte 0"),
-		},
-		"invalid user token json": {
-			authKey: "X-Endpoint-Api-UserInfo",
-			authVal: "bm90IGEganNvbg",
-			cond: &ConditionInput{
-				Cond: &ConditionInput_Ktc{
-					Ktc: &KiwiTreeConditionInput{},
-				},
-			},
-			err: status.Error(codes.Unauthenticated, "invalid user token, failed to parse as JSON the decoded value: invalid character 'o' in literal null (expecting 'u')"),
-		},
-		"invalid user token - no email": {
-			authKey: "X-Endpoint-Api-UserInfo",
-			authVal: "eyAic3ViIjogMTIzNDUsICJpc3MiOiAiZ29vZ2xlLmNvbSIgfQ",
-			cond: &ConditionInput{
-				Cond: &ConditionInput_Ktc{
-					Ktc: &KiwiTreeConditionInput{},
-				},
-			},
-			err: status.Error(codes.Unauthenticated, "invalid user token, missing \"email\" claim"),
+			err: status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
 		},
 	}
 	//
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			ctx := metadata.AppendToOutgoingContext(context.TODO(), c.authKey, c.authVal)
+			ctx := metadata.AppendToOutgoingContext(context.TODO(), c.md...)
 			_, err = client.Create(ctx, &CreateRequest{
 				Md: &Metadata{
 					Description: k,
@@ -270,7 +244,7 @@ func TestServiceController_Read(t *testing.T) {
 		},
 		"no auth": {
 			auth: false,
-			err:  status.Error(codes.Unauthenticated, "missing request metadata, neither \"x-api-key\" nor \"x-endpoint-api-userinfo\" set"),
+			err:  status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
 		},
 	}
 	//
@@ -278,7 +252,7 @@ func TestServiceController_Read(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			ctx := context.TODO()
 			if c.auth {
-				ctx = metadata.AppendToOutgoingContext(ctx, "X-Endpoint-Api-UserInfo", "eyAiZW1haWwiOiAieW9ob2hvQGVtYWlsLmNvbSIgfQ")
+				ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
 			}
 			sub, err := client.Read(ctx, &ReadRequest{Id: k})
 			if c.err == nil {
@@ -334,7 +308,7 @@ func TestServiceController_UpdateMetadata(t *testing.T) {
 		},
 		"no auth": {
 			auth: false,
-			err:  status.Error(codes.Unauthenticated, "missing request metadata, neither \"x-api-key\" nor \"x-endpoint-api-userinfo\" set"),
+			err:  status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
 		},
 	}
 	//
@@ -342,7 +316,7 @@ func TestServiceController_UpdateMetadata(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			ctx := context.TODO()
 			if c.auth {
-				ctx = metadata.AppendToOutgoingContext(ctx, "X-Api-Key", "api-key-value...")
+				ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
 			}
 			_, err := client.UpdateMetadata(ctx, &UpdateMetadataRequest{
 				Id: k,
@@ -381,7 +355,7 @@ func TestServiceController_Delete(t *testing.T) {
 		},
 		"no auth": {
 			auth: false,
-			err:  status.Error(codes.Unauthenticated, "missing request metadata, neither \"x-api-key\" nor \"x-endpoint-api-userinfo\" set"),
+			err:  status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
 		},
 	}
 	//
@@ -389,7 +363,7 @@ func TestServiceController_Delete(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			ctx := context.TODO()
 			if c.auth {
-				ctx = metadata.AppendToOutgoingContext(ctx, "X-Api-Key", "api-key-value...")
+				ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
 			}
 			_, err := client.Delete(ctx, &DeleteRequest{Id: k})
 			if c.err == nil {
@@ -426,7 +400,7 @@ func TestServiceController_SearchByAccount(t *testing.T) {
 		},
 		"no auth": {
 			auth: false,
-			err:  status.Error(codes.Unauthenticated, "missing request metadata, neither \"x-api-key\" nor \"x-endpoint-api-userinfo\" set"),
+			err:  status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
 		},
 	}
 	//
@@ -434,7 +408,7 @@ func TestServiceController_SearchByAccount(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			ctx := context.TODO()
 			if c.auth {
-				ctx = metadata.AppendToOutgoingContext(ctx, "X-Api-Key", "api-key-value...")
+				ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
 			}
 			resp, err := client.SearchOwn(ctx, &SearchOwnRequest{Cursor: k, Limit: 0})
 			if c.err == nil {
@@ -443,6 +417,63 @@ func TestServiceController_SearchByAccount(t *testing.T) {
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}
+		})
+	}
+}
+
+func TestServiceController_SearchByCondition(t *testing.T) {
+	//
+	addr := fmt.Sprintf("localhost:%d", port)
+	//
+	req := &SearchByConditionRequest{
+		Cond: &SearchByConditionRequest_Kcq{
+			Kcq: &KiwiConditionQuery{},
+		},
+	}
+	//
+	cases := map[string]struct {
+		timeout  time.Duration
+		minCount int
+		maxCount int
+		err      error
+	}{
+		"10 milliseconds is not enough to read 10_000 items": {
+			timeout:  10 * time.Millisecond,
+			minCount: 1,
+			maxCount: 10_000,
+			err:      status.Error(codes.DeadlineExceeded, "context deadline exceeded"),
+		},
+		"10 seconds is more than enough to read 10_000 items": {
+			timeout:  10 * time.Second,
+			minCount: 10_000,
+			maxCount: 10_000,
+		},
+	}
+	for k, c := range cases {
+		t.Run(k, func(t *testing.T) {
+			conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			require.Nil(t, err)
+			defer conn.Close()
+			client := NewServiceClient(conn)
+			ctx, cancel := context.WithTimeout(context.TODO(), c.timeout)
+			defer cancel()
+			stream, err := client.SearchByCondition(ctx, req)
+			require.Nil(t, err)
+			count := 0
+			for {
+				_, err = stream.Recv()
+				if err == io.EOF {
+					err = nil
+					break
+				}
+				if err != nil {
+					break
+				}
+				count++
+			}
+			assert.ErrorIs(t, err, c.err)
+			assert.True(t, count >= c.minCount, count)
+			assert.True(t, count <= c.maxCount, count)
 		})
 	}
 }

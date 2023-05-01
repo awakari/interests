@@ -16,7 +16,7 @@ func NewServiceMock() Service {
 	return serviceMock{}
 }
 
-func (sm serviceMock) Create(ctx context.Context, acc string, sd subscription.Data) (id string, err error) {
+func (sm serviceMock) Create(ctx context.Context, groupId, userId string, sd subscription.Data) (id string, err error) {
 	descr := sd.Metadata.Description
 	if descr == "fail" {
 		err = ErrInternal
@@ -31,7 +31,7 @@ func (sm serviceMock) Create(ctx context.Context, acc string, sd subscription.Da
 	return
 }
 
-func (sm serviceMock) Read(ctx context.Context, id, acc string) (sd subscription.Data, err error) {
+func (sm serviceMock) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
 	if id == "fail" {
 		err = ErrInternal
 	} else if id == "missing" {
@@ -62,7 +62,7 @@ func (sm serviceMock) Read(ctx context.Context, id, acc string) (sd subscription
 	return
 }
 
-func (sm serviceMock) UpdateMetadata(ctx context.Context, id, acc string, md subscription.Metadata) (err error) {
+func (sm serviceMock) UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error) {
 	if id == "fail" {
 		err = ErrInternal
 	} else if id == "missing" {
@@ -71,7 +71,7 @@ func (sm serviceMock) UpdateMetadata(ctx context.Context, id, acc string, md sub
 	return
 }
 
-func (sm serviceMock) Delete(ctx context.Context, id, acc string) (err error) {
+func (sm serviceMock) Delete(ctx context.Context, id, groupId, userId string) (err error) {
 	if id == "fail" {
 		err = ErrInternal
 	} else if id == "missing" {

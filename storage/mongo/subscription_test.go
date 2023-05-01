@@ -18,7 +18,8 @@ func Test_decodeSubscription(t *testing.T) {
 		"ok": {
 			in: subscriptionRec{
 				Id:          "sub0",
-				Account:     "acc0",
+				GroupId:     "group0",
+				UserId:      "acc0",
 				Description: "description0",
 				RawCondition: bson.M{
 					conditionAttrBase: bson.M{
@@ -32,7 +33,8 @@ func Test_decodeSubscription(t *testing.T) {
 			},
 			out: subscription.Subscription{
 				Id:      "sub0",
-				Account: "acc0",
+				GroupId: "group0",
+				UserId:  "acc0",
 				Data: subscription.Data{
 					Metadata: subscription.Metadata{
 						Description: "description0",
@@ -48,7 +50,8 @@ func Test_decodeSubscription(t *testing.T) {
 		"fail": {
 			in: subscriptionRec{
 				Id:           "sub0",
-				Account:      "acc0",
+				GroupId:      "group0",
+				UserId:       "acc0",
 				Description:  "description0",
 				RawCondition: bson.M{},
 			},

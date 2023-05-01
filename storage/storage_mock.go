@@ -24,37 +24,37 @@ func (s storageMock) Close() error {
 	return nil
 }
 
-func (s storageMock) Create(ctx context.Context, acc string, sd subscription.Data) (id string, err error) {
+func (s storageMock) Create(ctx context.Context, groupId, userId string, sd subscription.Data) (id string, err error) {
 	id = uuid.NewString()
-	s.storage[id+acc] = sd
+	s.storage[id+groupId+userId] = sd
 	return
 }
 
-func (s storageMock) Read(ctx context.Context, id, acc string) (sub subscription.Data, err error) {
+func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sub subscription.Data, err error) {
 	var found bool
-	sub, found = s.storage[id+acc]
+	sub, found = s.storage[id+groupId+userId]
 	if !found {
 		err = fmt.Errorf("%w by id: %s", ErrNotFound, id)
 	}
 	return
 }
 
-func (s storageMock) UpdateMetadata(ctx context.Context, id, acc string, md subscription.Metadata) (err error) {
-	sd, found := s.storage[id+acc]
+func (s storageMock) UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error) {
+	sd, found := s.storage[id+groupId+userId]
 	if found {
 		sd.Metadata = md
-		s.storage[id+acc] = sd
+		s.storage[id+groupId+userId] = sd
 	} else {
 		err = fmt.Errorf("%w by id: %s", ErrNotFound, id)
 	}
 	return
 }
 
-func (s storageMock) Delete(ctx context.Context, id, acc string) (sd subscription.Data, err error) {
+func (s storageMock) Delete(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
 	var found bool
-	sd, found = s.storage[id+acc]
+	sd, found = s.storage[id+groupId+userId]
 	if found {
-		delete(s.storage, id+acc)
+		delete(s.storage, id+groupId+userId)
 	} else {
 		err = fmt.Errorf("%w by id: %s", ErrNotFound, id)
 	}
@@ -63,8 +63,8 @@ func (s storageMock) Delete(ctx context.Context, id, acc string) (sd subscriptio
 
 func (s storageMock) SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error) {
 	for id, _ := range s.storage {
-		if strings.HasSuffix(id, q.Account) && id > cursor {
-			ids = append(ids, id[:len(q.Account)])
+		if strings.HasSuffix(id, q.UserId) && id > cursor {
+			ids = append(ids, id[:len(q.UserId)])
 		}
 		if uint32(len(ids)) == q.Limit {
 			break

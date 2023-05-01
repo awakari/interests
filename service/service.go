@@ -17,18 +17,18 @@ type Service interface {
 
 	// Create a new subscription.Subscription with the specified fields.
 	// Returns subscription.ErrInvalidSubscriptionCondition if the specified condition.Condition is invalid.
-	Create(ctx context.Context, acc string, d subscription.Data) (id string, err error)
+	Create(ctx context.Context, groupId, userId string, d subscription.Data) (id string, err error)
 
 	// Read the specified subscription.Subscription.
 	// Returns ErrNotFound if subscription.Subscription is missing in the underlying storage.
-	Read(ctx context.Context, id, acc string) (d subscription.Data, err error)
+	Read(ctx context.Context, id, groupId, userId string) (d subscription.Data, err error)
 
 	// UpdateMetadata updates the mutable part of the subscription.Data
-	UpdateMetadata(ctx context.Context, id, acc string, md subscription.Metadata) (err error)
+	UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error)
 
 	// Delete a subscription.Subscription and all associated conditions those not in use by any other subscription.
 	// Returns ErrNotFound if a subscription.Subscription with the specified id is missing in the underlying storage.
-	Delete(ctx context.Context, id, acc string) (err error)
+	Delete(ctx context.Context, id, groupId, userId string) (err error)
 
 	// SearchByAccount returns all subscription ids those have the account matching the query.
 	SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error)
@@ -73,12 +73,12 @@ func NewService(
 	}
 }
 
-func (svc service) Create(ctx context.Context, acc string, sd subscription.Data) (id string, err error) {
+func (svc service) Create(ctx context.Context, groupId, userId string, sd subscription.Data) (id string, err error) {
 	err = sd.Validate()
 	if err == nil {
 		err = svc.createCondition(ctx, sd.Condition)
 		if err == nil {
-			id, err = svc.stor.Create(ctx, acc, sd)
+			id, err = svc.stor.Create(ctx, groupId, userId, sd)
 		}
 	}
 	err = translateError(err)
@@ -112,25 +112,25 @@ func (svc service) selectKiwiTreeService(ktc condition.KiwiTreeCondition) (kiwiT
 	return
 }
 
-func (svc service) Read(ctx context.Context, id, acc string) (sd subscription.Data, err error) {
-	sd, err = svc.stor.Read(ctx, id, acc)
+func (svc service) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
+	sd, err = svc.stor.Read(ctx, id, groupId, userId)
 	if err != nil {
 		err = translateError(err)
 	}
 	return
 }
 
-func (svc service) UpdateMetadata(ctx context.Context, id, acc string, md subscription.Metadata) (err error) {
-	err = svc.stor.UpdateMetadata(ctx, id, acc, md)
+func (svc service) UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error) {
+	err = svc.stor.UpdateMetadata(ctx, id, groupId, userId, md)
 	if err != nil {
 		err = translateError(err)
 	}
 	return
 }
 
-func (svc service) Delete(ctx context.Context, id, acc string) (err error) {
+func (svc service) Delete(ctx context.Context, id, groupId, userId string) (err error) {
 	var sd subscription.Data
-	sd, err = svc.stor.Delete(ctx, id, acc)
+	sd, err = svc.stor.Delete(ctx, id, groupId, userId)
 	if err == nil {
 		err = svc.clearUnusedCondition(ctx, sd.Condition)
 		if err != nil {

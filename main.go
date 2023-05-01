@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	grpcApi "github.com/awakari/subscriptions/api/grpc"
 	grpcApiKiwi "github.com/awakari/subscriptions/api/grpc/kiwi-tree"
-	grpcApiPrivate "github.com/awakari/subscriptions/api/grpc/private"
-	grpcApiPublic "github.com/awakari/subscriptions/api/grpc/public"
 	"github.com/awakari/subscriptions/config"
 	"github.com/awakari/subscriptions/service"
 	"github.com/awakari/subscriptions/storage/mongo"
@@ -67,15 +66,8 @@ func main() {
 	)
 	svc = service.NewLoggingMiddleware(svc, log)
 	//
-	log.Info(fmt.Sprintf("starting to listen the public API @ port #%d...", cfg.Api.Port.Public))
-	go func() {
-		if err = grpcApiPublic.Serve(svc, cfg.Api.Port.Public); err != nil {
-			panic(err)
-		}
-	}()
-	//
-	log.Info(fmt.Sprintf("starting to listen the private API @ port #%d...", cfg.Api.Port.Private))
-	if err = grpcApiPrivate.Serve(svc, cfg.Api.Port.Private); err != nil {
+	log.Info(fmt.Sprintf("starting to listen the API @ port #%d...", cfg.Api.Port))
+	if err = grpcApi.Serve(svc, cfg.Api.Port); err != nil {
 		panic(err)
 	}
 }

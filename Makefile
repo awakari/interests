@@ -9,7 +9,9 @@ proto:
 	go install github.com/golang/protobuf/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
 	PATH=${PATH}:~/go/bin protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative \
-		api/grpc/**/*.proto
+		api/grpc/*.proto \
+		api/grpc/common/*.proto \
+		api/grpc/kiwi-tree/*.proto
 
 vet: proto
 	go vet
@@ -33,8 +35,8 @@ run: docker
 	docker run \
 		-d \
 		--name awakari-subscriptions \
-		-p 8080:8080 \
-		--expose 8080 \
+		-p 50051:50051 \
+		--expose 50051 \
 		awakari/subscriptions
 
 staging: docker

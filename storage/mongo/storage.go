@@ -45,7 +45,11 @@ var (
 					Value: 1,
 				},
 				{
-					Key:   attrAcc,
+					Key:   attrGroupId,
+					Value: 1,
+				},
+				{
+					Key:   attrUserId,
 					Value: 1,
 				},
 			},
@@ -161,12 +165,13 @@ func (s storageImpl) Close() error {
 	return s.conn.Disconnect(context.TODO())
 }
 
-func (s storageImpl) Create(ctx context.Context, acc string, sd subscription.Data) (id string, err error) {
+func (s storageImpl) Create(ctx context.Context, groupId, userId string, sd subscription.Data) (id string, err error) {
 	md := sd.Metadata
 	recCondition, recKiwis := encodeCondition(sd.Condition)
 	rec := subscriptionWrite{
 		Id:          uuid.NewString(),
-		Account:     acc,
+		GroupId:     groupId,
+		UserId:      userId,
 		Description: md.Description,
 		Enabled:     md.Enabled,
 		Condition:   recCondition,
@@ -181,30 +186,31 @@ func (s storageImpl) Create(ctx context.Context, acc string, sd subscription.Dat
 	return
 }
 
-func (s storageImpl) Read(ctx context.Context, id, acc string) (sd subscription.Data, err error) {
+func (s storageImpl) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
 	q := bson.M{
-		attrId:  id,
-		attrAcc: acc,
+		attrId:      id,
+		attrGroupId: groupId,
+		attrUserId:  userId,
 	}
 	var result *mongo.SingleResult
 	result = s.coll.FindOne(ctx, q, optsRead)
-	sd, err = decodeSingleResult(id, acc, result)
+	sd, err = decodeSingleResult(id, groupId, userId, result)
 	return
 }
 
-func decodeSingleResult(id, acc string, result *mongo.SingleResult) (sd subscription.Data, err error) {
+func decodeSingleResult(id, groupId, userId string, result *mongo.SingleResult) (sd subscription.Data, err error) {
 	err = result.Err()
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			err = fmt.Errorf("%w: id=%s, acc=%s", storage.ErrNotFound, id, acc)
+			err = fmt.Errorf("%w: id=%s, acc=%s/%s", storage.ErrNotFound, id, groupId, userId)
 		} else {
-			err = fmt.Errorf("%w: failed to find by id: %s, acc: %s, %s", storage.ErrInternal, id, acc, err)
+			err = fmt.Errorf("%w: failed to find by id: %s, acc: %s/%s, %s", storage.ErrInternal, id, groupId, userId, err)
 		}
 	} else {
 		var rec subscriptionRec
 		err = result.Decode(&rec)
 		if err != nil {
-			err = fmt.Errorf("%w: failed to decode, id=%s, acc=%s, %s", storage.ErrInternal, id, acc, err)
+			err = fmt.Errorf("%w: failed to decode, id=%s, acc=%s/%s, %s", storage.ErrInternal, id, groupId, userId, err)
 		} else {
 			err = rec.decodeSubscriptionData(&sd)
 		}
@@ -212,10 +218,11 @@ func decodeSingleResult(id, acc string, result *mongo.SingleResult) (sd subscrip
 	return
 }
 
-func (s storageImpl) UpdateMetadata(ctx context.Context, id, acc string, md subscription.Metadata) (err error) {
+func (s storageImpl) UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error) {
 	q := bson.M{
-		attrId:  id,
-		attrAcc: acc,
+		attrId:      id,
+		attrGroupId: groupId,
+		attrUserId:  userId,
 	}
 	u := bson.M{
 		"$set": bson.M{
@@ -228,19 +235,20 @@ func (s storageImpl) UpdateMetadata(ctx context.Context, id, acc string, md subs
 	if err != nil {
 		err = fmt.Errorf("%w: failed to update metadata, id: %s, err: %s", storage.ErrInternal, id, err)
 	} else if result.ModifiedCount < 1 {
-		err = fmt.Errorf("%w: not found, id: %s, acc: %s", storage.ErrNotFound, id, acc)
+		err = fmt.Errorf("%w: not found, id: %s, acc: %s/%s", storage.ErrNotFound, id, groupId, userId)
 	}
 	return
 }
 
-func (s storageImpl) Delete(ctx context.Context, id, acc string) (sd subscription.Data, err error) {
+func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
 	q := bson.M{
-		attrId:  id,
-		attrAcc: acc,
+		attrId:      id,
+		attrGroupId: groupId,
+		attrUserId:  userId,
 	}
 	var result *mongo.SingleResult
 	result = s.coll.FindOneAndDelete(ctx, q, optsDelete)
-	sd, err = decodeSingleResult(id, acc, result)
+	sd, err = decodeSingleResult(id, groupId, userId, result)
 	return
 }
 
@@ -249,7 +257,8 @@ func (s storageImpl) SearchByAccount(ctx context.Context, q subscription.QueryBy
 		attrId: bson.M{
 			"$gt": cursor,
 		},
-		attrAcc: q.Account,
+		attrGroupId: q.GroupId,
+		attrUserId:  q.UserId,
 	}
 	opts := options.
 		Find().
