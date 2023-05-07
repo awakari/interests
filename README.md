@@ -179,8 +179,8 @@ Example command:
 grpcurl \
   -plaintext \
   -proto api/grpc/public/service.proto \
-  -H 'X-Awakari-Group-Id: producer-rss' \
-  -H 'X-Awakari-User-Id: producer-rss' \
+  -H 'X-Awakari-Group-Id: group0' \
+  -H 'X-Awakari-User-Id: user0' \
   -d @ \
   localhost:50051 \
   awakari.subscriptions.public.Service/Create
@@ -227,8 +227,8 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/public/service.proto \
-  -H 'X-Awakari-Group-Id: producer-rss' \
-  -H 'X-Awakari-User-Id: producer-rss' \
+  -H 'X-Awakari-Group-Id: group0' \
+  -H 'X-Awakari-User-Id: user0' \
   -d '{"id": "17861cda-edc0-4655-be5a-e69a8129aff5"}' \
   localhost:50051 \
   awakari.subscriptions.public.Service/Read
@@ -241,8 +241,8 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/public/service.proto \
-  -H 'X-Awakari-Group-Id: producer-rss' \
-  -H 'X-Awakari-User-Id: producer-rss' \
+  -H 'X-Awakari-Group-Id: group0' \
+  -H 'X-Awakari-User-Id: user0' \
   -d @ \
   localhost:50051 \
   awakari.subscriptions.public.Service/UpdateMetadata
@@ -265,8 +265,8 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/public/service.proto \
-  -H 'X-Awakari-Group-Id: producer-rss' \
-  -H 'X-Awakari-User-Id: producer-rss' \
+  -H 'X-Awakari-Group-Id: group0' \
+  -H 'X-Awakari-User-Id: user0' \
   -d '{"id": "f7102c87-3ce4-4bb0-8527-b4644f685b13"}' \
   localhost:50051 \
   awakari.subscriptions.public.Service/Delete
@@ -283,8 +283,8 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/public/service.proto \
-  -H 'X-Awakari-Group-Id: producer-rss' \
-  -H 'X-Awakari-User-Id: producer-rss' \
+  -H 'X-Awakari-Group-Id: group0' \
+  -H 'X-Awakari-User-Id: user0' \
   -d '{"limit": 100, "cursor": "0123456789abcdef"}' \
   localhost:50051 \
   awakari.subscriptions.public.Service/SearchOwn
@@ -331,8 +331,8 @@ Example data:
 - id: "2f63ea52-a66c-4b93-92f1-12aa2831cd2c"
   descr: Anything related to orders that are not in Helsinki
   enabled: true
-  groupId: "producer-rss"
-  userId: "e7fae6df-f0e7-4a6b-b8ae-3802a7927f7e"
+  groupId: "group0"
+  userId: "user0"
   cond:
     base:
       not: false
