@@ -30,6 +30,10 @@ type (
 		Table    struct {
 			Name string `envconfig:"DB_NAME" default:"subscriptions" required:"true"`
 		}
+		Tls struct {
+			Enabled  bool `envconfig:"DB_TLS_ENABLED" default:"false" required:"true"`
+			Insecure bool `envconfig:"DB_TLS_INSECURE" default:"false" required:"true"`
+		}
 	}
 )
 

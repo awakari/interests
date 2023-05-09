@@ -95,6 +95,9 @@ db:
   table:
     # Database table name to use.
     name: subscriptions
+  tls:
+    enabled: false
+    insecure: false
 # Dependency services
 api:
   uri:
