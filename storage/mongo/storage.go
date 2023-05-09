@@ -126,8 +126,10 @@ func NewStorage(ctx context.Context, cfgDb config.Db) (s storage.Storage, err er
 	clientOpts := options.
 		Client().
 		ApplyURI(cfgDb.Uri).
-		SetServerAPIOptions(optsSrvApi).
-		SetTLSConfig(&tls.Config{InsecureSkipVerify: true})
+		SetServerAPIOptions(optsSrvApi)
+	if cfgDb.Tls.Enabled {
+		clientOpts = clientOpts.SetTLSConfig(&tls.Config{InsecureSkipVerify: cfgDb.Tls.Insecure})
+	}
 	if len(cfgDb.UserName) > 0 {
 		auth := options.Credential{
 			Username:    cfgDb.UserName,

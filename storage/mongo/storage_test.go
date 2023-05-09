@@ -26,6 +26,8 @@ func TestNewStorage(t *testing.T) {
 		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	s, err := NewStorage(ctx, dbCfg)
@@ -48,6 +50,8 @@ func TestStorageImpl_Create(t *testing.T) {
 		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	s, err := NewStorage(ctx, dbCfg)
@@ -150,6 +154,8 @@ func TestStorageImpl_Read(t *testing.T) {
 		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	s, err := NewStorage(ctx, dbCfg)
@@ -229,6 +235,8 @@ func TestStorageImpl_UpdateMetadata(t *testing.T) {
 		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	s, err := NewStorage(ctx, dbCfg)
@@ -300,6 +308,8 @@ func TestStorageImpl_Delete(t *testing.T) {
 		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	s, err := NewStorage(ctx, dbCfg)
@@ -367,6 +377,8 @@ func TestStorageImpl_SearchByAccount(t *testing.T) {
 		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	s, err := NewStorage(ctx, dbCfg)
@@ -456,6 +468,8 @@ func TestStorageImpl_SearchByKiwi(t *testing.T) {
 		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	s, err := NewStorage(ctx, dbCfg)

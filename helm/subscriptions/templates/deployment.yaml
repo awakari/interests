@@ -50,6 +50,10 @@ spec:
             {{- end }}
             - name: DB_TABLE_NAME
               value: {{ .Values.db.table.name }}
+            - name: DB_TLS_ENABLED
+              value: "{{ .Values.db.tls.enabled }}"
+            - name: DB_TLS_INSECURE
+              value: "{{ .Values.db.tls.insecure }}"
             - name: API_KIWI_TREE_COMPLETE_URI
               value: "{{ .Values.api.uri.kiwi.tree.complete }}"
             - name: API_KIWI_TREE_PARTIAL_URI
