@@ -178,12 +178,12 @@ Example command:
 ```shell
 grpcurl \
   -plaintext \
-  -proto api/grpc/public/service.proto \
+  -proto api/grpc/service.proto \
   -H 'X-Awakari-Group-Id: group0' \
   -H 'X-Awakari-User-Id: user0' \
   -d @ \
   localhost:50051 \
-  awakari.subscriptions.public.Service/Create
+  awakari.subscriptions.Service/Create
 ```
 
 Payload:
@@ -226,12 +226,12 @@ Example:
 ```shell
 grpcurl \
   -plaintext \
-  -proto api/grpc/public/service.proto \
+  -proto api/grpc/service.proto \
   -H 'X-Awakari-Group-Id: group0' \
   -H 'X-Awakari-User-Id: user0' \
   -d '{"id": "17861cda-edc0-4655-be5a-e69a8129aff5"}' \
   localhost:50051 \
-  awakari.subscriptions.public.Service/Read
+  awakari.subscriptions.Service/Read
 ```
 
 ## 4.3. Update Metadata
@@ -240,12 +240,12 @@ Example:
 ```shell
 grpcurl \
   -plaintext \
-  -proto api/grpc/public/service.proto \
+  -proto api/grpc/service.proto \
   -H 'X-Awakari-Group-Id: group0' \
   -H 'X-Awakari-User-Id: user0' \
   -d @ \
   localhost:50051 \
-  awakari.subscriptions.public.Service/UpdateMetadata
+  awakari.subscriptions.Service/UpdateMetadata
 ```
 
 Payload:
@@ -264,12 +264,12 @@ Example:
 ```shell
 grpcurl \
   -plaintext \
-  -proto api/grpc/public/service.proto \
+  -proto api/grpc/service.proto \
   -H 'X-Awakari-Group-Id: group0' \
   -H 'X-Awakari-User-Id: user0' \
   -d '{"id": "f7102c87-3ce4-4bb0-8527-b4644f685b13"}' \
   localhost:50051 \
-  awakari.subscriptions.public.Service/Delete
+  awakari.subscriptions.Service/Delete
 ```
 
 ## 4.5. Search
@@ -282,12 +282,12 @@ Example:
 ```shell
 grpcurl \
   -plaintext \
-  -proto api/grpc/public/service.proto \
+  -proto api/grpc/service.proto \
   -H 'X-Awakari-Group-Id: group0' \
   -H 'X-Awakari-User-Id: user0' \
   -d '{"limit": 100, "cursor": "0123456789abcdef"}' \
   localhost:50051 \
-  awakari.subscriptions.public.Service/SearchOwn
+  awakari.subscriptions.Service/SearchOwn
 ```
 
 ### 4.5.2. By Condition
