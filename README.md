@@ -149,7 +149,14 @@ make run
 
 ## 3.4. K8s
 
-TODO
+Prepare the image pull secret:
+```shell
+kubectl create secret docker-registry github-registry \
+  --docker-server ghcr.io \
+  --docker-username=<GITHUB_USER_NAME> \ 
+  --docker-password=<GITHUB_CR_PAT> \
+  --docker-email=<USER_EMAIL>
+```
 
 ### 3.4.1. Helm
 
