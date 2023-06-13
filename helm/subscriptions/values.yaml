@@ -75,7 +75,7 @@ affinity: {}
 # Database related configuration.
 db:
   protocol: mongodb
-  hostname: mongodb
+  hostname: "mongodb:27017"
   # Database name to use.
   name: subscriptions
   username: ""
