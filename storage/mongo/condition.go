@@ -19,12 +19,12 @@ const conditionAttrNot = "not"
 
 var _ Condition = (*ConditionBase)(nil)
 
-func encodeCondition(src condition.Condition) (dst Condition, kiwis []kiwiSearchData) {
+func encodeCondition(src condition.Condition) (dst Condition, ids []string) {
 	switch c := src.(type) {
 	case condition.GroupCondition:
-		dst, kiwis = encodeGroupCondition(c)
-	case condition.KiwiCondition:
-		dst, kiwis = encodeKiwiCondition(c)
+		dst, ids = encodeGroupCondition(c)
+	case condition.TextCondition:
+		dst, ids = encodeTextCondition(c)
 	}
 	return
 }
@@ -42,7 +42,7 @@ func decodeRawCondition(raw bson.M) (result Condition, err error) {
 		if isGroup {
 			result, err = decodeRawGroupCondition(baseCond, group, raw)
 		} else {
-			result, err = decodeKiwiCondition(baseCond, raw)
+			result, err = decodeTextCondition(baseCond, raw)
 		}
 	}
 	return
@@ -57,10 +57,10 @@ func decodeCondition(src Condition) (dst condition.Condition) {
 		}
 		dstBase := condition.NewCondition(c.Base.Not)
 		dst = condition.NewGroupCondition(dstBase, condition.GroupLogic(c.Logic), children)
-	case kiwiCondition:
+	case textCondition:
 		dstBase := condition.NewCondition(c.Base.Not)
 		dstKey := condition.NewKeyCondition(dstBase, c.Id, c.Key)
-		dst = condition.NewKiwiCondition(dstKey, c.Partial, c.Pattern)
+		dst = condition.NewTextCondition(dstKey, c.Term)
 	}
 	return dst
 }

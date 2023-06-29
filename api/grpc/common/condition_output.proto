@@ -10,7 +10,7 @@ message ConditionOutput {
   bool not = 1;
   oneof cond {
     GroupConditionOutput gc = 2;
-    KiwiConditionOutput kc = 3;
+    TextConditionOutput tc = 3;
   }
 }
 
@@ -19,9 +19,8 @@ message GroupConditionOutput {
   repeated ConditionOutput group = 2;
 }
 
-message KiwiConditionOutput {
+message TextConditionOutput {
   string id = 1;
   string key = 2;
-  string pattern = 3;
-  bool partial = 4;
+  string term = 3;
 }

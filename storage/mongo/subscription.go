@@ -18,16 +18,9 @@ type subscriptionWrite struct {
 
 	Condition Condition `bson:"cond"`
 
-	// Kiwis contains a flat list of copies of all kiwi conditions.
-	// The Kiwis field is necessary to support the subscriptions search by a "Kiwi".
-	Kiwis []kiwiSearchData `bson:"kiwis"`
-}
-
-type kiwiSearchData struct {
-	Id      string `bson:"id"`
-	Partial bool   `bson:"partial"`
-	Key     string `bson:"key"`
-	Pattern string `bson:"pattern"`
+	// CondIds contains a flat list of all condition ids.
+	// The CondIds field is necessary to support the subscriptions search by a condition id.
+	CondIds []string `bson:"condIds"`
 }
 
 // intermediate read result that contains the condition not decoded yet
@@ -44,9 +37,9 @@ type subscriptionRec struct {
 
 	RawCondition bson.M `bson:"cond"`
 
-	// Kiwis contains a flat list of copies of all kiwi conditions.
-	// The Kiwis field is necessary to support the subscriptions search by a "Kiwi".
-	Kiwis []kiwiSearchData `bson:"kiwis"`
+	// CondIds contains a flat list of all condition ids.
+	// The CondIds field is necessary to support the subscriptions search by a condition id.
+	CondIds []string `bson:"condIds"`
 }
 
 const attrId = "id"
@@ -54,7 +47,7 @@ const attrGroupId = "groupId"
 const attrUserId = "userId"
 const attrDescr = "descr"
 const attrEnabled = "enabled"
-const attrKiwis = "kiwis"
+const attrCondIds = "condIds"
 const attrCond = "cond"
 
 func (rec subscriptionRec) decodeSubscription(sub *subscription.Subscription) (err error) {
@@ -66,18 +59,14 @@ func (rec subscriptionRec) decodeSubscription(sub *subscription.Subscription) (e
 }
 
 func (rec subscriptionRec) decodeSubscriptionData(sd *subscription.Data) (err error) {
-	rec.decodeSubscriptionMetadata(&sd.Metadata)
+	sd.Description = rec.Description
+	sd.Enabled = rec.Enabled
 	var condRec Condition
 	condRec, err = decodeRawCondition(rec.RawCondition)
 	if err == nil {
 		sd.Condition = decodeCondition(condRec)
 	}
 	return
-}
-
-func (rec subscriptionRec) decodeSubscriptionMetadata(smd *subscription.Metadata) {
-	smd.Description = rec.Description
-	smd.Enabled = rec.Enabled
 }
 
 func (rec subscriptionRec) decodeSubscriptionConditionMatch(cm *subscription.ConditionMatch) (err error) {

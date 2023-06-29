@@ -6,9 +6,7 @@
    &nbsp;&nbsp;&nbsp;1.2.1. [Condition](#121-condition)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.1. [Group Condition](#1211-group-condition)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2. [Key Condition](#1212-key-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.3. [Kiwi Condition](#1213-kiwi-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.4. [Kiwi Tree Condition](#1214-kiwi-tree-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.5. [Kiwi Bird Condition](#1215-kiwi-bird-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.3. [Text Condition](#1213-text-condition)<br/>
    &nbsp;&nbsp;&nbsp;1.2.2. [Subscription](#122-subscription)<br/>
 2. [Configuration](#2-configuration)<br/>
 3. [Deployment](#3-deployment)<br/>
@@ -20,7 +18,7 @@
 4. [Usage](#4-usage)<br/>
    4.1. [Create](#41-create)<br/>
    4.2. [Read](#42-read)<br/>
-   4.3. [Update Metadata](#43-update-metadata)<br/>
+   4.3. [Update](#43-update)<br/>
    4.4. [Delete](#44-delete)<br/>
    4.5. [Search](#45-search)<br/>
    &nbsp;&nbsp;&nbsp;4.5.1. [By Condition](#451-by-account)</br>
@@ -31,7 +29,7 @@
    &nbsp;&nbsp;&nbsp;5.2.1. [Data Schema](#521-data-schema)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.1. [Subscription](#5211-subscription)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.2. [Group Condition](#5212-group-condition)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.3. [Kiwi Condition](#5213-kiwi-condition)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.3. [Text Condition](#5213-text-condition)<br/>
    &nbsp;&nbsp;&nbsp;5.2.2 [Flow](#522-flow)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.2.1. [Create](#5221-create)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.2.2. [Delete](#5222-delete)<br/>
@@ -73,22 +71,9 @@ A group condition represents a group of child conditions coupled with a certain 
 A key condition is an abstract condition specifying a key that should match the message metadata key. Also has a unique
 condition id.
 
-#### 1.2.1.3. Kiwi Condition
+#### 1.2.1.3. Text Condition
 
-A kiwi (Key-Input WIldcard) condition is a key condition containing the metadata value pattern. Also, kiwi condition has
-a `partial` attribute to represent whether a value part is allowed to match the pattern.
-
-#### 1.2.1.4. Kiwi Tree Condition
-
-A [kiwi-tree](https://github.com/awakari/kiwi-tree) specific condition implementation of a kiwi condition.
-It comes with additional [limitations](https://github.com/awakari/kiwi-tree#53-limitations) on the 
-[pattern syntax](https://github.com/awakari/kiwi-tree#122-pattern) but allows resolving a condition by a key/value pair 
-in a O(log(N)) time.
-
-#### 1.2.1.5. Kiwi Bird Condition
-
-A specific kiwi condition implementation. It should come without any limitation on the pattern syntax but will resolve a 
-condition in O(N) time. Not implemented yet. 
+A text condition is a key condition containing the terms for a text search.
 
 ### 1.2.2. Subscription
 
@@ -101,16 +86,15 @@ A subscription also has:
 
 The service is configurable using the environment variables:
 
-| Variable                   | Example value                                          | Description                                                                       |
-|----------------------------|--------------------------------------------------------|-----------------------------------------------------------------------------------|
-| API_PORT                   | `50051`                                                | gRPC API port                                                                     |
-| DB_URI                     | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                 |
-| DB_NAME                    | `subscriptions`                                        | DB name to store the data                                                         |
-| DB_USERNAME                | `subscriptions`                                        | DB connection username                                                            |
-| DB_PASSWORD                | `subscriptions`                                        | DB connection password                                                            |
-| DB_TABLE_NAME              | `subscriptions`                                        | DB table name to store the data                                                   |
-| API_KIWI_TREE_COMPLETE_URI | `kiwi-tree-complete:50051`                             | Complete [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI |
-| API_KIWI_TREE_PARTIAL_URI  | `kiwi-tree-partial:50051`                              | Partial [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency service URI  |
+| Variable                  | Example value                                          | Description                                                                          |
+|---------------------------|--------------------------------------------------------|--------------------------------------------------------------------------------------|
+| API_PORT                  | `50051`                                                | gRPC API port                                                                        |
+| DB_URI                    | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                    |
+| DB_NAME                   | `subscriptions`                                        | DB name to store the data                                                            |
+| DB_USERNAME               | `subscriptions`                                        | DB connection username                                                               |
+| DB_PASSWORD               | `subscriptions`                                        | DB connection password                                                               |
+| DB_TABLE_NAME             | `subscriptions`                                        | DB table name to store the data                                                      |
+| API_COND_TEXT_URI         | `conditions-text:50051`                                | [Conditions Text](https://github.com/awakari/conditions-text) dependency service URI |
 
 # 3. Deployment
 
@@ -123,7 +107,7 @@ It's possible to obtain a free cluster for testing purposes using [Atlas](https:
 
 Preconditions:
 1. Build patterns executive using ```make build```
-2. Run the [kiwi-tree](https://github.com/awakari/kiwi-tree) dependency services (x2: complete/partial)
+2. Run the [conditions-text](https://github.com/awakari/conditions-text) dependency service
 
 Then run the command:
 ```shell
@@ -131,14 +115,10 @@ API_PORT=50051 \
 DB_URI=mongodb+srv://localhost/\?retryWrites=true\&w=majority \
 DB_NAME=subscriptions \
 DB_TABLE_NAME=subscriptions \
-API_KIWI_TREE_COMPLETE_URI=http://localhost:50051 \
-API_KIWI_TREE_PARTIAL_URI=http://localhost:50052 \
 ./subscriptions
 ```
 
 ## 3.3. Docker
-
-TODO: run the kiwi-tree (x2) and subscriptions in the same network
 
 alternatively, it's possible to build and run the new docker image in place using the command:
 (note that the command below requires all env vars to be set in the file `env.txt`)
@@ -207,18 +187,16 @@ Payload:
          "group": [
             {
                "not": false,
-               "ktc": {
+               "tc": {
                   "key": "key0", 
-                  "pattern": "pattern?", 
-                  "partial": false
+                  "term": "term0 term1"
                }
             }, 
             {
                "not": true,
-               "ktc": {
+               "tc": {
                   "key": "key1", 
-                  "pattern": "pattern1", 
-                  "partial": true
+                  "term": "term2"
                }
             }
          ]
@@ -241,7 +219,7 @@ grpcurl \
   awakari.subscriptions.Service/Read
 ```
 
-## 4.3. Update Metadata
+## 4.3. Update
 
 Example:
 ```shell
@@ -259,9 +237,8 @@ Payload:
 ```json
 {
    "id": "d3911098-99e7-4a69-94f9-3cea0b236a04",
-   "md": {
-      "description": "my subscription 1 updated"
-   }
+   "description": "my subscription 1 updated",
+   "enabled": false
 }
 ```
 
@@ -283,7 +260,7 @@ grpcurl \
 
 ### 4.5.1. By Account
 
-The search by metadata purpose is to be used by a user to find own subscriptions.
+The search by account purpose is to be used by a user to find own subscriptions.
 
 Example:
 ```shell
@@ -307,7 +284,7 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/private/service.proto \
-  -d '{"kcq": {"key": "key0", "pattern": "pattern?", "partial": false}}' \
+  -d '{"condId": "14cadd71-c662-4f1a-8b0f-3b17dfb107f5"}' \
   localhost:50051 \
   awakari.subscriptions.private.Service/SearchByCondition
 ```
@@ -371,7 +348,7 @@ subscription they need to delete it 1st and then create again.
 | userId    | String                                     | User Id                                                                 |
 | descr     | String                                     | Human readable description                                              |
 | enabled   | Boolean                                    | Defines whether the subscription is searchable for a condition matching |
-| cond      | Condition (currently may be Group or Kiwi) | Message matching root immutable criteria                                |
+| cond      | Condition (currently may be Group or Text) | Message matching root immutable criteria                                |
 
 #### 5.2.1.2. Group Condition
 
@@ -381,15 +358,14 @@ subscription they need to delete it 1st and then create again.
 | logic     | Enum of `And`/`Or`/`Xor`  | Defines the grouping logic for the child conditions            |
 | group     | Array of child conditions | Set of conditions in the group                                 |
 
-#### 5.2.1.3. Kiwi Condition
+#### 5.2.1.3. Text Condition
 
 | Attribute | Type    | Description                                                                                                   |
 |-----------|---------|---------------------------------------------------------------------------------------------------------------|
 | id        | String  | Condition UUID (generated on creation)                                                                        |
 | not       | Boolean | Defines whether the conditions should act as a negation or not                                                |
 | key       | String  | Metadata key                                                                                                  |
-| pattern   | String  | Metadata value matching pattern                                                                               |
-| partial   | Boolean | If `true`, then allowed match any lexeme in a tokenized metadata value. Otherwise, entire value should match. |
+| term      | String  | Text value matching term(s)                                                                                   |
 
 ### 5.2.2. Flow
 

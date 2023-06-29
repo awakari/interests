@@ -9,7 +9,6 @@ import (
 	"github.com/awakari/subscriptions/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type serviceController struct {
@@ -31,14 +30,10 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 		var cond condition.Condition
 		cond, err = decodeCondition(req.Cond)
 		if err == nil {
-			reqMd := req.Md
-			md := subscription.Metadata{
-				Description: reqMd.Description,
-				Enabled:     reqMd.Enabled,
-			}
 			sd := subscription.Data{
-				Metadata:  md,
-				Condition: cond,
+				Description: req.Description,
+				Enabled:     req.Enabled,
+				Condition:   cond,
 			}
 			resp.Id, err = sc.svc.Create(ctx, groupId, userId, sd)
 		}
@@ -58,36 +53,32 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 		if err == nil {
 			resp.Cond = &common.ConditionOutput{}
 			encodeCondition(sd.Condition, resp.Cond)
-			md := sd.Metadata
-			resp.Md = &Metadata{
-				Description: md.Description,
-				Enabled:     md.Enabled,
-			}
+			resp.Description = sd.Description
+			resp.Enabled = sd.Enabled
 		}
 		err = encodeError(err)
 	}
 	return
 }
 
-func (sc serviceController) UpdateMetadata(ctx context.Context, req *UpdateMetadataRequest) (resp *emptypb.Empty, err error) {
-	resp = &emptypb.Empty{}
+func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (resp *UpdateResponse, err error) {
+	resp = &UpdateResponse{}
 	var groupId string
 	var userId string
 	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
-		reqMd := req.Md
-		md := subscription.Metadata{
-			Description: reqMd.Description,
-			Enabled:     reqMd.Enabled,
+		sd := subscription.Data{
+			Description: req.Description,
+			Enabled:     req.Enabled,
 		}
-		err = sc.svc.UpdateMetadata(ctx, req.Id, groupId, userId, md)
+		err = sc.svc.Update(ctx, req.Id, groupId, userId, sd)
 		err = encodeError(err)
 	}
 	return
 }
 
-func (sc serviceController) Delete(ctx context.Context, req *DeleteRequest) (resp *emptypb.Empty, err error) {
-	resp = &emptypb.Empty{}
+func (sc serviceController) Delete(ctx context.Context, req *DeleteRequest) (resp *DeleteResponse, err error) {
+	resp = &DeleteResponse{}
 	var groupId string
 	var userId string
 	groupId, userId, err = getAuthInfo(ctx)
@@ -104,37 +95,23 @@ func (sc serviceController) SearchOwn(ctx context.Context, req *SearchOwnRequest
 	var userId string
 	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
-		q := subscription.QueryByAccount{
+		q := subscription.QueryOwn{
 			GroupId: groupId,
 			UserId:  userId,
 			Limit:   req.Limit,
 		}
-		resp.Ids, err = sc.svc.SearchByAccount(ctx, q, req.Cursor)
+		resp.Ids, err = sc.svc.SearchOwn(ctx, q, req.Cursor)
 		err = encodeError(err)
 	}
 	return
 }
 
-func (sc serviceController) SearchByCondition(req *SearchByConditionRequest, server Service_SearchByConditionServer) (err error) {
-	var cond condition.Condition
-	kcq := req.GetKcq()
-	switch {
-	case kcq != nil:
-		cond = condition.NewKiwiCondition(
-			condition.NewKeyCondition(condition.NewCondition(false), "", kcq.Key),
-			kcq.Partial,
-			kcq.Pattern,
-		)
-	default:
-		err = status.Error(codes.InvalidArgument, "unsupported condition type")
+func (sc serviceController) SearchByCondition(req *SearchByConditionRequest, stream Service_SearchByConditionServer) (err error) {
+	ctx := stream.Context()
+	sendToStreamFunc := func(cm *subscription.ConditionMatch) (err error) {
+		return sendToStream(cm, stream)
 	}
-	if err == nil {
-		ctx := server.Context()
-		sendToStreamFunc := func(cm *subscription.ConditionMatch) (err error) {
-			return sendToStream(cm, server)
-		}
-		err = sc.svc.SearchByCondition(ctx, cond, sendToStreamFunc)
-	}
+	err = sc.svc.SearchByCondition(ctx, req.CondId, sendToStreamFunc)
 	if err != nil {
 		err = status.Error(codes.Internal, err.Error())
 	}
@@ -142,7 +119,7 @@ func (sc serviceController) SearchByCondition(req *SearchByConditionRequest, ser
 }
 
 func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
-	gc, ktc := src.GetGc(), src.GetKtc()
+	gc, tc := src.GetGc(), src.GetTc()
 	switch {
 	case gc != nil:
 		var group []condition.Condition
@@ -161,13 +138,10 @@ func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
 				group,
 			)
 		}
-	case ktc != nil:
-		dst = condition.NewKiwiTreeCondition(
-			condition.NewKiwiCondition(
-				condition.NewKeyCondition(condition.NewCondition(src.Not), "", ktc.GetKey()),
-				ktc.GetPartial(),
-				ktc.GetPattern(),
-			),
+	case tc != nil:
+		dst = condition.NewTextCondition(
+			condition.NewKeyCondition(condition.NewCondition(src.Not), "", tc.GetKey()),
+			tc.GetTerm(),
 		)
 	default:
 		err = status.Error(codes.InvalidArgument, "unsupported condition type")
@@ -176,9 +150,9 @@ func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
 }
 
 func sendToStream(cm *subscription.ConditionMatch, server Service_SearchByConditionServer) (err error) {
-	var respCm ConditionMatch
-	encodeConditionMatch(cm, &respCm)
-	err = server.Send(&respCm)
+	var resp SearchByConditionResponse
+	encodeConditionMatch(cm, &resp)
+	err = server.Send(&resp)
 	return
 }
 
@@ -198,22 +172,20 @@ func encodeCondition(src condition.Condition, dst *common.ConditionOutput) {
 				Group: dstGroup,
 			},
 		}
-	case condition.KiwiCondition:
-		dst.Cond = &common.ConditionOutput_Kc{
-			Kc: &common.KiwiConditionOutput{
-				Id:      c.GetId(),
-				Key:     c.GetKey(),
-				Pattern: c.GetPattern(),
-				Partial: c.IsPartial(),
+	case condition.TextCondition:
+		dst.Cond = &common.ConditionOutput_Tc{
+			Tc: &common.TextConditionOutput{
+				Id:   c.GetId(),
+				Key:  c.GetKey(),
+				Term: c.GetTerm(),
 			},
 		}
 	}
 	return
 }
 
-func encodeConditionMatch(src *subscription.ConditionMatch, dst *ConditionMatch) {
-	dst.SubId = src.SubscriptionId
-	dst.CondId = src.ConditionId
+func encodeConditionMatch(src *subscription.ConditionMatch, dst *SearchByConditionResponse) {
+	dst.Id = src.SubscriptionId
 	dst.Cond = &common.ConditionOutput{}
 	encodeCondition(src.Condition, dst.Cond)
 }

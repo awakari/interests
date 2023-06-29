@@ -19,12 +19,12 @@ func TestCondition_Validate(t *testing.T) {
 		},
 		"ok": {
 			d: Data{
-				Condition: condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key0"), false, ""),
+				Condition: condition.NewTextCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key0"), ""),
 			},
 		},
 		"negation only condition": {
 			d: Data{
-				Condition: condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key0"), false, ""),
+				Condition: condition.NewTextCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key0"), ""),
 			},
 			err: ErrInvalidSubscriptionCondition,
 		},
@@ -40,9 +40,9 @@ func TestCondition_Validate(t *testing.T) {
 					condition.NewCondition(false),
 					condition.GroupLogicAnd,
 					[]condition.Condition{
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key0"), false, ""),
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key1"), false, ""),
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key2"), false, ""),
+						condition.NewTextCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key0"), ""),
+						condition.NewTextCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key1"), ""),
+						condition.NewTextCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key2"), ""),
 					},
 				),
 			},
@@ -53,8 +53,8 @@ func TestCondition_Validate(t *testing.T) {
 					condition.NewCondition(true),
 					condition.GroupLogicAnd,
 					[]condition.Condition{
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key0"), false, ""),
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key1"), false, ""),
+						condition.NewTextCondition(condition.NewKeyCondition(condition.NewCondition(false), "", "key0"), ""),
+						condition.NewTextCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key1"), ""),
 					},
 				),
 			},
@@ -66,8 +66,8 @@ func TestCondition_Validate(t *testing.T) {
 					condition.NewCondition(false),
 					condition.GroupLogicAnd,
 					[]condition.Condition{
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key0"), false, ""),
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key1"), false, ""),
+						condition.NewTextCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key0"), ""),
+						condition.NewTextCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key1"), ""),
 					},
 				),
 			},
@@ -79,7 +79,7 @@ func TestCondition_Validate(t *testing.T) {
 					condition.NewCondition(false),
 					condition.GroupLogicAnd,
 					[]condition.Condition{
-						condition.NewKiwiCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key0"), false, ""),
+						condition.NewTextCondition(condition.NewKeyCondition(condition.NewCondition(true), "", "key0"), ""),
 					},
 				),
 			},

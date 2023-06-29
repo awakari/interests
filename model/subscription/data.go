@@ -7,9 +7,8 @@ import (
 )
 
 type Data struct {
-
-	// Metadata represents a mutable Subscription data.
-	Metadata Metadata
+	Description string
+	Enabled     bool
 
 	// Condition represents the certain criteria to select the Subscription for the further routing.
 	// It's immutable once the Subscription is created.
@@ -29,7 +28,7 @@ func (d Data) Validate() (err error) {
 	switch c := d.Condition.(type) {
 	case condition.GroupCondition:
 		err = validateRootGroupCondition(c)
-	case condition.KiwiCondition:
+	case condition.TextCondition:
 	default:
 		return fmt.Errorf("%w: %s", ErrInvalidSubscriptionCondition, "root condition is not a group neither metadata pattern condition")
 	}

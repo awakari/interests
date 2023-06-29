@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/awakari/subscriptions/api/grpc/kiwi-tree"
+	conditions_text "github.com/awakari/subscriptions/api/grpc/conditions-text"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/storage"
@@ -23,24 +23,23 @@ type Service interface {
 	// Returns ErrNotFound if subscription.Subscription is missing in the underlying storage.
 	Read(ctx context.Context, id, groupId, userId string) (d subscription.Data, err error)
 
-	// UpdateMetadata updates the mutable part of the subscription.Data
-	UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error)
+	// Update the mutable part of the subscription.Data
+	Update(ctx context.Context, id, groupId, userId string, d subscription.Data) (err error)
 
 	// Delete a subscription.Subscription and all associated conditions those not in use by any other subscription.
 	// Returns ErrNotFound if a subscription.Subscription with the specified id is missing in the underlying storage.
 	Delete(ctx context.Context, id, groupId, userId string) (err error)
 
-	// SearchByAccount returns all subscription ids those have the account matching the query.
-	SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error)
+	// SearchOwn returns all subscription ids those have the account matching the query.
+	SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error)
 
 	// SearchByCondition sends the matches to the specified consumer func those contain a condition specified by the query.
-	SearchByCondition(ctx context.Context, cond condition.Condition, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error)
+	SearchByCondition(ctx context.Context, condId string, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error)
 }
 
 type service struct {
-	stor                storage.Storage
-	kiwiCompleteTreeSvc kiwiTree.Service
-	kiwiPartialTreeSvc  kiwiTree.Service
+	stor        storage.Storage
+	condTextSvc conditions_text.Service
 }
 
 var (
@@ -54,22 +53,17 @@ var (
 	// ErrInternal indicates some unexpected internal failure.
 	ErrInternal = errors.New("internal failure")
 
-	// ErrCleanKiwis indicates unused kiwis cleanup failure upon a subscription deletion.
-	ErrCleanKiwis = errors.New("kiwis cleanup failure, may cause kiwis garbage")
-
-	// ErrInvalidQuery indicates the search query is invalid.
-	ErrInvalidQuery = errors.New("invalid search query")
+	// ErrCleanConditions indicates unused conditions cleanup failure upon a subscription deletion.
+	ErrCleanConditions = errors.New("conditions cleanup failure, may cause a garbage in the conditions storage")
 )
 
 func NewService(
 	stor storage.Storage,
-	kiwiCompleteTreeSvc kiwiTree.Service,
-	kiwiPartialTreeSvc kiwiTree.Service,
+	condTextSvc conditions_text.Service,
 ) Service {
 	return service{
-		stor:                stor,
-		kiwiCompleteTreeSvc: kiwiCompleteTreeSvc,
-		kiwiPartialTreeSvc:  kiwiPartialTreeSvc,
+		stor:        stor,
+		condTextSvc: condTextSvc,
 	}
 }
 
@@ -94,20 +88,14 @@ func (svc service) createCondition(ctx context.Context, cond condition.Condition
 				break
 			}
 		}
-	case condition.KiwiTreeCondition:
-		kiwiTreeSvc := svc.selectKiwiTreeService(c)
-		err = kiwiTreeSvc.Create(ctx, c.GetKey(), c.GetPattern())
+	case condition.TextCondition:
+		var condId string
+		condId, err = svc.condTextSvc.Create(ctx, c.GetKey(), c.GetTerm())
+		if err == nil {
+			c.SetId(condId)
+		}
 	default:
 		err = fmt.Errorf("%w: unsupported condition type: %s", subscription.ErrInvalidSubscriptionCondition, reflect.TypeOf(cond))
-	}
-	return
-}
-
-func (svc service) selectKiwiTreeService(ktc condition.KiwiTreeCondition) (kiwiTreeSvc kiwiTree.Service) {
-	if ktc.IsPartial() {
-		kiwiTreeSvc = svc.kiwiPartialTreeSvc
-	} else {
-		kiwiTreeSvc = svc.kiwiCompleteTreeSvc
 	}
 	return
 }
@@ -120,8 +108,8 @@ func (svc service) Read(ctx context.Context, id, groupId, userId string) (sd sub
 	return
 }
 
-func (svc service) UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error) {
-	err = svc.stor.UpdateMetadata(ctx, id, groupId, userId, md)
+func (svc service) Update(ctx context.Context, id, groupId, userId string, d subscription.Data) (err error) {
+	err = svc.stor.Update(ctx, id, groupId, userId, d)
 	if err != nil {
 		err = translateError(err)
 	}
@@ -134,7 +122,7 @@ func (svc service) Delete(ctx context.Context, id, groupId, userId string) (err 
 	if err == nil {
 		err = svc.clearUnusedCondition(ctx, sd.Condition)
 		if err != nil {
-			err = fmt.Errorf("%w: %s, subscription id: %s", ErrCleanKiwis, err, id)
+			err = fmt.Errorf("%w: %s, subscription id: %s", ErrCleanConditions, err, id)
 		}
 	}
 	err = translateError(err)
@@ -150,64 +138,45 @@ func (svc service) clearUnusedCondition(ctx context.Context, cond condition.Cond
 				break
 			}
 		}
-	case condition.KiwiTreeCondition:
-		err = svc.clearUnusedKiwiTreeCondition(ctx, c)
+	case condition.TextCondition:
+		err = svc.clearUnusedTextCondition(ctx, c.GetId())
 	default:
 		err = fmt.Errorf("%w: unsupported condition type: %s", subscription.ErrInvalidSubscriptionCondition, reflect.TypeOf(cond))
 	}
 	return
 }
 
-func (svc service) clearUnusedKiwiTreeCondition(ctx context.Context, ktc condition.KiwiTreeCondition) (err error) {
-	k := ktc.GetKey()
-	p := ktc.GetPattern()
-	q := storage.KiwiQuery{
-		Key:     k,
-		Pattern: p,
-	}
-	kiwiTreeSvc := svc.selectKiwiTreeService(ktc)
-	err = kiwiTreeSvc.LockCreate(ctx, k, p)
+func (svc service) clearUnusedTextCondition(ctx context.Context, condId string) (err error) {
+	err = svc.condTextSvc.LockCreate(ctx, condId)
 	if err == nil {
-		defer func() {
-			_ = kiwiTreeSvc.UnlockCreate(ctx, k, p)
-		}()
-		// find any subscription that is also using this kiwi condition
+		defer svc.condTextSvc.UnlockCreate(ctx, condId)
+		// find any subscription that is also using this condition
 		var matches []*subscription.ConditionMatch
 		consumeFunc := func(match *subscription.ConditionMatch) (err error) {
 			matches = append(matches, match)
 			return
 		}
-		err = svc.stor.SearchByKiwi(ctx, q, consumeFunc)
+		err = svc.stor.SearchByCondition(ctx, condId, consumeFunc)
 		if err == nil {
 			if len(matches) == 0 {
-				// no other subscriptions found, let's delete the kiwi condition from the tree
-				err = kiwiTreeSvc.Delete(ctx, k, p)
+				// no other subscriptions found, let's delete the condition from the tree
+				err = svc.condTextSvc.Delete(ctx, condId)
 			}
 		}
 	}
 	return
 }
 
-func (svc service) SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error) {
-	ids, err = svc.stor.SearchByAccount(ctx, q, cursor)
+func (svc service) SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error) {
+	ids, err = svc.stor.SearchOwn(ctx, q, cursor)
 	if err != nil {
 		err = translateError(err)
 	}
 	return
 }
 
-func (svc service) SearchByCondition(ctx context.Context, cond condition.Condition, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
-	switch condT := cond.(type) {
-	case condition.KiwiCondition:
-		kiwiQuery := storage.KiwiQuery{
-			Key:     condT.GetKey(),
-			Pattern: condT.GetPattern(),
-			Partial: condT.IsPartial(),
-		}
-		err = svc.stor.SearchByKiwi(ctx, kiwiQuery, consumeFunc)
-	default:
-		err = fmt.Errorf("%w: unsupported condition type: %s", ErrInvalidQuery, reflect.TypeOf(condT))
-	}
+func (svc service) SearchByCondition(ctx context.Context, condId string, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
+	err = svc.stor.SearchByCondition(ctx, condId, consumeFunc)
 	if err != nil {
 		err = translateError(err)
 	}
@@ -223,10 +192,8 @@ func translateError(srcErr error) (dstErr error) {
 			dstErr = fmt.Errorf("%w: %s", ErrNotFound, srcErr)
 		case errors.Is(srcErr, storage.ErrInternal):
 			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)
-		case errors.Is(srcErr, kiwiTree.ErrShouldRetry):
+		case errors.Is(srcErr, conditions_text.ErrConflict):
 			dstErr = fmt.Errorf("%w: %s", ErrShouldRetry, srcErr)
-		case errors.Is(srcErr, kiwiTree.ErrInternal):
-			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)
 		case errors.Is(srcErr, subscription.ErrInvalidSubscriptionCondition):
 			dstErr = srcErr
 		case errors.Is(srcErr, ErrNotFound):
@@ -235,9 +202,7 @@ func translateError(srcErr error) (dstErr error) {
 			dstErr = srcErr
 		case errors.Is(srcErr, ErrShouldRetry):
 			dstErr = srcErr
-		case errors.Is(srcErr, ErrCleanKiwis):
-			dstErr = srcErr
-		case errors.Is(srcErr, ErrInvalidQuery):
+		case errors.Is(srcErr, ErrCleanConditions):
 			dstErr = srcErr
 		default:
 			dstErr = fmt.Errorf("%w: %s", ErrInternal, srcErr)

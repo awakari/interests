@@ -25,10 +25,9 @@ func Test_decodeSubscription(t *testing.T) {
 					conditionAttrBase: bson.M{
 						conditionAttrNot: false,
 					},
-					kiwiConditionAttrId:      "cond0",
-					kiwiConditionAttrPartial: true,
-					kiwiConditionAttrKey:     "key0",
-					kiwiConditionAttrPattern: "pattern0",
+					textConditionAttrId:   "cond0",
+					textConditionAttrKey:  "key0",
+					textConditionAttrTerm: "pattern0",
 				},
 			},
 			out: subscription.Subscription{
@@ -36,12 +35,9 @@ func Test_decodeSubscription(t *testing.T) {
 				GroupId: "group0",
 				UserId:  "acc0",
 				Data: subscription.Data{
-					Metadata: subscription.Metadata{
-						Description: "description0",
-					},
-					Condition: condition.NewKiwiCondition(
+					Description: "description0",
+					Condition: condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-						true,
 						"pattern0",
 					),
 				},

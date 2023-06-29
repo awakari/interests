@@ -17,7 +17,7 @@ func NewServiceMock() Service {
 }
 
 func (sm serviceMock) Create(ctx context.Context, groupId, userId string, sd subscription.Data) (id string, err error) {
-	descr := sd.Metadata.Description
+	descr := sd.Description
 	if descr == "fail" {
 		err = ErrInternal
 	} else if descr == "invalid" {
@@ -38,21 +38,17 @@ func (sm serviceMock) Read(ctx context.Context, id, groupId, userId string) (sd 
 		err = ErrNotFound
 	} else {
 		sd = subscription.Data{
-			Metadata: subscription.Metadata{
-				Description: "description",
-			},
+			Description: "description",
 			Condition: condition.NewGroupCondition(
 				condition.NewCondition(false),
 				condition.GroupLogicAnd,
 				[]condition.Condition{
-					condition.NewKiwiCondition(
+					condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
-						true,
 						"pattern0",
 					),
-					condition.NewKiwiCondition(
+					condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(true), "", "key1"),
-						false,
 						"pattern1",
 					),
 				},
@@ -62,7 +58,7 @@ func (sm serviceMock) Read(ctx context.Context, id, groupId, userId string) (sd 
 	return
 }
 
-func (sm serviceMock) UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error) {
+func (sm serviceMock) Update(ctx context.Context, id, groupId, userId string, d subscription.Data) (err error) {
 	if id == "fail" {
 		err = ErrInternal
 	} else if id == "missing" {
@@ -80,7 +76,7 @@ func (sm serviceMock) Delete(ctx context.Context, id, groupId, userId string) (e
 	return
 }
 
-func (sm serviceMock) SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error) {
+func (sm serviceMock) SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error) {
 	if cursor == "" {
 		ids = []string{
 			"sub0",
@@ -92,16 +88,14 @@ func (sm serviceMock) SearchByAccount(ctx context.Context, q subscription.QueryB
 	return
 }
 
-func (sm serviceMock) SearchByCondition(ctx context.Context, cond condition.Condition, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
+func (sm serviceMock) SearchByCondition(ctx context.Context, condId string, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
 	for i := 0; i < 10_000; i++ {
 		cm := subscription.ConditionMatch{
 			SubscriptionId: fmt.Sprintf("sub%d", i),
-			Condition: condition.NewKiwiCondition(
+			Condition: condition.NewTextCondition(
 				condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-				false,
 				"pattern0",
 			),
-			ConditionId: "cond0",
 		}
 		err = consumeFunc(&cm)
 		if err != nil {

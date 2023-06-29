@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	grpcApi "github.com/awakari/subscriptions/api/grpc"
-	grpcApiKiwi "github.com/awakari/subscriptions/api/grpc/kiwi-tree"
+	grpcApiCondText "github.com/awakari/subscriptions/api/grpc/conditions-text"
 	"github.com/awakari/subscriptions/config"
 	"github.com/awakari/subscriptions/service"
 	"github.com/awakari/subscriptions/storage/mongo"
@@ -33,37 +33,20 @@ func main() {
 		panic(err)
 	}
 	//
-	kiwiTreeConnComplete, err := grpc.Dial(
-		cfg.Api.KiwiTree.CompleteUri,
+	connCondText, err := grpc.Dial(
+		cfg.Api.Conditions.Text.Uri,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err == nil {
-		log.Info("connected kiwi tree complete service")
+		log.Info("connected conditions-text service")
 	} else {
-		log.Error("failed to connect the kiwiTree service", err)
+		log.Error("failed to connect the conditions-text service", err)
 	}
-	kiwiTreeClientComplete := grpcApiKiwi.NewServiceClient(kiwiTreeConnComplete)
-	kiwiTreeSvcComplete := grpcApiKiwi.NewService(kiwiTreeClientComplete)
-	kiwiTreeSvcComplete = grpcApiKiwi.NewLoggingMiddleware(kiwiTreeSvcComplete, log)
+	clientCondText := grpcApiCondText.NewServiceClient(connCondText)
+	svcCondText := grpcApiCondText.NewService(clientCondText)
+	svcCondText = grpcApiCondText.NewServiceLogging(svcCondText, log)
 	//
-	kiwiTreeConnPartial, err := grpc.Dial(
-		cfg.Api.KiwiTree.PartialUri,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err == nil {
-		log.Info("connected kiwi tree partial service")
-	} else {
-		log.Error("failed to connect the kiwiTree service", err)
-	}
-	kiwiTreeClientPartial := grpcApiKiwi.NewServiceClient(kiwiTreeConnPartial)
-	kiwiTreeSvcPartial := grpcApiKiwi.NewService(kiwiTreeClientPartial)
-	kiwiTreeSvcPartial = grpcApiKiwi.NewLoggingMiddleware(kiwiTreeSvcPartial, log)
-	//
-	svc := service.NewService(
-		db,
-		kiwiTreeSvcComplete,
-		kiwiTreeSvcPartial,
-	)
+	svc := service.NewService(db, svcCondText)
 	svc = service.NewLoggingMiddleware(svc, log)
 	//
 	log.Info(fmt.Sprintf("starting to listen the API @ port #%d...", cfg.Api.Port))
