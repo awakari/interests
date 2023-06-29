@@ -39,10 +39,9 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sub 
 	return
 }
 
-func (s storageMock) UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error) {
+func (s storageMock) Update(ctx context.Context, id, groupId, userId string, sd subscription.Data) (err error) {
 	sd, found := s.storage[id+groupId+userId]
 	if found {
-		sd.Metadata = md
 		s.storage[id+groupId+userId] = sd
 	} else {
 		err = fmt.Errorf("%w by id: %s", ErrNotFound, id)
@@ -61,7 +60,7 @@ func (s storageMock) Delete(ctx context.Context, id, groupId, userId string) (sd
 	return
 }
 
-func (s storageMock) SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error) {
+func (s storageMock) SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error) {
 	for id, _ := range s.storage {
 		if strings.HasSuffix(id, q.UserId) && id > cursor {
 			ids = append(ids, id[:len(q.UserId)])
@@ -73,14 +72,12 @@ func (s storageMock) SearchByAccount(ctx context.Context, q subscription.QueryBy
 	return
 }
 
-func (s storageMock) SearchByKiwi(ctx context.Context, q KiwiQuery, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
+func (s storageMock) SearchByCondition(ctx context.Context, condId string, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
 	for i := 0; i < 10_000; i++ {
 		cm := subscription.ConditionMatch{
 			SubscriptionId: fmt.Sprintf("sub%d", i),
-			ConditionId:    "cond0",
-			Condition: condition.NewKiwiCondition(
+			Condition: condition.NewTextCondition(
 				condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-				false,
 				"pattern0",
 			),
 		}

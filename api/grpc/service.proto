@@ -4,7 +4,6 @@ package awakari.subscriptions;
 
 option go_package = "./api/grpc";
 
-import "google/protobuf/empty.proto";
 import "api/grpc/common/group_logic.proto";
 import "api/grpc/common/condition_output.proto";
 
@@ -12,25 +11,20 @@ service Service {
 
   rpc Create(CreateRequest) returns (CreateResponse);
   rpc Read(ReadRequest) returns (ReadResponse);
-  rpc UpdateMetadata(UpdateMetadataRequest) returns (google.protobuf.Empty);
-  rpc Delete(DeleteRequest) returns (google.protobuf.Empty);
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc SearchOwn(SearchOwnRequest) returns (SearchOwnResponse);
 
-  // used by writer
-  rpc SearchByCondition(SearchByConditionRequest) returns (stream ConditionMatch);
+  // used internally by writer
+  rpc SearchByCondition(SearchByConditionRequest) returns (stream SearchByConditionResponse);
 }
 
 // Create
 
 message CreateRequest {
-  Metadata md = 1;
-  ConditionInput cond = 2;
-}
-
-// Metadata represents the mutable part of the Subscription data.
-message Metadata {
   string description = 1;
   bool enabled = 2;
+  ConditionInput cond = 3;
 }
 
 // ConditionInput represents the Subscription routing Condition data that is immutable once Subscription is created.
@@ -38,7 +32,7 @@ message ConditionInput {
   bool not = 1;
   oneof cond {
     GroupConditionInput gc = 2;
-    KiwiTreeConditionInput ktc = 3;
+    TextConditionInput tc = 3;
   }
 }
 
@@ -47,11 +41,9 @@ message GroupConditionInput {
   repeated ConditionInput group = 2;
 }
 
-// marker type
-message KiwiTreeConditionInput {
+message TextConditionInput {
   string key = 1;
-  string pattern = 2;
-  bool partial = 3;
+  string term = 2;
 }
 
 message CreateResponse {
@@ -65,15 +57,20 @@ message ReadRequest {
 }
 
 message ReadResponse {
-  Metadata md = 1;
-  common.ConditionOutput cond = 2;
+  string description = 1;
+  bool enabled = 2;
+  common.ConditionOutput cond = 3;
 }
 
 // Update
 
-message UpdateMetadataRequest {
+message UpdateRequest {
   string id = 1;
-  Metadata md = 2;
+  string description = 2;
+  bool enabled = 3;
+}
+
+message UpdateResponse {
 }
 
 // Delete
@@ -82,7 +79,10 @@ message DeleteRequest {
   string id = 1;
 }
 
-// SearchByAccount
+message DeleteResponse {
+}
+
+// SearchOwn
 
 message SearchOwnRequest {
   string cursor = 1;
@@ -93,23 +93,13 @@ message SearchOwnResponse {
   repeated string ids = 1;
 }
 
-// SearchByCondition
-
+// ReadByCondition
 
 message SearchByConditionRequest {
-  oneof cond {
-    KiwiConditionQuery kcq = 1;
-  }
+  string condId = 1;
 }
 
-message KiwiConditionQuery {
-  string key = 1;
-  string pattern = 2;
-  bool partial = 3;
-}
-
-message ConditionMatch {
-  string subId = 1;
-  string condId = 2;
-  common.ConditionOutput cond = 3;
+message SearchByConditionResponse {
+  string id = 1;
+  common.ConditionOutput cond = 2;
 }

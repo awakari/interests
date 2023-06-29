@@ -21,19 +21,19 @@ type (
 		// Read the subscription.Data by the subscription.Subscription id.
 		Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error)
 
-		// UpdateMetadata updates the mutable part of the subscription.Data
-		UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error)
+		// Update updates the mutable part of the subscription.Data
+		Update(ctx context.Context, id, groupId, userId string, sd subscription.Data) (err error)
 
 		// Delete removes the subscription.Subscription specified by its unique id.
 		// Returns the subscription.Data if deleted, error otherwise.
 		Delete(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error)
 
-		// SearchByAccount returns all subscription ids those have the account matching the query.
-		SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error)
+		// SearchOwn returns all subscription ids those have the account matching the query.
+		SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error)
 
-		// SearchByKiwi finds all subscriptions those match the specified KiwiQuery and feeds these to the specified
-		// consumer func.
-		SearchByKiwi(ctx context.Context, q KiwiQuery, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error)
+		// SearchByCondition finds all subscriptions those match the specified condition id and feeds these to the
+		// specified consumer func.
+		SearchByCondition(ctx context.Context, condId string, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error)
 	}
 )
 

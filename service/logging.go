@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/util"
 	"golang.org/x/exp/slog"
@@ -37,11 +36,11 @@ func (lm loggingMiddleware) Read(ctx context.Context, id, groupId, userId string
 	return lm.svc.Read(ctx, id, groupId, userId)
 }
 
-func (lm loggingMiddleware) UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error) {
+func (lm loggingMiddleware) Update(ctx context.Context, id, groupId, userId string, d subscription.Data) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("UpdateMetadata(%s, %s, %s, %+v): err=%s", id, groupId, userId, md, err))
+		lm.log.Debug(fmt.Sprintf("Update(%s, %s, %s, %+v): err=%s", id, groupId, userId, d, err))
 	}()
-	return lm.svc.UpdateMetadata(ctx, id, groupId, userId, md)
+	return lm.svc.Update(ctx, id, groupId, userId, d)
 }
 
 func (lm loggingMiddleware) Delete(ctx context.Context, id, groupId, userId string) (err error) {
@@ -51,16 +50,16 @@ func (lm loggingMiddleware) Delete(ctx context.Context, id, groupId, userId stri
 	return lm.svc.Delete(ctx, id, groupId, userId)
 }
 
-func (lm loggingMiddleware) SearchByCondition(ctx context.Context, cond condition.Condition, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
+func (lm loggingMiddleware) SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("SearchByCondition(%+v): %s", cond, err))
+		lm.log.Debug(fmt.Sprintf("SearchOwn(%v, %v): %s", q, cursor, err))
 	}()
-	return lm.svc.SearchByCondition(ctx, cond, consumeFunc)
+	return lm.svc.SearchOwn(ctx, q, cursor)
 }
 
-func (lm loggingMiddleware) SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error) {
+func (lm loggingMiddleware) SearchByCondition(ctx context.Context, condId string, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("SearchByAccount(%v, %v): %s", q, cursor, err))
+		lm.log.Debug(fmt.Sprintf("SearchByCondition(%s): %s", condId, err))
 	}()
-	return lm.svc.SearchByAccount(ctx, q, cursor)
+	return lm.svc.SearchByCondition(ctx, condId, consumeFunc)
 }

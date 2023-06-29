@@ -54,10 +54,8 @@ spec:
               value: "{{ .Values.db.tls.enabled }}"
             - name: DB_TLS_INSECURE
               value: "{{ .Values.db.tls.insecure }}"
-            - name: API_KIWI_TREE_COMPLETE_URI
-              value: "{{ .Values.api.uri.kiwi.tree.complete }}"
-            - name: API_KIWI_TREE_PARTIAL_URI
-              value: "{{ .Values.api.uri.kiwi.tree.partial }}"
+            - name: API_COND_TEXT_URI
+              value: "{{ .Values.api.uri.conditions.text }}"
             - name: LOG_LEVEL
               value: "{{ .Values.log.level }}"
           securityContext:

@@ -4,6 +4,7 @@ type (
 	KeyCondition interface {
 		Condition
 		GetId() string
+		SetId(id string)
 		GetKey() string
 	}
 
@@ -15,22 +16,26 @@ type (
 )
 
 func NewKeyCondition(c Condition, id, k string) KeyCondition {
-	return keyCondition{
+	return &keyCondition{
 		Condition: c,
 		Id:        id,
 		Key:       k,
 	}
 }
 
-func (kc keyCondition) IsNot() bool {
+func (kc *keyCondition) IsNot() bool {
 	return kc.Condition.IsNot()
 }
 
-func (kc keyCondition) GetId() string {
+func (kc *keyCondition) GetId() string {
 	return kc.Id
 }
 
-func (kc keyCondition) Equal(another Condition) (equal bool) {
+func (kc *keyCondition) SetId(id string) {
+	kc.Id = id
+}
+
+func (kc *keyCondition) Equal(another Condition) (equal bool) {
 	equal = kc.Condition.Equal(another)
 	if equal {
 		var anotherKc KeyCondition
@@ -42,6 +47,6 @@ func (kc keyCondition) Equal(another Condition) (equal bool) {
 	return
 }
 
-func (kc keyCondition) GetKey() string {
+func (kc *keyCondition) GetKey() string {
 	return kc.Key
 }

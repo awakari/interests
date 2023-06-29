@@ -16,12 +16,12 @@ const groupConditionAttrLogic = "logic"
 
 var _ Condition = (*groupCondition)(nil)
 
-func encodeGroupCondition(src condition.GroupCondition) (dst groupCondition, kiwis []kiwiSearchData) {
+func encodeGroupCondition(src condition.GroupCondition) (dst groupCondition, ids []string) {
 	var group []Condition
 	for _, childSrc := range src.GetGroup() {
-		childDst, childKiwis := encodeCondition(childSrc)
+		childDst, childIds := encodeCondition(childSrc)
 		group = append(group, childDst)
-		kiwis = append(kiwis, childKiwis...)
+		ids = append(ids, childIds...)
 	}
 	dst = groupCondition{
 		Base: ConditionBase{

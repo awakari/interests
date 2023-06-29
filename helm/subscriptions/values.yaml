@@ -97,10 +97,8 @@ db:
 # Dependency services
 api:
   uri:
-    kiwi:
-      tree:
-        complete: "kiwi-tree-complete:50051"
-        partial: "kiwi-tree-partial:50051"
+    conditions:
+      text: "conditions-text:50051"
 log:
   # https://pkg.go.dev/golang.org/x/exp/slog#Level
   level: -4

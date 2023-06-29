@@ -54,8 +54,8 @@ func TestServiceController_Create(t *testing.T) {
 				"X-Awakari-User-ID", "user0",
 			},
 			cond: &ConditionInput{
-				Cond: &ConditionInput_Ktc{
-					Ktc: &KiwiTreeConditionInput{},
+				Cond: &ConditionInput_Tc{
+					Tc: &TextConditionInput{},
 				},
 			},
 		},
@@ -72,21 +72,19 @@ func TestServiceController_Create(t *testing.T) {
 						Group: []*ConditionInput{
 							{
 								Not: true,
-								Cond: &ConditionInput_Ktc{
-									Ktc: &KiwiTreeConditionInput{
-										Key:     "key0",
-										Pattern: "pattern0",
-										Partial: true,
+								Cond: &ConditionInput_Tc{
+									Tc: &TextConditionInput{
+										Key:  "key0",
+										Term: "pattern0",
 									},
 								},
 							},
 							{
 								Not: false,
-								Cond: &ConditionInput_Ktc{
-									Ktc: &KiwiTreeConditionInput{
-										Key:     "key1",
-										Pattern: "pattern1",
-										Partial: false,
+								Cond: &ConditionInput_Tc{
+									Tc: &TextConditionInput{
+										Key:  "key1",
+										Term: "pattern1",
 									},
 								},
 							},
@@ -102,8 +100,8 @@ func TestServiceController_Create(t *testing.T) {
 			},
 
 			cond: &ConditionInput{
-				Cond: &ConditionInput_Ktc{
-					Ktc: &KiwiTreeConditionInput{},
+				Cond: &ConditionInput_Tc{
+					Tc: &TextConditionInput{},
 				},
 			},
 			err: status.Error(codes.Internal, "internal failure"),
@@ -114,8 +112,8 @@ func TestServiceController_Create(t *testing.T) {
 				"X-Awakari-User-ID", "user0",
 			},
 			cond: &ConditionInput{
-				Cond: &ConditionInput_Ktc{
-					Ktc: &KiwiTreeConditionInput{},
+				Cond: &ConditionInput_Tc{
+					Tc: &TextConditionInput{},
 				},
 			},
 			err: status.Error(codes.InvalidArgument, "invalid subscription condition"),
@@ -126,8 +124,8 @@ func TestServiceController_Create(t *testing.T) {
 				"X-Awakari-User-ID", "user0",
 			},
 			cond: &ConditionInput{
-				Cond: &ConditionInput_Ktc{
-					Ktc: &KiwiTreeConditionInput{},
+				Cond: &ConditionInput_Tc{
+					Tc: &TextConditionInput{},
 				},
 			},
 			err: status.Error(codes.Unavailable, "retry the operation"),
@@ -138,8 +136,8 @@ func TestServiceController_Create(t *testing.T) {
 				"X-Awakari-User-ID", "user0",
 			},
 			cond: &ConditionInput{
-				Cond: &ConditionInput_Ktc{
-					Ktc: &KiwiTreeConditionInput{},
+				Cond: &ConditionInput_Tc{
+					Tc: &TextConditionInput{},
 				},
 			},
 			err: status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
@@ -150,16 +148,16 @@ func TestServiceController_Create(t *testing.T) {
 				"X-Awakari-User-ID", "",
 			},
 			cond: &ConditionInput{
-				Cond: &ConditionInput_Ktc{
-					Ktc: &KiwiTreeConditionInput{},
+				Cond: &ConditionInput_Tc{
+					Tc: &TextConditionInput{},
 				},
 			},
 			err: status.Error(codes.Unauthenticated, "missing value for x-awakari-user-id in request metadata"),
 		},
 		"no auth info": {
 			cond: &ConditionInput{
-				Cond: &ConditionInput_Ktc{
-					Ktc: &KiwiTreeConditionInput{},
+				Cond: &ConditionInput_Tc{
+					Tc: &TextConditionInput{},
 				},
 			},
 			err: status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
@@ -170,10 +168,8 @@ func TestServiceController_Create(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			ctx := metadata.AppendToOutgoingContext(context.TODO(), c.md...)
 			_, err = client.Create(ctx, &CreateRequest{
-				Md: &Metadata{
-					Description: k,
-				},
-				Cond: c.cond,
+				Description: k,
+				Cond:        c.cond,
 			})
 			if c.err == nil {
 				assert.Nil(t, err)
@@ -199,9 +195,7 @@ func TestServiceController_Read(t *testing.T) {
 		"ok": {
 			auth: true,
 			sub: &ReadResponse{
-				Md: &Metadata{
-					Description: "description",
-				},
+				Description: "description",
 				Cond: &common.ConditionOutput{
 					Not: false,
 					Cond: &common.ConditionOutput_Gc{
@@ -210,21 +204,19 @@ func TestServiceController_Read(t *testing.T) {
 							Group: []*common.ConditionOutput{
 								{
 									Not: false,
-									Cond: &common.ConditionOutput_Kc{
-										Kc: &common.KiwiConditionOutput{
-											Key:     "key0",
-											Pattern: "pattern0",
-											Partial: true,
+									Cond: &common.ConditionOutput_Tc{
+										Tc: &common.TextConditionOutput{
+											Key:  "key0",
+											Term: "pattern0",
 										},
 									},
 								},
 								{
 									Not: true,
-									Cond: &common.ConditionOutput_Kc{
-										Kc: &common.KiwiConditionOutput{
-											Key:     "key1",
-											Pattern: "pattern1",
-											Partial: false,
+									Cond: &common.ConditionOutput_Tc{
+										Tc: &common.TextConditionOutput{
+											Key:  "key1",
+											Term: "pattern1",
 										},
 									},
 								},
@@ -257,18 +249,16 @@ func TestServiceController_Read(t *testing.T) {
 			sub, err := client.Read(ctx, &ReadRequest{Id: k})
 			if c.err == nil {
 				require.Nil(t, err)
-				assert.Equal(t, c.sub.Md, sub.Md)
+				assert.Equal(t, c.sub.Description, sub.Description)
 				assert.Equal(t, c.sub.Cond.Not, sub.Cond.Not)
 				assert.Equal(t, c.sub.Cond.GetGc().Logic, sub.Cond.GetGc().Logic)
 				assert.Equal(t, len(c.sub.Cond.GetGc().GetGroup()), len(sub.Cond.GetGc().GetGroup()))
 				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[0].Not, sub.Cond.GetGc().GetGroup()[0].Not)
-				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[0].GetKc().Key, sub.Cond.GetGc().GetGroup()[0].GetKc().Key)
-				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[0].GetKc().Pattern, sub.Cond.GetGc().GetGroup()[0].GetKc().Pattern)
-				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[0].GetKc().Partial, sub.Cond.GetGc().GetGroup()[0].GetKc().Partial)
+				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[0].GetTc().Key, sub.Cond.GetGc().GetGroup()[0].GetTc().Key)
+				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[0].GetTc().Term, sub.Cond.GetGc().GetGroup()[0].GetTc().Term)
 				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].Not, sub.Cond.GetGc().GetGroup()[1].Not)
-				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].GetKc().Key, sub.Cond.GetGc().GetGroup()[1].GetKc().Key)
-				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].GetKc().Pattern, sub.Cond.GetGc().GetGroup()[1].GetKc().Pattern)
-				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].GetKc().Partial, sub.Cond.GetGc().GetGroup()[1].GetKc().Partial)
+				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].GetTc().Key, sub.Cond.GetGc().GetGroup()[1].GetTc().Key)
+				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].GetTc().Term, sub.Cond.GetGc().GetGroup()[1].GetTc().Term)
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}
@@ -276,7 +266,7 @@ func TestServiceController_Read(t *testing.T) {
 	}
 }
 
-func TestServiceController_UpdateMetadata(t *testing.T) {
+func TestServiceController_Update(t *testing.T) {
 	//
 	addr := fmt.Sprintf("localhost:%d", port)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -284,19 +274,18 @@ func TestServiceController_UpdateMetadata(t *testing.T) {
 	client := NewServiceClient(conn)
 	//
 	cases := map[string]struct {
-		auth bool
-		md   Metadata
-		err  error
+		auth    bool
+		descr   string
+		enabled bool
+		err     error
 	}{
 		"ok1": {
 			auth: true,
 		},
 		"ok2": {
-			auth: true,
-			md: Metadata{
-				Description: "new description",
-				Enabled:     true,
-			},
+			auth:    true,
+			descr:   "new description",
+			enabled: true,
 		},
 		"fail": {
 			auth: true,
@@ -318,9 +307,10 @@ func TestServiceController_UpdateMetadata(t *testing.T) {
 			if c.auth {
 				ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
 			}
-			_, err := client.UpdateMetadata(ctx, &UpdateMetadataRequest{
-				Id: k,
-				Md: &c.md,
+			_, err := client.Update(ctx, &UpdateRequest{
+				Id:          k,
+				Description: c.descr,
+				Enabled:     c.enabled,
 			})
 			if c.err == nil {
 				assert.Nil(t, err)
@@ -375,7 +365,7 @@ func TestServiceController_Delete(t *testing.T) {
 	}
 }
 
-func TestServiceController_SearchByAccount(t *testing.T) {
+func TestServiceController_SearchOwn(t *testing.T) {
 	//
 	addr := fmt.Sprintf("localhost:%d", port)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -426,9 +416,7 @@ func TestServiceController_SearchByCondition(t *testing.T) {
 	addr := fmt.Sprintf("localhost:%d", port)
 	//
 	req := &SearchByConditionRequest{
-		Cond: &SearchByConditionRequest_Kcq{
-			Kcq: &KiwiConditionQuery{},
-		},
+		CondId: "cond0",
 	}
 	//
 	cases := map[string]struct {

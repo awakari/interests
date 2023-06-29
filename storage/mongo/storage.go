@@ -15,17 +15,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type (
-	storageImpl struct {
-		conn *mongo.Client
-		db   *mongo.Database
-		coll *mongo.Collection
-	}
-)
+type storageImpl struct {
+	conn *mongo.Client
+	db   *mongo.Database
+	coll *mongo.Collection
+}
 
 var (
 	indices = []mongo.IndexModel{
-		// id should be unique
+		// external id should be unique
 		{
 			Keys: bson.D{
 				{
@@ -57,7 +55,7 @@ var (
 				Index().
 				SetUnique(true),
 		},
-		// query by enabled flag and kiwi
+		// query by enabled flag and condition id
 		{
 			Keys: bson.D{
 				{
@@ -65,15 +63,7 @@ var (
 					Value: 1,
 				},
 				{
-					Key:   attrKiwis + "." + kiwiConditionAttrKey,
-					Value: 1,
-				},
-				{
-					Key:   attrKiwis + "." + kiwiConditionAttrPattern,
-					Value: 1,
-				},
-				{
-					Key:   attrKiwis + "." + kiwiConditionAttrPartial,
+					Key:   attrCondIds,
 					Value: 1,
 				},
 			},
@@ -83,8 +73,8 @@ var (
 				SetSparse(true),
 		},
 	}
-	optsSrvApi     = options.ServerAPI(options.ServerAPIVersion1)
-	dataProjection = bson.D{
+	optsSrvApi = options.ServerAPI(options.ServerAPIVersion1)
+	projData   = bson.D{
 		{
 			Key:   attrDescr,
 			Value: 1,
@@ -96,17 +86,17 @@ var (
 	}
 	optsRead = options.
 			FindOne().
-			SetProjection(dataProjection)
+			SetProjection(projData)
 	optsDelete = options.
 			FindOneAndDelete().
-			SetProjection(dataProjection)
-	idsProjection = bson.D{
+			SetProjection(projData)
+	projId = bson.D{
 		{
 			Key:   attrId,
 			Value: 1,
 		},
 	}
-	searchByKiwiProjection = bson.D{
+	projSearchByCondId = bson.D{
 		{
 			Key:   attrId,
 			Value: 1,
@@ -116,13 +106,13 @@ var (
 			Value: 1,
 		},
 		{
-			Key:   attrKiwis,
+			Key:   attrCondIds,
 			Value: 1,
 		},
 	}
 )
 
-func NewStorage(ctx context.Context, cfgDb config.Db) (s storage.Storage, err error) {
+func NewStorage(ctx context.Context, cfgDb config.DbConfig) (s storage.Storage, err error) {
 	clientOpts := options.
 		Client().
 		ApplyURI(cfgDb.Uri).
@@ -168,16 +158,15 @@ func (s storageImpl) Close() error {
 }
 
 func (s storageImpl) Create(ctx context.Context, groupId, userId string, sd subscription.Data) (id string, err error) {
-	md := sd.Metadata
-	recCondition, recKiwis := encodeCondition(sd.Condition)
+	recCond, condIds := encodeCondition(sd.Condition)
 	rec := subscriptionWrite{
 		Id:          uuid.NewString(),
 		GroupId:     groupId,
 		UserId:      userId,
-		Description: md.Description,
-		Enabled:     md.Enabled,
-		Condition:   recCondition,
-		Kiwis:       recKiwis,
+		Description: sd.Description,
+		Enabled:     sd.Enabled,
+		Condition:   recCond,
+		CondIds:     condIds,
 	}
 	_, err = s.coll.InsertOne(ctx, rec)
 	if err != nil {
@@ -220,7 +209,7 @@ func decodeSingleResult(id, groupId, userId string, result *mongo.SingleResult) 
 	return
 }
 
-func (s storageImpl) UpdateMetadata(ctx context.Context, id, groupId, userId string, md subscription.Metadata) (err error) {
+func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d subscription.Data) (err error) {
 	q := bson.M{
 		attrId:      id,
 		attrGroupId: groupId,
@@ -228,8 +217,8 @@ func (s storageImpl) UpdateMetadata(ctx context.Context, id, groupId, userId str
 	}
 	u := bson.M{
 		"$set": bson.M{
-			attrDescr:   md.Description,
-			attrEnabled: md.Enabled,
+			attrDescr:   d.Description,
+			attrEnabled: d.Enabled,
 		},
 	}
 	var result *mongo.UpdateResult
@@ -254,7 +243,7 @@ func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd
 	return
 }
 
-func (s storageImpl) SearchByAccount(ctx context.Context, q subscription.QueryByAccount, cursor string) (ids []string, err error) {
+func (s storageImpl) SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error) {
 	dbQuery := bson.M{
 		attrId: bson.M{
 			"$gt": cursor,
@@ -265,9 +254,9 @@ func (s storageImpl) SearchByAccount(ctx context.Context, q subscription.QueryBy
 	opts := options.
 		Find().
 		SetLimit(int64(q.Limit)).
-		SetProjection(idsProjection).
+		SetProjection(projId).
 		SetShowRecordID(false).
-		SetSort(idsProjection)
+		SetSort(projId)
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, dbQuery, opts)
 	if err != nil {
@@ -287,16 +276,14 @@ func (s storageImpl) SearchByAccount(ctx context.Context, q subscription.QueryBy
 	return
 }
 
-func (s storageImpl) SearchByKiwi(ctx context.Context, q storage.KiwiQuery, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
+func (s storageImpl) SearchByCondition(ctx context.Context, condId string, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
 	dbQuery := bson.M{
-		attrKiwis + "." + kiwiConditionAttrKey:     q.Key,
-		attrKiwis + "." + kiwiConditionAttrPattern: q.Pattern,
-		attrKiwis + "." + kiwiConditionAttrPartial: q.Partial,
+		attrCondIds: condId,
 		attrEnabled: true,
 	}
 	opts := options.
 		Find().
-		SetProjection(searchByKiwiProjection).
+		SetProjection(projSearchByCondId).
 		SetShowRecordID(false)
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, dbQuery, opts)
@@ -313,13 +300,6 @@ func (s storageImpl) SearchByKiwi(ctx context.Context, q storage.KiwiQuery, cons
 			}
 			var cm subscription.ConditionMatch
 			err = rec.decodeSubscriptionConditionMatch(&cm)
-			var condId string
-			for _, kiwi := range rec.Kiwis {
-				if kiwi.Key == q.Key && kiwi.Pattern == q.Pattern && kiwi.Partial == q.Partial {
-					condId = kiwi.Id
-				}
-			}
-			cm.ConditionId = condId
 			if err != nil {
 				err = fmt.Errorf("%w: failed to decode subscription record %v: %s", storage.ErrInternal, rec, err)
 				break
