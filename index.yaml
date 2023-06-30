@@ -3,12 +3,12 @@ entries:
   subscriptions:
   - apiVersion: v2
     appVersion: latest
-    created: "2023-06-09T10:30:06.997462257Z"
+    created: "2023-06-30T12:44:24.099900168Z"
     description: A Helm chart for Awakari Subscriptions
-    digest: b5c02c09f515364f032b1c1d2facc31b8258dc980ec0d63e39a9f5b097b37456
+    digest: fa6c34deda6ac66caff2083422250b2b38f5cb1b76b51c5c04ef9d1d401d0476
     name: subscriptions
     type: application
     urls:
     - subscriptions-0.0.0.tgz
     version: 0.0.0
-generated: "2023-06-09T10:30:06.995922196Z"
+generated: "2023-06-30T12:44:24.099099438Z"
