@@ -9,7 +9,7 @@ import (
 )
 
 type Service interface {
-	Create(ctx context.Context, k, v string) (id string, err error)
+	Create(ctx context.Context, k, v string, exact bool) (id, out string, err error)
 	LockCreate(ctx context.Context, id string) (err error)
 	UnlockCreate(ctx context.Context, id string) (err error)
 	Delete(ctx context.Context, id string) (err error)
@@ -31,15 +31,17 @@ func NewService(client ServiceClient) Service {
 	}
 }
 
-func (svc service) Create(ctx context.Context, k, v string) (id string, err error) {
+func (svc service) Create(ctx context.Context, k, v string, exact bool) (id, out string, err error) {
 	req := CreateRequest{
-		Key:  k,
-		Term: v,
+		Key:   k,
+		Term:  v,
+		Exact: exact,
 	}
 	var resp *CreateResponse
 	resp, err = svc.client.Create(ctx, &req)
 	if err == nil {
 		id = resp.Id
+		out = resp.Term
 	}
 	err = decodeError(err)
 	return

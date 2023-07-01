@@ -23,4 +23,5 @@ message TextConditionOutput {
   string id = 1;
   string key = 2;
   string term = 3;
+  bool exact = 4;
 }

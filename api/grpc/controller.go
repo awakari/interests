@@ -142,6 +142,7 @@ func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
 		dst = condition.NewTextCondition(
 			condition.NewKeyCondition(condition.NewCondition(src.Not), "", tc.GetKey()),
 			tc.GetTerm(),
+			tc.GetExact(),
 		)
 	default:
 		err = status.Error(codes.InvalidArgument, "unsupported condition type")
@@ -175,9 +176,10 @@ func encodeCondition(src condition.Condition, dst *common.ConditionOutput) {
 	case condition.TextCondition:
 		dst.Cond = &common.ConditionOutput_Tc{
 			Tc: &common.TextConditionOutput{
-				Id:   c.GetId(),
-				Key:  c.GetKey(),
-				Term: c.GetTerm(),
+				Id:    c.GetId(),
+				Key:   c.GetKey(),
+				Term:  c.GetTerm(),
+				Exact: c.IsExact(),
 			},
 		}
 	}

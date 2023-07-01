@@ -38,7 +38,7 @@ func Test_decodeSubscription(t *testing.T) {
 					Description: "description0",
 					Condition: condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-						"pattern0",
+						"pattern0", false,
 					),
 				},
 			},

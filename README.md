@@ -196,7 +196,8 @@ Payload:
                "not": true,
                "tc": {
                   "key": "key1", 
-                  "term": "term2"
+                  "term": "term2",
+                  "exact": true
                }
             }
          ]
@@ -360,12 +361,13 @@ subscription they need to delete it 1st and then create again.
 
 #### 5.2.1.3. Text Condition
 
-| Attribute | Type    | Description                                                                                                   |
-|-----------|---------|---------------------------------------------------------------------------------------------------------------|
-| id        | String  | Condition UUID (generated on creation)                                                                        |
-| not       | Boolean | Defines whether the conditions should act as a negation or not                                                |
-| key       | String  | Metadata key                                                                                                  |
-| term      | String  | Text value matching term(s)                                                                                   |
+| Attribute | Type    | Description                                                                  |
+|-----------|---------|------------------------------------------------------------------------------|
+| id        | String  | Condition UUID (generated on creation)                                       |
+| not       | Boolean | Defines whether the conditions should act as a negation or not               |
+| key       | String  | Metadata key                                                                 |
+| term      | String  | Text value matching term(s)                                                  |
+| exact     | Boolean | Defines whether the condition should match the complete input exactly or not |
 
 ### 5.2.2. Flow
 

@@ -19,17 +19,19 @@ func Test_decodeTextCondition(t *testing.T) {
 				Not: true,
 			},
 			raw: bson.M{
-				"id":                  "cond0",
-				textConditionAttrKey:  "key0",
-				textConditionAttrTerm: "pattern0",
+				"id":                   "cond0",
+				textConditionAttrKey:   "key0",
+				textConditionAttrTerm:  "pattern0",
+				textConditionAttrExact: true,
 			},
 			out: textCondition{
 				Base: ConditionBase{
 					Not: true,
 				},
-				Id:   "cond0",
-				Key:  "key0",
-				Term: "pattern0",
+				Id:    "cond0",
+				Key:   "key0",
+				Term:  "pattern0",
+				Exact: true,
 			},
 		},
 		"fails to decode \"partial\" attribute": {

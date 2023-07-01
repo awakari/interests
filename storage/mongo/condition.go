@@ -60,7 +60,7 @@ func decodeCondition(src Condition) (dst condition.Condition) {
 	case textCondition:
 		dstBase := condition.NewCondition(c.Base.Not)
 		dstKey := condition.NewKeyCondition(dstBase, c.Id, c.Key)
-		dst = condition.NewTextCondition(dstKey, c.Term)
+		dst = condition.NewTextCondition(dstKey, c.Term, c.Exact)
 	}
 	return dst
 }

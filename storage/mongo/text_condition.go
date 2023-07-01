@@ -8,15 +8,17 @@ import (
 )
 
 type textCondition struct {
-	Base ConditionBase `bson:"base"`
-	Id   string        `bson:"id"`
-	Key  string        `bson:"key"`
-	Term string        `bson:"term"`
+	Base  ConditionBase `bson:"base"`
+	Id    string        `bson:"id"`
+	Key   string        `bson:"key"`
+	Term  string        `bson:"term"`
+	Exact bool          `bson:"exact"`
 }
 
 const textConditionAttrId = "id"
 const textConditionAttrKey = "key"
 const textConditionAttrTerm = "term"
+const textConditionAttrExact = "exact"
 
 var _ Condition = (*textCondition)(nil)
 
@@ -45,6 +47,9 @@ func decodeTextCondition(baseCond ConditionBase, raw bson.M) (tc textCondition, 
 	}
 	if ok {
 		tc.Term, ok = raw[textConditionAttrTerm].(string)
+	}
+	if ok {
+		tc.Exact, _ = raw[textConditionAttrExact].(bool)
 	}
 	if !ok {
 		err = fmt.Errorf("%w: failed to decode the text condition %v", storage.ErrInternal, raw)
