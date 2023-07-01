@@ -79,6 +79,7 @@ func (s storageMock) SearchByCondition(ctx context.Context, condId string, consu
 			Condition: condition.NewTextCondition(
 				condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 				"pattern0",
+				false,
 			),
 		}
 		err = consumeFunc(&cm)

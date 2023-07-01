@@ -89,10 +89,11 @@ func (svc service) createCondition(ctx context.Context, cond condition.Condition
 			}
 		}
 	case condition.TextCondition:
-		var condId string
-		condId, err = svc.condTextSvc.Create(ctx, c.GetKey(), c.GetTerm())
+		var condId, condTerm string
+		condId, condTerm, err = svc.condTextSvc.Create(ctx, c.GetKey(), c.GetTerm(), c.IsExact())
 		if err == nil {
 			c.SetId(condId)
+			c.SetTerm(condTerm)
 		}
 	default:
 		err = fmt.Errorf("%w: unsupported condition type: %s", subscription.ErrInvalidSubscriptionCondition, reflect.TypeOf(cond))

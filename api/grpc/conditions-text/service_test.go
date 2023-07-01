@@ -12,11 +12,13 @@ func TestService_Create(t *testing.T) {
 	svc := NewService(newClientMock())
 	svc = NewServiceLogging(svc, slog.Default())
 	cases := map[string]struct {
-		key string
-		err error
+		key  string
+		term string
+		err  error
 	}{
 		"ok": {
-			key: "category",
+			key:  "category",
+			term: "cat0",
 		},
 		"fail": {
 			key: "fail",
@@ -30,9 +32,10 @@ func TestService_Create(t *testing.T) {
 	//
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			id, err := svc.Create(context.TODO(), c.key, "value")
+			id, out, err := svc.Create(context.TODO(), c.key, c.term, false)
 			if c.err == nil {
 				assert.Equal(t, c.key, id)
+				assert.Equal(t, c.term, out)
 			}
 			assert.ErrorIs(t, err, c.err)
 		})

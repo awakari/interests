@@ -11,7 +11,7 @@ func NewServiceMock() Service {
 	return serviceMock{}
 }
 
-func (sm serviceMock) Create(ctx context.Context, k, v string) (id string, err error) {
+func (sm serviceMock) Create(ctx context.Context, k, v string, exact bool) (id, out string, err error) {
 	switch k {
 	case "fail":
 		err = ErrInternal

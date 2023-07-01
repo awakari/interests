@@ -18,10 +18,10 @@ func NewServiceLogging(svc Service, log *slog.Logger) Service {
 	}
 }
 
-func (sl serviceLogging) Create(ctx context.Context, k, v string) (id string, err error) {
-	id, err = sl.svc.Create(ctx, k, v)
+func (sl serviceLogging) Create(ctx context.Context, k, v string, exact bool) (id, out string, err error) {
+	id, out, err = sl.svc.Create(ctx, k, v, exact)
 	ll := sl.logLevel(err)
-	sl.log.Log(ll, fmt.Sprintf("conditions_text.Create(k=%s, v=%s): id=%s, err=%s", k, v, id, err))
+	sl.log.Log(ll, fmt.Sprintf("conditions_text.Create(k=%s, v=%s, exact=%t): id=%s, out=%s, err=%s", k, v, exact, id, out, err))
 	return
 }
 

@@ -43,9 +43,10 @@ func Test_decodeGroupCondition(t *testing.T) {
 								"base": bson.M{
 									"not": false,
 								},
-								"id":   "cond3",
-								"key":  "k2",
-								"term": "p2",
+								"id":    "cond3",
+								"key":   "k2",
+								"term":  "p2",
+								"exact": true,
 							},
 						},
 						"logic": int32(condition.GroupLogicXor),
@@ -80,9 +81,10 @@ func Test_decodeGroupCondition(t *testing.T) {
 								},
 							},
 							textCondition{
-								Id:   "cond3",
-								Key:  "k2",
-								Term: "p2",
+								Id:    "cond3",
+								Key:   "k2",
+								Term:  "p2",
+								Exact: true,
 								Base: ConditionBase{
 									Not: false,
 								},

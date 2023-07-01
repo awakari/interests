@@ -62,7 +62,7 @@ func TestStorageImpl_Create(t *testing.T) {
 		Description: "test subscription 0",
 		Condition: condition.NewTextCondition(
 			condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-			"pattern0",
+			"pattern0", false,
 		),
 	})
 	assert.Nil(t, err)
@@ -84,13 +84,13 @@ func TestStorageImpl_Create(t *testing.T) {
 							condition.NewKeyCondition(
 								condition.NewCondition(true), "cond0", "key0",
 							),
-							"pattern0",
+							"pattern0", true,
 						),
 						condition.NewTextCondition(
 							condition.NewKeyCondition(
 								condition.NewCondition(false), "cond1", "key1",
 							),
-							"pattern1",
+							"pattern1", false,
 						),
 					},
 				),
@@ -105,11 +105,11 @@ func TestStorageImpl_Create(t *testing.T) {
 					[]condition.Condition{
 						condition.NewTextCondition(
 							condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-							"pattern0",
+							"pattern0", true,
 						),
 						condition.NewTextCondition(
 							condition.NewKeyCondition(condition.NewCondition(false), "cond1", "key0"),
-							"pattern0",
+							"pattern0", false,
 						),
 					},
 				),
@@ -149,7 +149,7 @@ func TestStorageImpl_Read(t *testing.T) {
 	//
 	cond0 := condition.NewTextCondition(
 		condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
-		"pattern0",
+		"pattern0", true,
 	)
 	id0, err := s.Create(ctx, "group0", "user0", subscription.Data{
 		Description: "test subscription 0",
@@ -226,7 +226,7 @@ func TestStorageImpl_Update(t *testing.T) {
 	//
 	cond0 := condition.NewTextCondition(
 		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-		"pattern0",
+		"pattern0", false,
 	)
 	id0, err := s.Create(ctx, "group0", "user0", subscription.Data{
 		Condition: cond0,
@@ -298,7 +298,7 @@ func TestStorageImpl_Delete(t *testing.T) {
 	//
 	cond0 := condition.NewTextCondition(
 		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-		"pattern0",
+		"pattern0", false,
 	)
 	id0, err := s.Create(ctx, "acc0", "user0", subscription.Data{
 		Condition: cond0,
@@ -372,7 +372,7 @@ func TestStorageImpl_SearchOwn(t *testing.T) {
 			condition.NewKeyCondition(
 				condition.NewCondition(i%4 == 0), fmt.Sprintf("cond%d", i), fmt.Sprintf("key%d", i%3),
 			),
-			fmt.Sprintf("pattern%d", i%3),
+			fmt.Sprintf("pattern%d", i%3), i%2 == 0,
 		)
 		sub := subscription.Data{
 			Description: fmt.Sprintf("description%d", i%2),
@@ -460,7 +460,7 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 			condition.NewKeyCondition(
 				condition.NewCondition(i%4 == 0), fmt.Sprintf("cond%d", i%5), fmt.Sprintf("key%d", i%3),
 			),
-			fmt.Sprintf("pattern%d", i%3),
+			fmt.Sprintf("pattern%d", i%3), i%2 == 0,
 		)
 		sub := subscription.Data{
 			Enabled:   i > 0,

@@ -45,11 +45,11 @@ func (sm serviceMock) Read(ctx context.Context, id, groupId, userId string) (sd 
 				[]condition.Condition{
 					condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
-						"pattern0",
+						"pattern0", false,
 					),
 					condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(true), "", "key1"),
-						"pattern1",
+						"pattern1", false,
 					),
 				},
 			),
@@ -94,7 +94,7 @@ func (sm serviceMock) SearchByCondition(ctx context.Context, condId string, cons
 			SubscriptionId: fmt.Sprintf("sub%d", i),
 			Condition: condition.NewTextCondition(
 				condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-				"pattern0",
+				"pattern0", false,
 			),
 		}
 		err = consumeFunc(&cm)

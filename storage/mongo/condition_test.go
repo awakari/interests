@@ -21,11 +21,13 @@ func Test_encodeCondition(t *testing.T) {
 					"key0",
 				),
 				"pattern0",
+				true,
 			),
 			dst: textCondition{
-				Id:   "cond0",
-				Key:  "key0",
-				Term: "pattern0",
+				Id:    "cond0",
+				Key:   "key0",
+				Term:  "pattern0",
+				Exact: true,
 				Base: ConditionBase{
 					Not: true,
 				},
@@ -45,6 +47,7 @@ func Test_encodeCondition(t *testing.T) {
 							"key0",
 						),
 						"pattern0",
+						false,
 					),
 					condition.NewTextCondition(
 						condition.NewKeyCondition(
@@ -52,6 +55,7 @@ func Test_encodeCondition(t *testing.T) {
 							"key1",
 						),
 						"pattern1",
+						true,
 					),
 				},
 			),
@@ -61,17 +65,19 @@ func Test_encodeCondition(t *testing.T) {
 				},
 				Group: []Condition{
 					textCondition{
-						Id:   "cond1",
-						Key:  "key0",
-						Term: "pattern0",
+						Id:    "cond1",
+						Key:   "key0",
+						Term:  "pattern0",
+						Exact: false,
 						Base: ConditionBase{
 							Not: true,
 						},
 					},
 					textCondition{
-						Id:   "cond2",
-						Key:  "key1",
-						Term: "pattern1",
+						Id:    "cond2",
+						Key:   "key1",
+						Term:  "pattern1",
+						Exact: true,
 						Base: ConditionBase{
 							Not: false,
 						},
@@ -293,6 +299,7 @@ func Test_decodeCondition(t *testing.T) {
 					"cond0", "key0",
 				),
 				"pattern0",
+				false,
 			),
 			src: textCondition{
 				Id:   "cond0",
@@ -310,11 +317,11 @@ func Test_decodeCondition(t *testing.T) {
 				[]condition.Condition{
 					condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(true), "cond1", "key0"),
-						"pattern0",
+						"pattern0", false,
 					),
 					condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "cond2", "key1"),
-						"pattern1",
+						"pattern1", true,
 					),
 				},
 			),
@@ -332,9 +339,10 @@ func Test_decodeCondition(t *testing.T) {
 						},
 					},
 					textCondition{
-						Id:   "cond2",
-						Key:  "key1",
-						Term: "pattern1",
+						Id:    "cond2",
+						Key:   "key1",
+						Term:  "pattern1",
+						Exact: true,
 						Base: ConditionBase{
 							Not: false,
 						},

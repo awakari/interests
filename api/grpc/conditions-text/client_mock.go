@@ -22,7 +22,8 @@ func (cm clientMock) Create(ctx context.Context, in *CreateRequest, opts ...grpc
 		err = status.Error(codes.AlreadyExists, "already exists")
 	default:
 		resp = &CreateResponse{
-			Id: in.Key,
+			Id:   in.Key,
+			Term: in.Term,
 		}
 	}
 	return

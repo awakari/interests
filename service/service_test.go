@@ -29,7 +29,7 @@ func TestService_Create(t *testing.T) {
 			Description: "pre-existing",
 			Condition: condition.NewTextCondition(
 				condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
-				"pattern0",
+				"pattern0", false,
 			),
 		},
 	)
@@ -47,7 +47,7 @@ func TestService_Create(t *testing.T) {
 				Description: "my subscription",
 				Condition: condition.NewTextCondition(
 					condition.NewKeyCondition(condition.NewCondition(false), "", "conflict"),
-					"locked",
+					"locked", false,
 				),
 			},
 			err: ErrShouldRetry,
@@ -60,7 +60,7 @@ func TestService_Create(t *testing.T) {
 						condition.NewCondition(false),
 						"", "fail",
 					),
-					"fail",
+					"fail", false,
 				),
 			},
 			err: ErrInternal,
@@ -70,7 +70,7 @@ func TestService_Create(t *testing.T) {
 				Description: "my subscription",
 				Condition: condition.NewTextCondition(
 					condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
-					"ok",
+					"ok", false,
 				),
 			},
 		},
@@ -107,7 +107,7 @@ func TestService_Read(t *testing.T) {
 			Description: "pre existing",
 			Condition: condition.NewTextCondition(
 				condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
-				"pattern0",
+				"pattern0", false,
 			),
 		},
 	)
@@ -126,7 +126,7 @@ func TestService_Read(t *testing.T) {
 				Description: "pre existing",
 				Condition: condition.NewTextCondition(
 					condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
-					"pattern0",
+					"pattern0", false,
 				),
 			},
 		},
@@ -172,14 +172,14 @@ func TestService_Delete(t *testing.T) {
 							condition.NewCondition(false),
 							"", "key0",
 						),
-						"pattern0",
+						"pattern0", false,
 					),
 					condition.NewTextCondition(
 						condition.NewKeyCondition(
 							condition.NewCondition(true),
 							"", "key1",
 						),
-						"pattern1",
+						"pattern1", false,
 					),
 				},
 			),
@@ -201,14 +201,14 @@ func TestService_Delete(t *testing.T) {
 							condition.NewCondition(false),
 							"", "key0",
 						),
-						"pattern0",
+						"pattern0", false,
 					),
 					condition.NewTextCondition(
 						condition.NewKeyCondition(
 							condition.NewCondition(true),
 							"", "fail_lock",
 						),
-						"pattern0",
+						"pattern0", false,
 					),
 				},
 			),
@@ -260,7 +260,7 @@ func TestService_SearchByCondition(t *testing.T) {
 				condition.NewKeyCondition(
 					condition.NewCondition(false), fmt.Sprintf("cond%d", i%3), fmt.Sprintf("key%d", i%4),
 				),
-				fmt.Sprintf("pattern%d", i%5),
+				fmt.Sprintf("pattern%d", i%5), false,
 			),
 		}
 		_, err := svc.Create(ctx, "acc0", "user0", req)
@@ -316,7 +316,7 @@ func TestService_SearchOwn(t *testing.T) {
 				condition.NewKeyCondition(
 					condition.NewCondition(false), "", fmt.Sprintf("key%d", i%4),
 				),
-				fmt.Sprintf("pattern%d", i%5),
+				fmt.Sprintf("pattern%d", i%5), false,
 			),
 		}
 		_, err := svc.Create(ctx, fmt.Sprintf("acc%d", i%3), fmt.Sprintf("user%d", i%3), req)

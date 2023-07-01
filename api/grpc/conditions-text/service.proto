@@ -18,10 +18,12 @@ service Service {
 message CreateRequest {
   string key = 1;
   string term = 2;
+  bool exact = 3;
 }
 
 message CreateResponse {
   string id = 1;
+  string term = 2;
 }
 
 message LockCreateRequest {
