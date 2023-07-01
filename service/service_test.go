@@ -392,7 +392,7 @@ func conditionsDataEqual(a, b condition.Condition) (equal bool) {
 			case condition.GroupCondition:
 				equal = false
 			case condition.TextCondition:
-				equal = at.GetKey() == bt.GetKey() && at.GetTerm() == bt.GetTerm()
+				equal = at.GetKey() == bt.GetKey() && at.GetTerm() == bt.GetTerm() && at.IsExact() == bt.IsExact()
 			default:
 				equal = false
 			}

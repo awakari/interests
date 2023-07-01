@@ -18,9 +18,9 @@ func (sm serviceMock) Create(ctx context.Context, k, v string, exact bool) (id, 
 	case "conflict":
 		err = ErrConflict
 	case "fail_lock":
-		id = "fail_lock"
+		id, out = "fail_lock", v
 	default:
-		id = "cond0"
+		id, out = "cond0", v
 	}
 	return
 }
