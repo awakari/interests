@@ -176,10 +176,8 @@ grpcurl \
 Payload:
 ```json
 {
-   "md": {
-      "description": "my subscription 1",
-      "enabled": true
-   }, 
+   "description": "my subscription 1",
+   "enabled": true,
    "cond": {
       "not": false,
       "gc": {
@@ -309,33 +307,6 @@ grpcurl \
 ### 5.2.1. Data Schema
 
 Subscriptions are stored in the single table under the denormalized schema.
-
-Example data:
-
-```yaml
-- id: "2f63ea52-a66c-4b93-92f1-12aa2831cd2c"
-  descr: Anything related to orders that are not in Helsinki
-  enabled: true
-  groupId: "group0"
-  userId: "user0"
-  cond:
-    base:
-      not: false
-    logic: "And"
-    group:
-    - id: "14cadd71-c662-4f1a-8b0f-3b17dfb107f5"
-      base:
-        not: false
-      partial: true
-      key: "subject"
-      pattern: "orders"
-    - id: "c00e1228-fd78-4761-8f59-fbbfa690b9a9"
-      base:
-        not: true
-      partial: false
-      key: "location"
-      pattern: "Helsinki"
-```
 
 #### 5.2.1.1. Subscription
 
