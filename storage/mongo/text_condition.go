@@ -31,9 +31,10 @@ func encodeTextCondition(src condition.TextCondition) (dst textCondition, ids []
 		Base: ConditionBase{
 			Not: src.IsNot(),
 		},
-		Id:   id,
-		Key:  key,
-		Term: term,
+		Id:    id,
+		Key:   key,
+		Term:  term,
+		Exact: src.IsExact(),
 	}
 	return
 }
