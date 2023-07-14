@@ -15,6 +15,7 @@ cover.tmp
 
 # Dependency directories (remove the comment below to include it)
 vendor/
+*.pb.go
 
 helm/subscriptions/values-dev.yaml
 ghcr_io_pat.txt
