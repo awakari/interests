@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/awakari/subscriptions/api/grpc/common"
-	"github.com/awakari/subscriptions/service"
+	"github.com/awakari/subscriptions/model/subscription"
+	"github.com/awakari/subscriptions/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slog"
@@ -24,10 +25,10 @@ const port = 50051
 var log = slog.Default()
 
 func TestMain(m *testing.M) {
-	svc := service.NewServiceMock()
-	svc = service.NewLoggingMiddleware(svc, log)
+	stor := storage.NewStorageMock(make(map[string]subscription.Data))
+	stor = storage.NewLoggingMiddleware(stor, log)
 	go func() {
-		err := Serve(svc, port)
+		err := Serve(stor, port)
 		if err != nil {
 			log.Error("", err)
 		}
@@ -45,7 +46,7 @@ func TestServiceController_Create(t *testing.T) {
 	//
 	cases := map[string]struct {
 		md   []string
-		cond *ConditionInput
+		cond *Condition
 		err  error
 	}{
 		"ok1": {
@@ -53,9 +54,9 @@ func TestServiceController_Create(t *testing.T) {
 				"x-awakari-group-id", "group0",
 				"X-Awakari-User-ID", "user0",
 			},
-			cond: &ConditionInput{
-				Cond: &ConditionInput_Tc{
-					Tc: &TextConditionInput{},
+			cond: &Condition{
+				Cond: &Condition_Tc{
+					Tc: &TextCondition{},
 				},
 			},
 		},
@@ -64,16 +65,16 @@ func TestServiceController_Create(t *testing.T) {
 				"x-awakari-group-id", "group0",
 				"X-Awakari-User-ID", "user0",
 			},
-			cond: &ConditionInput{
+			cond: &Condition{
 				Not: false,
-				Cond: &ConditionInput_Gc{
-					Gc: &GroupConditionInput{
+				Cond: &Condition_Gc{
+					Gc: &GroupCondition{
 						Logic: common.GroupLogic_And,
-						Group: []*ConditionInput{
+						Group: []*Condition{
 							{
 								Not: true,
-								Cond: &ConditionInput_Tc{
-									Tc: &TextConditionInput{
+								Cond: &Condition_Tc{
+									Tc: &TextCondition{
 										Key:  "key0",
 										Term: "pattern0",
 									},
@@ -81,8 +82,8 @@ func TestServiceController_Create(t *testing.T) {
 							},
 							{
 								Not: false,
-								Cond: &ConditionInput_Tc{
-									Tc: &TextConditionInput{
+								Cond: &Condition_Tc{
+									Tc: &TextCondition{
 										Key:  "key1",
 										Term: "pattern1",
 									},
@@ -99,45 +100,21 @@ func TestServiceController_Create(t *testing.T) {
 				"X-Awakari-User-ID", "user0",
 			},
 
-			cond: &ConditionInput{
-				Cond: &ConditionInput_Tc{
-					Tc: &TextConditionInput{},
+			cond: &Condition{
+				Cond: &Condition_Tc{
+					Tc: &TextCondition{},
 				},
 			},
-			err: status.Error(codes.Internal, "internal failure"),
-		},
-		"invalid": {
-			md: []string{
-				"x-awakari-group-id", "group0",
-				"X-Awakari-User-ID", "user0",
-			},
-			cond: &ConditionInput{
-				Cond: &ConditionInput_Tc{
-					Tc: &TextConditionInput{},
-				},
-			},
-			err: status.Error(codes.InvalidArgument, "invalid subscription condition"),
-		},
-		"busy": {
-			md: []string{
-				"x-awakari-group-id", "group0",
-				"X-Awakari-User-ID", "user0",
-			},
-			cond: &ConditionInput{
-				Cond: &ConditionInput_Tc{
-					Tc: &TextConditionInput{},
-				},
-			},
-			err: status.Error(codes.Unavailable, "retry the operation"),
+			err: status.Error(codes.Internal, "internal subscription storage failure"),
 		},
 		"empty group": {
 			md: []string{
 				"x-awakari-group-id", "",
 				"X-Awakari-User-ID", "user0",
 			},
-			cond: &ConditionInput{
-				Cond: &ConditionInput_Tc{
-					Tc: &TextConditionInput{},
+			cond: &Condition{
+				Cond: &Condition_Tc{
+					Tc: &TextCondition{},
 				},
 			},
 			err: status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
@@ -147,17 +124,17 @@ func TestServiceController_Create(t *testing.T) {
 				"x-awakari-group-id", "group0",
 				"X-Awakari-User-ID", "",
 			},
-			cond: &ConditionInput{
-				Cond: &ConditionInput_Tc{
-					Tc: &TextConditionInput{},
+			cond: &Condition{
+				Cond: &Condition_Tc{
+					Tc: &TextCondition{},
 				},
 			},
 			err: status.Error(codes.Unauthenticated, "missing value for x-awakari-user-id in request metadata"),
 		},
 		"no auth info": {
-			cond: &ConditionInput{
-				Cond: &ConditionInput_Tc{
-					Tc: &TextConditionInput{},
+			cond: &Condition{
+				Cond: &Condition_Tc{
+					Tc: &TextCondition{},
 				},
 			},
 			err: status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
@@ -196,16 +173,16 @@ func TestServiceController_Read(t *testing.T) {
 			auth: true,
 			sub: &ReadResponse{
 				Description: "description",
-				Cond: &common.ConditionOutput{
+				Cond: &Condition{
 					Not: false,
-					Cond: &common.ConditionOutput_Gc{
-						Gc: &common.GroupConditionOutput{
+					Cond: &Condition_Gc{
+						Gc: &GroupCondition{
 							Logic: common.GroupLogic_And,
-							Group: []*common.ConditionOutput{
+							Group: []*Condition{
 								{
 									Not: false,
-									Cond: &common.ConditionOutput_Tc{
-										Tc: &common.TextConditionOutput{
+									Cond: &Condition_Tc{
+										Tc: &TextCondition{
 											Key:  "key0",
 											Term: "pattern0",
 										},
@@ -213,8 +190,8 @@ func TestServiceController_Read(t *testing.T) {
 								},
 								{
 									Not: true,
-									Cond: &common.ConditionOutput_Tc{
-										Tc: &common.TextConditionOutput{
+									Cond: &Condition_Tc{
+										Tc: &TextCondition{
 											Key:  "key1",
 											Term: "pattern1",
 										},
@@ -228,7 +205,7 @@ func TestServiceController_Read(t *testing.T) {
 		},
 		"fail": {
 			auth: true,
-			err:  status.Error(codes.Internal, "internal failure"),
+			err:  status.Error(codes.Internal, "internal subscription storage failure"),
 		},
 		"missing": {
 			auth: true,
@@ -289,7 +266,7 @@ func TestServiceController_Update(t *testing.T) {
 		},
 		"fail": {
 			auth: true,
-			err:  status.Error(codes.Internal, "internal failure"),
+			err:  status.Error(codes.Internal, "internal subscription storage failure"),
 		},
 		"missing": {
 			auth: true,
@@ -337,7 +314,7 @@ func TestServiceController_Delete(t *testing.T) {
 		},
 		"fail": {
 			auth: true,
-			err:  status.Error(codes.Internal, "internal failure"),
+			err:  status.Error(codes.Internal, "internal subscription storage failure"),
 		},
 		"missing": {
 			auth: true,
@@ -386,7 +363,7 @@ func TestServiceController_SearchOwn(t *testing.T) {
 		},
 		"fail": {
 			auth: true,
-			err:  status.Error(codes.Internal, "internal failure"),
+			err:  status.Error(codes.Internal, "internal subscription storage failure"),
 		},
 		"no auth": {
 			auth: false,

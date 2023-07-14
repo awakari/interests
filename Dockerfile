@@ -1,4 +1,4 @@
-FROM golang:1.20.2-alpine3.17 AS builder
+FROM golang:1.20.6-alpine3.18 AS builder
 WORKDIR /go/src/subscriptions
 COPY . .
 RUN \

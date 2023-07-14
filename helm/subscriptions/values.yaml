@@ -94,11 +94,6 @@ db:
   tls:
     enabled: false
     insecure: false
-# Dependency services
-api:
-  uri:
-    conditions:
-      text: "conditions-text:50051"
 log:
   # https://pkg.go.dev/golang.org/x/exp/slog#Level
   level: -4

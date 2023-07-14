@@ -30,10 +30,7 @@
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.1. [Subscription](#5211-subscription)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.2. [Group Condition](#5212-group-condition)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.3. [Text Condition](#5213-text-condition)<br/>
-   &nbsp;&nbsp;&nbsp;5.2.2 [Flow](#522-flow)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.2.1. [Create](#5221-create)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.2.2. [Delete](#5222-delete)<br/>
-   5.3. [Limitations](#53-limitations)<br/>
+   5.2. [Limitations](#52-limitations)<br/>
 6. [Contributing](#6-contributing)<br/>
    6.1. [Versioning](#61-versioning)<br/>
    6.2. [Issue Reporting](#62-issue-reporting)<br/>
@@ -94,7 +91,6 @@ The service is configurable using the environment variables:
 | DB_USERNAME               | `subscriptions`                                        | DB connection username                                                               |
 | DB_PASSWORD               | `subscriptions`                                        | DB connection password                                                               |
 | DB_TABLE_NAME             | `subscriptions`                                        | DB table name to store the data                                                      |
-| API_COND_TEXT_URI         | `conditions-text:50051`                                | [Conditions Text](https://github.com/awakari/conditions-text) dependency service URI |
 
 # 3. Deployment
 
@@ -186,6 +182,7 @@ Payload:
             {
                "not": false,
                "tc": {
+                  "id": "cond0",
                   "key": "key0", 
                   "term": "term0 term1"
                }
@@ -193,6 +190,7 @@ Payload:
             {
                "not": true,
                "tc": {
+                  "id": "cond1",
                   "key": "key1", 
                   "term": "term2",
                   "exact": true
@@ -340,99 +338,11 @@ subscription they need to delete it 1st and then create again.
 | term      | String  | Text value matching term(s)                                                  |
 | exact     | Boolean | Defines whether the condition should match the complete input exactly or not |
 
-### 5.2.2. Flow
+## 5.2. Limitations
 
-#### 5.2.2.1. Create
-
-```mermaid
-%%{init: {'theme': 'neutral' } }%%
-sequenceDiagram
-
-    autonumber
-
-    actor API Gateway
-    participant Subscriptions
-    participant Conditions
-
-    API Gateway->>Subscriptions: Create
-
-    activate Subscriptions
-    Subscriptions->>Subscriptions: Insert to Storage
-    loop Condition and its children
-    
-        Subscriptions->>Conditions: Create
-        deactivate Subscriptions
-        
-        activate Conditions
-        Conditions->>Conditions: Upsert
-        Conditions-->>Subscriptions: Ack
-        deactivate Conditions
-        
-        activate  Subscriptions
-    
-    end
-    Subscriptions-->>API Gateway: Ack
-    deactivate Subscriptions
-```
-
-#### 5.2.2.2. Delete
-
-```mermaid
-%%{init: {'theme': 'neutral' } }%%
-sequenceDiagram
-
-    autonumber
-
-    actor API Gateway
-    participant Subscriptions
-    participant Conditions
-
-    API Gateway->>Subscriptions: Delete
-
-    activate Subscriptions
-    Subscriptions->>Subscriptions: Delete from Storage
-    loop Condition and its children
-    
-        Subscriptions->>Conditions: Lock Create
-        deactivate Subscriptions
-        
-        activate Conditions
-        Conditions->>Conditions: Lock Create in Storage
-        Conditions-->>Subscriptions: Ack
-        deactivate Conditions
-        
-        activate Subscriptions
-        Subscriptions->>Subscriptions: Check Condition not in use
-        Subscriptions->>Conditions: Delete
-        deactivate Subscriptions
-        
-        activate Conditions
-        Conditions-->>Subscriptions: Ack
-        deactivate Conditions
-        
-        activate Subscriptions
-        Subscriptions->>Conditions: Unlock Create
-        deactivate Subscriptions
-        
-        activate Conditions
-        Conditions->>Conditions: Unlock Create in Storage
-        Conditions-->>Subscriptions: Ack
-        deactivate Conditions
-        
-        activate Subscriptions
-        
-    end
-    Subscriptions-->>API Gateway: Ack
-    deactivate Subscriptions
-```
-
-
-## 5.3. Limitations
-
-| #     | Summary                                    | Description                                                                                                            |
-|-------|--------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| LIM-1 | Root condition negation is not allowed     | A subscription should not have root negation condition. Otherwise the subscription never matches anything in practice. |
-| LIM-2 | Optional condition negation is not allowed | TODO: A negation condition in the group with "Or"/"Xor" group logic doesn't have any effect                            |
+| #     | Summary                                    | Description                                                                                 |
+|-------|--------------------------------------------|---------------------------------------------------------------------------------------------|
+| LIM-1 | TODO                                       | TODO                                                                                        |
 
 # 6. Contributing
 

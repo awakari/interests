@@ -7,19 +7,12 @@ import (
 
 type Config struct {
 	Api struct {
-		Port       uint16 `envconfig:"API_PORT" default:"50051" required:"true"`
-		Conditions struct {
-			Text TextConfig
-		}
+		Port uint16 `envconfig:"API_PORT" default:"50051" required:"true"`
 	}
 	Db  DbConfig
 	Log struct {
 		Level slog.Level `envconfig:"LOG_LEVEL" default:"-4" required:"true"`
 	}
-}
-
-type TextConfig struct {
-	Uri string `envconfig:"API_COND_TEXT_URI" default:"conditions-text:50051" required:"true"`
 }
 
 type DbConfig struct {

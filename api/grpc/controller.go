@@ -6,18 +6,18 @@ import (
 	"github.com/awakari/subscriptions/api/grpc/common"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
-	"github.com/awakari/subscriptions/service"
+	"github.com/awakari/subscriptions/storage"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type serviceController struct {
-	svc service.Service
+	stor storage.Storage
 }
 
-func NewServiceController(svc service.Service) ServiceServer {
+func NewServiceController(stor storage.Storage) ServiceServer {
 	return serviceController{
-		svc: svc,
+		stor: stor,
 	}
 }
 
@@ -35,7 +35,7 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 				Enabled:     req.Enabled,
 				Condition:   cond,
 			}
-			resp.Id, err = sc.svc.Create(ctx, groupId, userId, sd)
+			resp.Id, err = sc.stor.Create(ctx, groupId, userId, sd)
 		}
 		err = encodeError(err)
 	}
@@ -49,9 +49,9 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
 		var sd subscription.Data
-		sd, err = sc.svc.Read(ctx, req.Id, groupId, userId)
+		sd, err = sc.stor.Read(ctx, req.Id, groupId, userId)
 		if err == nil {
-			resp.Cond = &common.ConditionOutput{}
+			resp.Cond = &Condition{}
 			encodeCondition(sd.Condition, resp.Cond)
 			resp.Description = sd.Description
 			resp.Enabled = sd.Enabled
@@ -71,7 +71,7 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 			Description: req.Description,
 			Enabled:     req.Enabled,
 		}
-		err = sc.svc.Update(ctx, req.Id, groupId, userId, sd)
+		err = sc.stor.Update(ctx, req.Id, groupId, userId, sd)
 		err = encodeError(err)
 	}
 	return
@@ -83,7 +83,12 @@ func (sc serviceController) Delete(ctx context.Context, req *DeleteRequest) (res
 	var userId string
 	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
-		err = sc.svc.Delete(ctx, req.Id, groupId, userId)
+		var sd subscription.Data
+		sd, err = sc.stor.Delete(ctx, req.Id, groupId, userId)
+		if err == nil {
+			resp.Cond = &Condition{}
+			encodeCondition(sd.Condition, resp.Cond)
+		}
 		err = encodeError(err)
 	}
 	return
@@ -100,7 +105,7 @@ func (sc serviceController) SearchOwn(ctx context.Context, req *SearchOwnRequest
 			UserId:  userId,
 			Limit:   req.Limit,
 		}
-		resp.Ids, err = sc.svc.SearchOwn(ctx, q, req.Cursor)
+		resp.Ids, err = sc.stor.SearchOwn(ctx, q, req.Cursor)
 		err = encodeError(err)
 	}
 	return
@@ -111,14 +116,14 @@ func (sc serviceController) SearchByCondition(req *SearchByConditionRequest, str
 	sendToStreamFunc := func(cm *subscription.ConditionMatch) (err error) {
 		return sendToStream(cm, stream)
 	}
-	err = sc.svc.SearchByCondition(ctx, req.CondId, sendToStreamFunc)
+	err = sc.stor.SearchByCondition(ctx, req.CondId, sendToStreamFunc)
 	if err != nil {
 		err = status.Error(codes.Internal, err.Error())
 	}
 	return
 }
 
-func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
+func decodeCondition(src *Condition) (dst condition.Condition, err error) {
 	gc, tc := src.GetGc(), src.GetTc()
 	switch {
 	case gc != nil:
@@ -140,7 +145,7 @@ func decodeCondition(src *ConditionInput) (dst condition.Condition, err error) {
 		}
 	case tc != nil:
 		dst = condition.NewTextCondition(
-			condition.NewKeyCondition(condition.NewCondition(src.Not), "", tc.GetKey()),
+			condition.NewKeyCondition(condition.NewCondition(src.Not), tc.GetId(), tc.GetKey()),
 			tc.GetTerm(),
 			tc.GetExact(),
 		)
@@ -157,25 +162,25 @@ func sendToStream(cm *subscription.ConditionMatch, server Service_SearchByCondit
 	return
 }
 
-func encodeCondition(src condition.Condition, dst *common.ConditionOutput) {
+func encodeCondition(src condition.Condition, dst *Condition) {
 	dst.Not = src.IsNot()
 	switch c := src.(type) {
 	case condition.GroupCondition:
-		var dstGroup []*common.ConditionOutput
+		var dstGroup []*Condition
 		for _, childSrc := range c.GetGroup() {
-			var childDst common.ConditionOutput
+			var childDst Condition
 			encodeCondition(childSrc, &childDst)
 			dstGroup = append(dstGroup, &childDst)
 		}
-		dst.Cond = &common.ConditionOutput_Gc{
-			Gc: &common.GroupConditionOutput{
+		dst.Cond = &Condition_Gc{
+			Gc: &GroupCondition{
 				Logic: common.GroupLogic(c.GetLogic()),
 				Group: dstGroup,
 			},
 		}
 	case condition.TextCondition:
-		dst.Cond = &common.ConditionOutput_Tc{
-			Tc: &common.TextConditionOutput{
+		dst.Cond = &Condition_Tc{
+			Tc: &TextCondition{
 				Id:    c.GetId(),
 				Key:   c.GetKey(),
 				Term:  c.GetTerm(),
@@ -188,7 +193,7 @@ func encodeCondition(src condition.Condition, dst *common.ConditionOutput) {
 
 func encodeConditionMatch(src *subscription.ConditionMatch, dst *SearchByConditionResponse) {
 	dst.Id = src.SubscriptionId
-	dst.Cond = &common.ConditionOutput{}
+	dst.Cond = &Condition{}
 	encodeCondition(src.Condition, dst.Cond)
 }
 
@@ -196,13 +201,9 @@ func encodeError(svcErr error) (err error) {
 	switch {
 	case svcErr == nil:
 		err = nil
-	case errors.Is(svcErr, service.ErrInternal):
+	case errors.Is(svcErr, storage.ErrInternal):
 		err = status.Error(codes.Internal, svcErr.Error())
-	case errors.Is(svcErr, subscription.ErrInvalidSubscriptionCondition):
-		err = status.Error(codes.InvalidArgument, svcErr.Error())
-	case errors.Is(svcErr, service.ErrShouldRetry):
-		err = status.Error(codes.Unavailable, svcErr.Error())
-	case errors.Is(svcErr, service.ErrNotFound):
+	case errors.Is(svcErr, storage.ErrNotFound):
 		err = status.Error(codes.NotFound, svcErr.Error())
 	default:
 		err = status.Error(codes.Internal, svcErr.Error())

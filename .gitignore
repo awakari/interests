@@ -15,12 +15,6 @@ cover.tmp
 
 # Dependency directories (remove the comment below to include it)
 vendor/
-**/*.pb.go
-**/*.krproj
-**/*.krpref
-**/*.krenv
-**/*.krop
-api/grpc/*-request.json
 
 helm/subscriptions/values-dev.yaml
 ghcr_io_pat.txt

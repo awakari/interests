@@ -5,7 +5,6 @@ package awakari.subscriptions;
 option go_package = "./api/grpc";
 
 import "api/grpc/common/group_logic.proto";
-import "api/grpc/common/condition_output.proto";
 
 service Service {
 
@@ -14,8 +13,6 @@ service Service {
   rpc Update(UpdateRequest) returns (UpdateResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc SearchOwn(SearchOwnRequest) returns (SearchOwnResponse);
-
-  // used internally by writer
   rpc SearchByCondition(SearchByConditionRequest) returns (stream SearchByConditionResponse);
 }
 
@@ -24,27 +21,27 @@ service Service {
 message CreateRequest {
   string description = 1;
   bool enabled = 2;
-  ConditionInput cond = 3;
+  Condition cond = 3;
 }
 
-// ConditionInput represents the Subscription routing Condition data that is immutable once Subscription is created.
-message ConditionInput {
+message Condition {
   bool not = 1;
   oneof cond {
-    GroupConditionInput gc = 2;
-    TextConditionInput tc = 3;
+    GroupCondition gc = 2;
+    TextCondition tc = 3;
   }
 }
 
-message GroupConditionInput {
+message GroupCondition {
   common.GroupLogic logic = 1;
-  repeated ConditionInput group = 2;
+  repeated Condition group = 2;
 }
 
-message TextConditionInput {
-  string key = 1;
-  string term = 2;
-  bool exact = 3;
+message TextCondition {
+  string id = 1;
+  string key = 2;
+  string term = 3;
+  bool exact = 4;
 }
 
 message CreateResponse {
@@ -60,7 +57,7 @@ message ReadRequest {
 message ReadResponse {
   string description = 1;
   bool enabled = 2;
-  common.ConditionOutput cond = 3;
+  Condition cond = 3;
 }
 
 // Update
@@ -81,6 +78,7 @@ message DeleteRequest {
 }
 
 message DeleteResponse {
+  Condition cond = 1;
 }
 
 // SearchOwn
@@ -102,5 +100,5 @@ message SearchByConditionRequest {
 
 message SearchByConditionResponse {
   string id = 1;
-  common.ConditionOutput cond = 2;
+  Condition cond = 2;
 }
