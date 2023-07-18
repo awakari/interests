@@ -13,7 +13,7 @@ service Service {
   rpc Update(UpdateRequest) returns (UpdateResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc SearchOwn(SearchOwnRequest) returns (SearchOwnResponse);
-  rpc SearchByCondition(SearchByConditionRequest) returns (stream SearchByConditionResponse);
+  rpc SearchByCondition(SearchByConditionRequest) returns (SearchByConditionResponse);
 }
 
 // Create
@@ -96,9 +96,15 @@ message SearchOwnResponse {
 
 message SearchByConditionRequest {
   string condId = 1;
+  uint32 limit = 2;
+  string cursor = 3;
 }
 
 message SearchByConditionResponse {
+  repeated SearchByConditionResult page = 1;
+}
+
+message SearchByConditionResult {
   string id = 1;
   Condition cond = 2;
 }

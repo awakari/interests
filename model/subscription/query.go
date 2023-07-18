@@ -5,3 +5,8 @@ type QueryOwn struct {
 	GroupId string
 	UserId  string
 }
+
+type QueryByCondition struct {
+	CondId string
+	Limit  uint32
+}

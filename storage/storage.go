@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"github.com/awakari/subscriptions/model/subscription"
-	"github.com/awakari/subscriptions/util"
 	"io"
 )
 
@@ -33,7 +32,7 @@ type (
 
 		// SearchByCondition finds all subscriptions those match the specified condition id and feeds these to the
 		// specified consumer func.
-		SearchByCondition(ctx context.Context, condId string, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error)
+		SearchByCondition(ctx context.Context, q subscription.QueryByCondition, cursor string) (page []subscription.ConditionMatch, err error)
 	}
 )
 

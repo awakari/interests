@@ -281,7 +281,7 @@ Example:
 grpcurl \
   -plaintext \
   -proto api/grpc/private/service.proto \
-  -d '{"condId": "14cadd71-c662-4f1a-8b0f-3b17dfb107f5"}' \
+  -d '{"condId": "14cadd71-c662-4f1a-8b0f-3b17dfb107f5", "limit": 16}' \
   localhost:50051 \
   awakari.subscriptions.private.Service/SearchByCondition
 ```

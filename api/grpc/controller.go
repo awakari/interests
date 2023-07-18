@@ -111,15 +111,22 @@ func (sc serviceController) SearchOwn(ctx context.Context, req *SearchOwnRequest
 	return
 }
 
-func (sc serviceController) SearchByCondition(req *SearchByConditionRequest, stream Service_SearchByConditionServer) (err error) {
-	ctx := stream.Context()
-	sendToStreamFunc := func(cm *subscription.ConditionMatch) (err error) {
-		return sendToStream(cm, stream)
+func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchByConditionRequest) (resp *SearchByConditionResponse, err error) {
+	q := subscription.QueryByCondition{
+		CondId: req.CondId,
+		Limit:  req.Limit,
 	}
-	err = sc.stor.SearchByCondition(ctx, req.CondId, sendToStreamFunc)
-	if err != nil {
-		err = status.Error(codes.Internal, err.Error())
+	var page []subscription.ConditionMatch
+	page, err = sc.stor.SearchByCondition(ctx, q, req.Cursor)
+	if err == nil {
+		resp = &SearchByConditionResponse{}
+		for _, cm := range page {
+			result := SearchByConditionResult{}
+			encodeConditionMatch(cm, &result)
+			resp.Page = append(resp.Page, &result)
+		}
 	}
+	err = encodeError(err)
 	return
 }
 
@@ -155,13 +162,6 @@ func decodeCondition(src *Condition) (dst condition.Condition, err error) {
 	return
 }
 
-func sendToStream(cm *subscription.ConditionMatch, server Service_SearchByConditionServer) (err error) {
-	var resp SearchByConditionResponse
-	encodeConditionMatch(cm, &resp)
-	err = server.Send(&resp)
-	return
-}
-
 func encodeCondition(src condition.Condition, dst *Condition) {
 	dst.Not = src.IsNot()
 	switch c := src.(type) {
@@ -191,7 +191,7 @@ func encodeCondition(src condition.Condition, dst *Condition) {
 	return
 }
 
-func encodeConditionMatch(src *subscription.ConditionMatch, dst *SearchByConditionResponse) {
+func encodeConditionMatch(src subscription.ConditionMatch, dst *SearchByConditionResult) {
 	dst.Id = src.SubscriptionId
 	dst.Cond = &Condition{}
 	encodeCondition(src.Condition, dst.Cond)

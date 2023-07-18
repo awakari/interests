@@ -8,7 +8,6 @@ import (
 	"github.com/awakari/subscriptions/config"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/storage"
-	"github.com/awakari/subscriptions/util"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -73,26 +72,19 @@ var (
 				SetSparse(true),
 		},
 	}
-	optsSrvApi = options.ServerAPI(options.ServerAPIVersion1)
-	projData   = bson.D{
+	projId = bson.D{
+		{
+			Key:   attrId,
+			Value: 1,
+		},
+	}
+	projData = bson.D{
 		{
 			Key:   attrDescr,
 			Value: 1,
 		},
 		{
 			Key:   attrCond,
-			Value: 1,
-		},
-	}
-	optsRead = options.
-			FindOne().
-			SetProjection(projData)
-	optsDelete = options.
-			FindOneAndDelete().
-			SetProjection(projData)
-	projId = bson.D{
-		{
-			Key:   attrId,
 			Value: 1,
 		},
 	}
@@ -110,6 +102,19 @@ var (
 			Value: 1,
 		},
 	}
+	optsSrvApi = options.
+			ServerAPI(options.ServerAPIVersion1)
+	optsRead = options.
+			FindOne().
+			SetProjection(projData)
+	optsDelete = options.
+			FindOneAndDelete().
+			SetProjection(projData)
+	optsSearchByCond = options.
+				Find().
+				SetProjection(projSearchByCondId).
+				SetShowRecordID(false).
+				SetSort(projId)
 )
 
 func NewStorage(ctx context.Context, cfgDb config.DbConfig) (s storage.Storage, err error) {
@@ -276,38 +281,34 @@ func (s storageImpl) SearchOwn(ctx context.Context, q subscription.QueryOwn, cur
 	return
 }
 
-func (s storageImpl) SearchByCondition(ctx context.Context, condId string, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
+func (s storageImpl) SearchByCondition(ctx context.Context, q subscription.QueryByCondition, cursor string) (page []subscription.ConditionMatch, err error) {
 	dbQuery := bson.M{
-		attrCondIds: condId,
+		attrId: bson.M{
+			"$gt": cursor,
+		},
+		attrCondIds: q.CondId,
 		attrEnabled: true,
 	}
-	opts := options.
-		Find().
-		SetProjection(projSearchByCondId).
-		SetShowRecordID(false)
+	opts := optsSearchByCond.SetLimit(int64(q.Limit))
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, dbQuery, opts)
 	if err != nil {
 		err = fmt.Errorf("%w: failed to find: query=%+v, %s", storage.ErrInternal, dbQuery, err)
 	} else {
 		defer cur.Close(ctx)
-		for cur.Next(ctx) {
-			var rec subscriptionRec
-			err = cur.Decode(&rec)
-			if err != nil {
-				err = fmt.Errorf("%w: failed to decode subscription record @ cursor %v: %s", storage.ErrInternal, cur.Current, err)
-				break
-			}
-			var cm subscription.ConditionMatch
-			err = rec.decodeSubscriptionConditionMatch(&cm)
-			if err != nil {
-				err = fmt.Errorf("%w: failed to decode subscription record %v: %s", storage.ErrInternal, rec, err)
-				break
-			}
-			err = consumeFunc(&cm)
-			if err != nil {
-				err = fmt.Errorf("%w: failed to consume condition match %v: %s", storage.ErrInternal, cm, err)
-				break
+		var recs []subscriptionRec
+		err = cur.All(ctx, &recs)
+		if err != nil {
+			err = fmt.Errorf("%w: failed to decode subscription record @ cursor %v: %s", storage.ErrInternal, cur.Current, err)
+		} else {
+			for _, rec := range recs {
+				var cm subscription.ConditionMatch
+				err = rec.decodeSubscriptionConditionMatch(&cm)
+				if err != nil {
+					err = fmt.Errorf("%w: failed to decode subscription record %v: %s", storage.ErrInternal, rec, err)
+					break
+				}
+				page = append(page, cm)
 			}
 		}
 	}

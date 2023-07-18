@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
-	"github.com/awakari/subscriptions/util"
 	"github.com/google/uuid"
 )
 
@@ -106,8 +105,8 @@ func (s storageMock) SearchOwn(ctx context.Context, q subscription.QueryOwn, cur
 	return
 }
 
-func (s storageMock) SearchByCondition(ctx context.Context, condId string, consumeFunc util.ConsumeFunc[*subscription.ConditionMatch]) (err error) {
-	for i := 0; i < 10_000; i++ {
+func (s storageMock) SearchByCondition(ctx context.Context, q subscription.QueryByCondition, cursor string) (page []subscription.ConditionMatch, err error) {
+	for i := 0; i < int(q.Limit); i++ {
 		cm := subscription.ConditionMatch{
 			SubscriptionId: fmt.Sprintf("sub%d", i),
 			Condition: condition.NewTextCondition(
@@ -115,10 +114,7 @@ func (s storageMock) SearchByCondition(ctx context.Context, condId string, consu
 				"pattern0", false,
 			),
 		}
-		err = consumeFunc(&cm)
-		if err != nil {
-			break
-		}
+		page = append(page, cm)
 	}
 	return
 }

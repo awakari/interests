@@ -453,62 +453,102 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 	require.Nil(t, err)
 	defer clear(ctx, t, s.(storageImpl))
 	//
-	var rootConditions []condition.Condition
-	var ids []string
+	rootConditions := map[string]condition.Condition{}
+	var matchingSubIds []string
 	for i := 0; i < 10; i++ {
 		cond := condition.NewTextCondition(
 			condition.NewKeyCondition(
-				condition.NewCondition(i%4 == 0), fmt.Sprintf("cond%d", i%5), fmt.Sprintf("key%d", i%3),
+				condition.NewCondition(i%4 == 0), "cond0", fmt.Sprintf("key%d", i%3),
 			),
 			fmt.Sprintf("pattern%d", i%3), i%2 == 0,
 		)
 		sub := subscription.Data{
-			Enabled:   i > 0,
+			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
 		id, err := s.Create(ctx, "acc0", "user0", sub)
 		require.Nil(t, err)
-		rootConditions = append(rootConditions, cond)
-		ids = append(ids, id)
+		if sub.Enabled {
+			matchingSubIds = append(matchingSubIds, id)
+			rootConditions[id] = cond
+		}
+	}
+	sort.Strings(matchingSubIds)
+	for i := 0; i < 10; i++ {
+		cond := condition.NewTextCondition(
+			condition.NewKeyCondition(
+				condition.NewCondition(i%4 == 0), "cond1", fmt.Sprintf("key%d", i%3),
+			),
+			fmt.Sprintf("pattern%d", i%3), i%2 == 0,
+		)
+		sub := subscription.Data{
+			Enabled:   i%2 == 0,
+			Condition: cond,
+		}
+		_, err := s.Create(ctx, "acc0", "user0", sub)
+		require.Nil(t, err)
 	}
 	//
 	cases := map[string]struct {
-		condId string
-		out    []*subscription.ConditionMatch
+		q      subscription.QueryByCondition
+		cursor string
+		out    []subscription.ConditionMatch
 		err    error
 	}{
-		"1": {
-			condId: "cond1",
-			out: []*subscription.ConditionMatch{
+		"limit=1": {
+			q: subscription.QueryByCondition{
+				CondId: "cond0",
+				Limit:  1,
+			},
+			out: []subscription.ConditionMatch{
 				{
-					SubscriptionId: ids[1],
-					Condition:      rootConditions[1],
-				},
-				{
-					SubscriptionId: ids[6],
-					Condition:      rootConditions[6],
+					SubscriptionId: matchingSubIds[0],
+					Condition:      rootConditions[matchingSubIds[0]],
 				},
 			},
 		},
-		"2": {
-			condId: "cond2",
-			out: []*subscription.ConditionMatch{
+		"limit=10": {
+			q: subscription.QueryByCondition{
+				CondId: "cond0",
+				Limit:  10,
+			},
+			out: []subscription.ConditionMatch{
 				{
-					SubscriptionId: ids[2],
-					Condition:      rootConditions[2],
+					SubscriptionId: matchingSubIds[0],
+					Condition:      rootConditions[matchingSubIds[0]],
 				},
 				{
-					SubscriptionId: ids[7],
-					Condition:      rootConditions[7],
+					SubscriptionId: matchingSubIds[1],
+					Condition:      rootConditions[matchingSubIds[1]],
+				},
+				{
+					SubscriptionId: matchingSubIds[2],
+					Condition:      rootConditions[matchingSubIds[2]],
+				},
+				{
+					SubscriptionId: matchingSubIds[3],
+					Condition:      rootConditions[matchingSubIds[3]],
+				},
+				{
+					SubscriptionId: matchingSubIds[4],
+					Condition:      rootConditions[matchingSubIds[4]],
 				},
 			},
 		},
-		"skip disabled subscriptions": {
-			condId: "cond0",
-			out: []*subscription.ConditionMatch{
+		"with cursor": {
+			q: subscription.QueryByCondition{
+				CondId: "cond0",
+				Limit:  10,
+			},
+			cursor: matchingSubIds[2],
+			out: []subscription.ConditionMatch{
 				{
-					SubscriptionId: ids[5],
-					Condition:      rootConditions[5],
+					SubscriptionId: matchingSubIds[3],
+					Condition:      rootConditions[matchingSubIds[3]],
+				},
+				{
+					SubscriptionId: matchingSubIds[4],
+					Condition:      rootConditions[matchingSubIds[4]],
 				},
 			},
 		},
@@ -516,18 +556,13 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 	//
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			var out []*subscription.ConditionMatch
-			consumer := func(cm *subscription.ConditionMatch) (err error) {
-				out = append(out, cm)
-				return
-			}
-			err = s.SearchByCondition(ctx, c.condId, consumer)
+			page, err := s.SearchByCondition(ctx, c.q, c.cursor)
 			if c.err == nil {
 				require.Nil(t, err)
-				require.Equal(t, len(c.out), len(out))
+				require.Equal(t, len(c.out), len(page))
 				for i, cm := range c.out {
-					assert.Equal(t, cm.SubscriptionId, out[i].SubscriptionId)
-					assert.True(t, cm.Condition.Equal(out[i].Condition))
+					assert.Equal(t, cm.SubscriptionId, page[i].SubscriptionId)
+					assert.True(t, cm.Condition.Equal(page[i].Condition))
 				}
 			} else {
 				assert.ErrorIs(t, err, c.err)
