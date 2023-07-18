@@ -21,4 +21,4 @@
 .idea/
 *.tmproj
 .vscode/
-values-dev.yaml
+values-mongodb-ext-dev.yaml
