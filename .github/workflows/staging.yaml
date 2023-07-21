@@ -45,7 +45,7 @@ jobs:
           cd helm/package
           helm repo index .
 
-      - name: context
+      - name: Get Kubeconfig
         uses: okteto/context@latest
         with:
           token: ${{ secrets.OKTETO_TOKEN }}
@@ -53,7 +53,7 @@ jobs:
       - name: "Activate Namespace"
         uses: okteto/namespace@latest
         with:
-          name: ${{ secrets.OKTETO_NS }}
+          name: devenvs-${{ secrets.OKTETO_NS }}
 
       - name: Helm Upgrade
         run: |
