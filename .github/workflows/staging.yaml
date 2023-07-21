@@ -50,7 +50,7 @@ jobs:
         with:
           token: ${{ secrets.OKTETO_TOKEN }}
 
-      - name: "Activate Namespace"
+      - name: Okteto Activate Namespace
         uses: okteto/namespace@latest
         with:
           name: devenvs-${{ secrets.OKTETO_NS }}
