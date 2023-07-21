@@ -50,6 +50,8 @@ spec:
             {{- end }}
             - name: DB_TABLE_NAME
               value: {{ .Values.db.table.name }}
+            - name: DB_TABLE_SHARD
+              value: "{{ .Values.db.table.shard }}"
             - name: DB_TLS_ENABLED
               value: "{{ .Values.db.tls.enabled }}"
             - name: DB_TLS_INSECURE

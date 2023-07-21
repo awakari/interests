@@ -47,12 +47,12 @@ var (
 				},
 				{
 					Key:   attrUserId,
-					Value: 1,
+					Value: "hashed",
 				},
 			},
 			Options: options.
 				Index().
-				SetUnique(true),
+				SetUnique(false),
 		},
 		// query by enabled flag and condition id
 		{
@@ -68,8 +68,7 @@ var (
 			},
 			Options: options.
 				Index().
-				SetUnique(false).
-				SetSparse(true),
+				SetUnique(false),
 		},
 	}
 	projId = bson.D{
@@ -134,28 +133,50 @@ func NewStorage(ctx context.Context, cfgDb config.DbConfig) (s storage.Storage, 
 		clientOpts = clientOpts.SetAuth(auth)
 	}
 	conn, err := mongo.Connect(ctx, clientOpts)
-	if err != nil {
-		err = fmt.Errorf("%w: %s", storage.ErrInternal, err)
-	} else {
+	var stor storageImpl
+	if err == nil {
 		db := conn.Database(cfgDb.Name)
 		coll := db.Collection(cfgDb.Table.Name)
-		stor := storageImpl{
-			conn: conn,
-			db:   db,
-			coll: coll,
-		}
+		stor.conn = conn
+		stor.db = db
+		stor.coll = coll
 		_, err = stor.ensureIndices(ctx)
-		if err != nil {
-			err = fmt.Errorf("%w: %s", storage.ErrInternal, err)
-		} else {
-			s = stor
-		}
+	}
+	if err == nil && cfgDb.Table.Shard {
+		err = stor.shardCollection(ctx)
+	}
+	if err == nil {
+		s = stor
+	}
+	if err != nil {
+		err = fmt.Errorf("%w: %s", storage.ErrInternal, err)
 	}
 	return
 }
 
 func (s storageImpl) ensureIndices(ctx context.Context) ([]string, error) {
 	return s.coll.Indexes().CreateMany(ctx, indices)
+}
+
+func (s storageImpl) shardCollection(ctx context.Context) (err error) {
+	adminDb := s.conn.Database("admin")
+	cmd := bson.D{
+		{
+			Key:   "shardCollection",
+			Value: fmt.Sprintf("%s.%s", s.db.Name(), s.coll.Name()),
+		},
+		{
+			Key: "key",
+			Value: bson.D{
+				{
+					Key:   attrId,
+					Value: "hashed",
+				},
+			},
+		},
+	}
+	err = adminDb.RunCommand(ctx, cmd).Err()
+	return
 }
 
 func (s storageImpl) Close() error {

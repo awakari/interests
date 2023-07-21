@@ -21,7 +21,8 @@ type DbConfig struct {
 	UserName string `envconfig:"DB_USERNAME" default:""`
 	Password string `envconfig:"DB_PASSWORD" default:""`
 	Table    struct {
-		Name string `envconfig:"DB_NAME" default:"subscriptions" required:"true"`
+		Name  string `envconfig:"DB_NAME" default:"subscriptions" required:"true"`
+		Shard bool   `envconfig:"DB_TABLE_SHARD" default:"true"`
 	}
 	Tls struct {
 		Enabled  bool `envconfig:"DB_TLS_ENABLED" default:"false" required:"true"`
