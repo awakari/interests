@@ -45,7 +45,17 @@ jobs:
           cd helm/package
           helm repo index .
 
-#      - name: Helm Upgrade
-#        run: |
-#          helm upgrade --install ${COMPONENT} helm/package/${COMPONENT}-0.0.0.tgz \
-#            --set podAnnotations.commit=$(git rev-parse --short HEAD),db.password.secret.enabled=false,db.protocol=mongodb+srv,db.tls.enabled=true,db.tls.insecure=true,db.hostname=${{ secrets.DB_HOST_DEMO }},db.username=${{ secrets.DB_USERNAME_DEMO }},db.password.raw=${{ secrets.DB_PASSWORD_DEMO }}
+      - name: context
+        uses: okteto/context@latest
+        with:
+          token: ${{ secrets.OKTETO_TOKEN }}
+
+      - name: "Activate Namespace"
+        uses: okteto/namespace@latest
+        with:
+          name: ${{ secrets.OKTETO_NS }}
+
+      - name: Helm Upgrade
+        run: |
+          helm upgrade --install ${COMPONENT} helm/package/${COMPONENT}-0.0.0.tgz \
+            --set podAnnotations.commit=$(git rev-parse --short HEAD),db.password.secret.enabled=false,db.protocol=mongodb+srv,db.tls.enabled=true,db.tls.insecure=true,db.hostname=${{ secrets.DB_HOST_DEMO }},db.username=${{ secrets.DB_USERNAME_DEMO }},db.password.raw=${{ secrets.DB_PASSWORD_DEMO }},db.table.shard=false
