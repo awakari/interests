@@ -50,11 +50,6 @@ jobs:
         with:
           token: ${{ secrets.OKTETO_TOKEN }}
 
-      - name: Okteto Activate Namespace
-        uses: okteto/namespace@latest
-        with:
-          name: devenvs-${{ secrets.OKTETO_NS }}
-
       - name: Helm Upgrade
         run: |
           helm upgrade --install ${COMPONENT} helm/package/${COMPONENT}-0.0.0.tgz \
