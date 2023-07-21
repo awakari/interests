@@ -47,6 +47,7 @@ jobs:
 
       - name: Helm Upgrade
         run: |
+          mkdir ~/.kube
           echo "${{ secrets.OKTETO_KUBE_CONFIG }}" > ~/.kube/config
           helm upgrade --install ${COMPONENT} -n ${{ secrets.OKTETO_NS }} helm/package/${COMPONENT}-0.0.0.tgz \
             --set podAnnotations.commit=$(git rev-parse --short HEAD),db.password.secret.enabled=false,db.protocol=mongodb+srv,db.tls.enabled=true,db.tls.insecure=true,db.hostname=${{ secrets.DB_HOST_DEMO }},db.username=${{ secrets.DB_USERNAME_DEMO }},db.password.raw=${{ secrets.DB_PASSWORD_DEMO }},db.table.shard=false
