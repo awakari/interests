@@ -83,14 +83,15 @@ A subscription also has:
 
 The service is configurable using the environment variables:
 
-| Variable                  | Example value                                          | Description                                                                          |
-|---------------------------|--------------------------------------------------------|--------------------------------------------------------------------------------------|
-| API_PORT                  | `50051`                                                | gRPC API port                                                                        |
-| DB_URI                    | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                                                    |
-| DB_NAME                   | `subscriptions`                                        | DB name to store the data                                                            |
-| DB_USERNAME               | `subscriptions`                                        | DB connection username                                                               |
-| DB_PASSWORD               | `subscriptions`                                        | DB connection password                                                               |
-| DB_TABLE_NAME             | `subscriptions`                                        | DB table name to store the data                                                      |
+| Variable       | Example value                                          | Description                                                 |
+|----------------|--------------------------------------------------------|-------------------------------------------------------------|
+| API_PORT       | `50051`                                                | gRPC API port                                               |
+| DB_URI         | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                           |
+| DB_NAME        | `subscriptions`                                        | DB name to store the data                                   |
+| DB_USERNAME    | `subscriptions`                                        | DB connection username                                      |
+| DB_PASSWORD    | `subscriptions`                                        | DB connection password                                      |
+| DB_TABLE_NAME  | `subscriptions`                                        | DB table name to store the data                             |
+| DB_TABLE_SHARD | `true`                                                 | Defines whether the service should shard the table on start |
 
 # 3. Deployment
 

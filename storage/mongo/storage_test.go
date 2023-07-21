@@ -445,6 +445,7 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 		Name: "subscriptions",
 	}
 	dbCfg.Table.Name = collName
+	dbCfg.Table.Shard = false
 	dbCfg.Tls.Enabled = true
 	dbCfg.Tls.Insecure = true
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)

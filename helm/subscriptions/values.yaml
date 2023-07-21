@@ -91,6 +91,7 @@ db:
   table:
     # Database table name to use.
     name: subscriptions
+    shard: true
   tls:
     enabled: false
     insecure: false
