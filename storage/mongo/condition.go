@@ -25,6 +25,8 @@ func encodeCondition(src condition.Condition) (dst Condition, ids []string) {
 		dst, ids = encodeGroupCondition(c)
 	case condition.TextCondition:
 		dst, ids = encodeTextCondition(c)
+	case condition.NumberCondition:
+		dst, ids = encodeNumCondition(c)
 	}
 	return
 }
@@ -39,10 +41,17 @@ func decodeRawCondition(raw bson.M) (result Condition, err error) {
 			Not: not,
 		}
 		group, isGroup := raw[groupConditionAttrGroup].(bson.A)
-		if isGroup {
+		term, isText := raw[textConditionAttrTerm].(string)
+		num, isNum := raw[numConditionAttrVal].(float64)
+		switch {
+		case isGroup:
 			result, err = decodeRawGroupCondition(baseCond, group, raw)
-		} else {
-			result, err = decodeTextCondition(baseCond, raw)
+		case isText:
+			result, err = decodeTextCondition(baseCond, term, raw)
+		case isNum:
+			result, err = decodeNumCondition(baseCond, num, raw)
+		default:
+			err = fmt.Errorf("%w: undefined condition type: %v", storage.ErrInternal, raw)
 		}
 	}
 	return
@@ -61,6 +70,11 @@ func decodeCondition(src Condition) (dst condition.Condition) {
 		dstBase := condition.NewCondition(c.Base.Not)
 		dstKey := condition.NewKeyCondition(dstBase, c.Id, c.Key)
 		dst = condition.NewTextCondition(dstKey, c.Term, c.Exact)
+	case numCondition:
+		dstBase := condition.NewCondition(c.Base.Not)
+		dstKey := condition.NewKeyCondition(dstBase, c.Id, c.Key)
+		op := decodeNumOp(c.Op)
+		dst = condition.NewNumberCondition(dstKey, op, c.Val)
 	}
 	return dst
 }

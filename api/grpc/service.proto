@@ -29,6 +29,7 @@ message Condition {
   oneof cond {
     GroupCondition gc = 2;
     TextCondition tc = 3;
+    NumberCondition nc = 4;
   }
 }
 
@@ -42,6 +43,22 @@ message TextCondition {
   string key = 2;
   string term = 3;
   bool exact = 4;
+}
+
+message NumberCondition {
+  string id = 1;
+  string key = 2;
+  Operation op = 3;
+  double val = 4;
+}
+
+enum Operation {
+  Undefined = 0;
+  Gt = 1;
+  Gte = 2;
+  Eq = 3;
+  Lte = 4;
+  Lt = 5;
 }
 
 message CreateResponse {
