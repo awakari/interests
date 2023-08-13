@@ -72,6 +72,10 @@ condition id.
 
 A text condition is a key condition containing the terms for a text search.
 
+#### 1.2.1.4. Number Condition
+
+A key condition containing also a number comparison condition.
+
 ### 1.2.2. Subscription
 
 Subscription is an entity linking the message matching [condition](#121-condition) with the user account. 

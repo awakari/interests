@@ -179,6 +179,26 @@ func Test_decodeRawCondition(t *testing.T) {
 				},
 			},
 		},
+		"num condition ok": {
+			raw: bson.M{
+				"base": bson.M{
+					"not": false,
+				},
+				"id":  "cond0",
+				"key": "k0",
+				"op":  int32(2),
+				"val": 42.0,
+			},
+			out: numCondition{
+				Id:  "cond0",
+				Key: "k0",
+				Op:  int32(2),
+				Val: 42,
+				Base: ConditionBase{
+					Not: false,
+				},
+			},
+		},
 		"fail on invalid group condition": {
 			raw: bson.M{
 				"base": bson.M{
@@ -225,9 +245,10 @@ func Test_decodeRawCondition(t *testing.T) {
 								"base": bson.M{
 									"not": false,
 								},
-								"id":   "cond4",
-								"key":  "k2",
-								"term": "p2",
+								"id":  "cond4",
+								"key": "k2",
+								"op":  int32(3),
+								"val": 4.5,
 							},
 						},
 					},
@@ -259,10 +280,11 @@ func Test_decodeRawCondition(t *testing.T) {
 									Not: false,
 								},
 							},
-							textCondition{
-								Id:   "cond4",
-								Key:  "k2",
-								Term: "p2",
+							numCondition{
+								Id:  "cond4",
+								Key: "k2",
+								Op:  int32(3),
+								Val: 4.5,
 								Base: ConditionBase{
 									Not: false,
 								},
@@ -310,14 +332,52 @@ func Test_decodeCondition(t *testing.T) {
 				},
 			},
 		},
+		"single num condition": {
+			dst: condition.NewNumberCondition(
+				condition.NewKeyCondition(
+					condition.NewCondition(true),
+					"cond0", "key0",
+				),
+				condition.NumOpLt,
+				-1.2e-3,
+			),
+			src: numCondition{
+				Id:  "cond0",
+				Key: "key0",
+				Op:  int32(5),
+				Val: -1.2e-3,
+				Base: ConditionBase{
+					Not: true,
+				},
+			},
+		},
+		"invalid num condition": {
+			dst: condition.NewNumberCondition(
+				condition.NewKeyCondition(
+					condition.NewCondition(true),
+					"cond0", "key0",
+				),
+				condition.NumOpUndefined,
+				-1.2e-3,
+			),
+			src: numCondition{
+				Id:  "cond0",
+				Key: "key0",
+				Op:  int32(6),
+				Val: -1.2e-3,
+				Base: ConditionBase{
+					Not: true,
+				},
+			},
+		},
 		"group condition": {
 			dst: condition.NewGroupCondition(
 				condition.NewCondition(false),
 				condition.GroupLogicOr,
 				[]condition.Condition{
-					condition.NewTextCondition(
+					condition.NewNumberCondition(
 						condition.NewKeyCondition(condition.NewCondition(true), "cond1", "key0"),
-						"pattern0", false,
+						condition.NumOpLte, 5,
 					),
 					condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "cond2", "key1"),
@@ -330,10 +390,11 @@ func Test_decodeCondition(t *testing.T) {
 					Not: false,
 				},
 				Group: []Condition{
-					textCondition{
-						Id:   "cond1",
-						Key:  "key0",
-						Term: "pattern0",
+					numCondition{
+						Id:  "cond1",
+						Key: "key0",
+						Op:  int32(4),
+						Val: 5,
 						Base: ConditionBase{
 							Not: true,
 						},

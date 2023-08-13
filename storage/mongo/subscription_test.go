@@ -25,8 +25,8 @@ func Test_decodeSubscription(t *testing.T) {
 					conditionAttrBase: bson.M{
 						conditionAttrNot: false,
 					},
-					textConditionAttrId:   "cond0",
-					textConditionAttrKey:  "key0",
+					numConditionAttrId:    "cond0",
+					numConditionAttrKey:   "key0",
 					textConditionAttrTerm: "pattern0",
 				},
 			},

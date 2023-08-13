@@ -1,17 +1,18 @@
 package mongo
 
 import (
+	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/storage"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"testing"
 )
 
-func Test_decodeTextCondition(t *testing.T) {
+func Test_decodeNumCondition(t *testing.T) {
 	cases := map[string]struct {
 		base ConditionBase
 		raw  bson.M
-		out  textCondition
+		out  numCondition
 		err  error
 	}{
 		"ok": {
@@ -19,43 +20,35 @@ func Test_decodeTextCondition(t *testing.T) {
 				Not: true,
 			},
 			raw: bson.M{
-				"id":                   "cond0",
-				textConditionAttrKey:   "key0",
-				textConditionAttrTerm:  "pattern0",
-				textConditionAttrExact: true,
+				"id":                "cond0",
+				numConditionAttrKey: "key0",
+				numConditionAttrOp:  int32(1),
+				numConditionAttrVal: -3.1415926,
 			},
-			out: textCondition{
+			out: numCondition{
 				Base: ConditionBase{
 					Not: true,
 				},
-				Id:    "cond0",
-				Key:   "key0",
-				Term:  "pattern0",
-				Exact: true,
+				Id:  "cond0",
+				Key: "key0",
+				Op:  int32(condition.NumOpGt),
+				Val: -3.1415926,
 			},
 		},
-		"fails to decode \"partial\" attribute": {
+		"fails to decode \"op\" attribute": {
 			base: ConditionBase{},
 			raw: bson.M{
-				textConditionAttrKey:  "key0",
-				textConditionAttrTerm: "pattern0",
+				"id":                "cond0",
+				numConditionAttrKey: "key0",
+				numConditionAttrOp:  6,
+				numConditionAttrVal: 1.2e-3,
 			},
 			err: storage.ErrInternal,
 		},
 		"fails due to missing \"key\" attribute": {
 			base: ConditionBase{},
 			raw: bson.M{
-				"term": "term0",
-			},
-			err: storage.ErrInternal,
-		},
-		"fails due to nil": {
-			base: ConditionBase{
-				Not: true,
-			},
-			raw: bson.M{
-				textConditionAttrKey:  "key0",
-				textConditionAttrTerm: "pattern0",
+				"val": 0.0,
 			},
 			err: storage.ErrInternal,
 		},
@@ -63,7 +56,7 @@ func Test_decodeTextCondition(t *testing.T) {
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			out, err := decodeTextCondition(c.base, c.raw["term"].(string), c.raw)
+			out, err := decodeNumCondition(c.base, c.raw["val"].(float64), c.raw)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.out, out)

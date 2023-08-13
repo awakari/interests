@@ -79,11 +79,19 @@ func TestServiceController_Create(t *testing.T) {
 								},
 							},
 							{
-								Not: false,
 								Cond: &Condition_Tc{
 									Tc: &TextCondition{
 										Key:  "key1",
 										Term: "pattern1",
+									},
+								},
+							},
+							{
+								Cond: &Condition_Nc{
+									Nc: &NumberCondition{
+										Key: "key3",
+										Op:  Operation_Gt,
+										Val: 1.23,
 									},
 								},
 							},
@@ -192,6 +200,15 @@ func TestServiceController_Read(t *testing.T) {
 										Tc: &TextCondition{
 											Key:  "key1",
 											Term: "pattern1",
+										},
+									},
+								},
+								{
+									Cond: &Condition_Nc{
+										Nc: &NumberCondition{
+											Key: "key2",
+											Op:  Operation_Eq,
+											Val: 42,
 										},
 									},
 								},

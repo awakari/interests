@@ -86,11 +86,11 @@ func TestStorageImpl_Create(t *testing.T) {
 							),
 							"pattern0", true,
 						),
-						condition.NewTextCondition(
+						condition.NewNumberCondition(
 							condition.NewKeyCondition(
 								condition.NewCondition(false), "cond1", "key1",
 							),
-							"pattern1", false,
+							condition.NumOpEq, 42,
 						),
 					},
 				),
@@ -147,9 +147,19 @@ func TestStorageImpl_Read(t *testing.T) {
 	require.Nil(t, err)
 	defer clear(ctx, t, s.(storageImpl))
 	//
-	cond0 := condition.NewTextCondition(
-		condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
-		"pattern0", true,
+	cond0 := condition.NewGroupCondition(
+		condition.NewCondition(false),
+		condition.GroupLogicOr,
+		[]condition.Condition{
+			condition.NewTextCondition(
+				condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
+				"pattern0", true,
+			),
+			condition.NewNumberCondition(
+				condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
+				condition.NumOpLt, -1.2e-3,
+			),
+		},
 	)
 	id0, err := s.Create(ctx, "group0", "user0", subscription.Data{
 		Description: "test subscription 0",
@@ -476,11 +486,11 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 	}
 	sort.Strings(matchingSubIds)
 	for i := 0; i < 10; i++ {
-		cond := condition.NewTextCondition(
+		cond := condition.NewNumberCondition(
 			condition.NewKeyCondition(
 				condition.NewCondition(i%4 == 0), "cond1", fmt.Sprintf("key%d", i%3),
 			),
-			fmt.Sprintf("pattern%d", i%3), i%2 == 0,
+			condition.NumOpEq, 42,
 		)
 		sub := subscription.Data{
 			Enabled:   i%2 == 0,

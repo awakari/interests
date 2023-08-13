@@ -39,15 +39,13 @@ func encodeTextCondition(src condition.TextCondition) (dst textCondition, ids []
 	return
 }
 
-func decodeTextCondition(baseCond ConditionBase, raw bson.M) (tc textCondition, err error) {
+func decodeTextCondition(baseCond ConditionBase, term string, raw bson.M) (tc textCondition, err error) {
 	tc.Base = baseCond
+	tc.Term = term
 	var ok bool
 	tc.Id, ok = raw[textConditionAttrId].(string)
 	if ok {
 		tc.Key, ok = raw[textConditionAttrKey].(string)
-	}
-	if ok {
-		tc.Term, ok = raw[textConditionAttrTerm].(string)
 	}
 	if ok {
 		tc.Exact, _ = raw[textConditionAttrExact].(bool)

@@ -50,6 +50,10 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd s
 						condition.NewKeyCondition(condition.NewCondition(true), "", "key1"),
 						"pattern1", false,
 					),
+					condition.NewNumberCondition(
+						condition.NewKeyCondition(condition.NewCondition(false), "", "key2"),
+						condition.NumOpEq, 42,
+					),
 				},
 			),
 		}

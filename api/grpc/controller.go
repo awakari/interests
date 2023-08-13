@@ -131,7 +131,7 @@ func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchBy
 }
 
 func decodeCondition(src *Condition) (dst condition.Condition, err error) {
-	gc, tc := src.GetGc(), src.GetTc()
+	gc, tc, nc := src.GetGc(), src.GetTc(), src.GetNc()
 	switch {
 	case gc != nil:
 		var group []condition.Condition
@@ -156,8 +156,32 @@ func decodeCondition(src *Condition) (dst condition.Condition, err error) {
 			tc.GetTerm(),
 			tc.GetExact(),
 		)
+	case nc != nil:
+		dst = condition.NewNumberCondition(
+			condition.NewKeyCondition(condition.NewCondition(src.Not), nc.Id, nc.Key),
+			decodeNumOp(nc.Op),
+			nc.Val,
+		)
 	default:
 		err = status.Error(codes.InvalidArgument, "unsupported condition type")
+	}
+	return
+}
+
+func decodeNumOp(src Operation) (dst condition.NumOp) {
+	switch src {
+	case Operation_Gt:
+		dst = condition.NumOpGt
+	case Operation_Gte:
+		dst = condition.NumOpGte
+	case Operation_Eq:
+		dst = condition.NumOpEq
+	case Operation_Lte:
+		dst = condition.NumOpLte
+	case Operation_Lt:
+		dst = condition.NumOpLt
+	default:
+		dst = condition.NumOpUndefined
 	}
 	return
 }
@@ -187,6 +211,33 @@ func encodeCondition(src condition.Condition, dst *Condition) {
 				Exact: c.IsExact(),
 			},
 		}
+	case condition.NumberCondition:
+		dst.Cond = &Condition_Nc{
+			Nc: &NumberCondition{
+				Id:  c.GetId(),
+				Key: c.GetKey(),
+				Op:  encodeNumOp(c.GetOperation()),
+				Val: 0,
+			},
+		}
+	}
+	return
+}
+
+func encodeNumOp(src condition.NumOp) (dst Operation) {
+	switch src {
+	case condition.NumOpGt:
+		dst = Operation_Gt
+	case condition.NumOpGte:
+		dst = Operation_Gte
+	case condition.NumOpEq:
+		dst = Operation_Eq
+	case condition.NumOpLte:
+		dst = Operation_Lte
+	case condition.NumOpLt:
+		dst = Operation_Lt
+	default:
+		dst = Operation_Undefined
 	}
 	return
 }
