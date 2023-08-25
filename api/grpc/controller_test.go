@@ -179,6 +179,7 @@ func TestServiceController_Read(t *testing.T) {
 			auth: true,
 			sub: &ReadResponse{
 				Description: "description",
+				Enabled:     true,
 				Cond: &Condition{
 					Not: false,
 					Cond: &Condition_Gc{
@@ -242,6 +243,7 @@ func TestServiceController_Read(t *testing.T) {
 			if c.err == nil {
 				require.Nil(t, err)
 				assert.Equal(t, c.sub.Description, sub.Description)
+				assert.Equal(t, c.sub.Enabled, sub.Enabled)
 				assert.Equal(t, c.sub.Cond.Not, sub.Cond.Not)
 				assert.Equal(t, c.sub.Cond.GetGc().Logic, sub.Cond.GetGc().Logic)
 				assert.Equal(t, len(c.sub.Cond.GetGc().GetGroup()), len(sub.Cond.GetGc().GetGroup()))

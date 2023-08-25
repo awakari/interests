@@ -163,6 +163,7 @@ func TestStorageImpl_Read(t *testing.T) {
 	)
 	id0, err := s.Create(ctx, "group0", "user0", subscription.Data{
 		Description: "test subscription 0",
+		Enabled:     true,
 		Condition:   cond0,
 	})
 	require.Nil(t, err)
@@ -180,6 +181,7 @@ func TestStorageImpl_Read(t *testing.T) {
 			userId:  "user0",
 			sd: subscription.Data{
 				Description: "test subscription 0",
+				Enabled:     true,
 				Condition:   cond0,
 			},
 		},
