@@ -83,6 +83,10 @@ var (
 			Value: 1,
 		},
 		{
+			Key:   attrEnabled,
+			Value: 1,
+		},
+		{
 			Key:   attrCond,
 			Value: 1,
 		},

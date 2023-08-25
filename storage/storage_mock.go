@@ -38,6 +38,7 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd s
 	} else {
 		sd = subscription.Data{
 			Description: "description",
+			Enabled:     true,
 			Condition: condition.NewGroupCondition(
 				condition.NewCondition(false),
 				condition.GroupLogicAnd,
