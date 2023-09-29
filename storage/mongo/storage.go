@@ -255,7 +255,7 @@ func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d s
 	result, err = s.coll.UpdateOne(ctx, q, u)
 	if err != nil {
 		err = fmt.Errorf("%w: failed to update metadata, id: %s, err: %s", storage.ErrInternal, id, err)
-	} else if result.ModifiedCount < 1 {
+	} else if result.MatchedCount < 1 {
 		err = fmt.Errorf("%w: not found, id: %s, acc: %s/%s", storage.ErrNotFound, id, groupId, userId)
 	}
 	return
