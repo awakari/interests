@@ -6,6 +6,7 @@ import (
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/google/uuid"
+	"time"
 )
 
 type storageMock struct {
@@ -39,6 +40,7 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd s
 		sd = subscription.Data{
 			Description: "description",
 			Enabled:     true,
+			Expires:     time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 			Condition: condition.NewGroupCondition(
 				condition.NewCondition(false),
 				condition.GroupLogicAnd,
@@ -79,6 +81,7 @@ func (s storageMock) Delete(ctx context.Context, id, groupId, userId string) (sd
 	} else {
 		sd = subscription.Data{
 			Description: "description",
+			Expires:     time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 			Condition: condition.NewGroupCondition(
 				condition.NewCondition(false),
 				condition.GroupLogicAnd,

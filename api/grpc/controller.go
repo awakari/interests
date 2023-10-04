@@ -9,6 +9,8 @@ import (
 	"github.com/awakari/subscriptions/storage"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"time"
 )
 
 type serviceController struct {
@@ -30,9 +32,15 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 		var cond condition.Condition
 		cond, err = decodeCondition(req.Cond)
 		if err == nil {
+			var expires time.Time
+			// check is for the backward compatibility
+			if req.Expires != nil {
+				expires = req.Expires.AsTime()
+			}
 			sd := subscription.Data{
 				Description: req.Description,
 				Enabled:     req.Enabled,
+				Expires:     expires,
 				Condition:   cond,
 			}
 			resp.Id, err = sc.stor.Create(ctx, groupId, userId, sd)
@@ -55,6 +63,7 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 			encodeCondition(sd.Condition, resp.Cond)
 			resp.Description = sd.Description
 			resp.Enabled = sd.Enabled
+			resp.Expires = timestamppb.New(sd.Expires)
 		}
 		err = encodeError(err)
 	}

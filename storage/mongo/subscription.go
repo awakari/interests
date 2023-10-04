@@ -3,6 +3,7 @@ package mongo
 import (
 	"github.com/awakari/subscriptions/model/subscription"
 	"go.mongodb.org/mongo-driver/bson"
+	"time"
 )
 
 type subscriptionWrite struct {
@@ -15,6 +16,8 @@ type subscriptionWrite struct {
 	Description string `bson:"descr"`
 
 	Enabled bool `bson:"enabled"`
+
+	Expires time.Time `bson:"expires,omitempty"`
 
 	Condition Condition `bson:"cond"`
 
@@ -35,6 +38,8 @@ type subscriptionRec struct {
 
 	Enabled bool `bson:"enabled"`
 
+	Expires time.Time `bson:"expires,omitempty"`
+
 	RawCondition bson.M `bson:"cond"`
 
 	// CondIds contains a flat list of all condition ids.
@@ -47,6 +52,7 @@ const attrGroupId = "groupId"
 const attrUserId = "userId"
 const attrDescr = "descr"
 const attrEnabled = "enabled"
+const attrExpires = "expires"
 const attrCondIds = "condIds"
 const attrCond = "cond"
 
@@ -61,6 +67,7 @@ func (rec subscriptionRec) decodeSubscription(sub *subscription.Subscription) (e
 func (rec subscriptionRec) decodeSubscriptionData(sd *subscription.Data) (err error) {
 	sd.Description = rec.Description
 	sd.Enabled = rec.Enabled
+	sd.Expires = rec.Expires
 	var condRec Condition
 	condRec, err = decodeRawCondition(rec.RawCondition)
 	if err == nil {

@@ -5,6 +5,7 @@ package awakari.subscriptions;
 option go_package = "./api/grpc";
 
 import "api/grpc/common/group_logic.proto";
+import "google/protobuf/timestamp.proto";
 
 service Service {
 
@@ -22,6 +23,7 @@ message CreateRequest {
   string description = 1;
   bool enabled = 2;
   Condition cond = 3;
+  google.protobuf.Timestamp expires = 4;
 }
 
 message Condition {
@@ -75,6 +77,7 @@ message ReadResponse {
   string description = 1;
   bool enabled = 2;
   Condition cond = 3;
+  google.protobuf.Timestamp expires = 4;
 }
 
 // Update
@@ -83,6 +86,7 @@ message UpdateRequest {
   string id = 1;
   string description = 2;
   bool enabled = 3;
+  google.protobuf.Timestamp expires = 4;
 }
 
 message UpdateResponse {

@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 )
 
 type storageImpl struct {
@@ -20,6 +21,7 @@ type storageImpl struct {
 	coll *mongo.Collection
 }
 
+var timeZero = time.Time{}.UTC()
 var (
 	indices = []mongo.IndexModel{
 		// external id should be unique
@@ -54,11 +56,15 @@ var (
 				Index().
 				SetUnique(false),
 		},
-		// query by enabled flag and condition id
+		// query by enabled flag, expires and condition id
 		{
 			Keys: bson.D{
 				{
 					Key:   attrEnabled,
+					Value: 1,
+				},
+				{
+					Key:   attrExpires,
 					Value: 1,
 				},
 				{
@@ -84,6 +90,10 @@ var (
 		},
 		{
 			Key:   attrEnabled,
+			Value: 1,
+		},
+		{
+			Key:   attrExpires,
 			Value: 1,
 		},
 		{
@@ -195,6 +205,7 @@ func (s storageImpl) Create(ctx context.Context, groupId, userId string, sd subs
 		UserId:      userId,
 		Description: sd.Description,
 		Enabled:     sd.Enabled,
+		Expires:     sd.Expires.UTC(),
 		Condition:   recCond,
 		CondIds:     condIds,
 	}
@@ -249,6 +260,7 @@ func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d s
 		"$set": bson.M{
 			attrDescr:   d.Description,
 			attrEnabled: d.Enabled,
+			attrExpires: d.Expires.UTC(),
 		},
 	}
 	var result *mongo.UpdateResult
@@ -313,6 +325,21 @@ func (s storageImpl) SearchByCondition(ctx context.Context, q subscription.Query
 		},
 		attrCondIds: q.CondId,
 		attrEnabled: true,
+		"$or": []bson.M{
+			{
+				attrExpires: bson.M{
+					"$gt": time.Now().UTC(),
+				},
+			},
+			{
+				attrExpires: timeZero,
+			},
+			{
+				attrExpires: bson.M{
+					"$exists": false,
+				},
+			},
+		},
 	}
 	opts := optsSearchByCond.SetLimit(int64(q.Limit))
 	var cur *mongo.Cursor
