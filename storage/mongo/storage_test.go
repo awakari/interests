@@ -76,6 +76,7 @@ func TestStorageImpl_Create(t *testing.T) {
 		"success": {
 			sd: subscription.Data{
 				Description: "test subscription 1",
+				Expires:     time.Now().Add(1 * time.Hour),
 				Condition: condition.NewGroupCondition(
 					condition.NewCondition(false),
 					condition.GroupLogicOr,
@@ -99,6 +100,7 @@ func TestStorageImpl_Create(t *testing.T) {
 		"index allows duplicate condition in the subscription": {
 			sd: subscription.Data{
 				Description: "test subscription 2",
+				Expires:     time.Now().Add(1 * time.Hour),
 				Condition: condition.NewGroupCondition(
 					condition.NewCondition(false),
 					condition.GroupLogicAnd,
@@ -164,6 +166,7 @@ func TestStorageImpl_Read(t *testing.T) {
 	id0, err := s.Create(ctx, "group0", "user0", subscription.Data{
 		Description: "test subscription 0",
 		Enabled:     true,
+		Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 		Condition:   cond0,
 	})
 	require.Nil(t, err)
@@ -182,6 +185,7 @@ func TestStorageImpl_Read(t *testing.T) {
 			sd: subscription.Data{
 				Description: "test subscription 0",
 				Enabled:     true,
+				Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 				Condition:   cond0,
 			},
 		},
@@ -241,6 +245,7 @@ func TestStorageImpl_Update(t *testing.T) {
 		"pattern0", false,
 	)
 	id0, err := s.Create(ctx, "group0", "user0", subscription.Data{
+		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 		Condition: cond0,
 	})
 	require.Nil(t, err)
@@ -258,6 +263,7 @@ func TestStorageImpl_Update(t *testing.T) {
 			userId:  "user0",
 			sd: subscription.Data{
 				Description: "new description",
+				Expires:     time.Date(2023, 10, 5, 6, 44, 55, 0, time.UTC),
 			},
 		},
 		"id mismatch": {
@@ -313,6 +319,7 @@ func TestStorageImpl_Delete(t *testing.T) {
 		"pattern0", false,
 	)
 	id0, err := s.Create(ctx, "acc0", "user0", subscription.Data{
+		Expires:   time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 		Condition: cond0,
 	})
 	require.Nil(t, err)
@@ -329,6 +336,7 @@ func TestStorageImpl_Delete(t *testing.T) {
 			groupId: "acc0",
 			userId:  "user0",
 			sd: subscription.Data{
+				Expires:   time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 				Condition: cond0,
 			},
 		},
@@ -388,6 +396,7 @@ func TestStorageImpl_SearchOwn(t *testing.T) {
 		)
 		sub := subscription.Data{
 			Description: fmt.Sprintf("description%d", i%2),
+			Expires:     time.Now().Add(time.Duration(i-2) * time.Hour),
 			Condition:   cond,
 		}
 		id, err := s.Create(ctx, fmt.Sprintf("acc%d", i%2), fmt.Sprintf("user%d", i%2), sub)
@@ -562,6 +571,102 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 				{
 					SubscriptionId: matchingSubIds[4],
 					Condition:      rootConditions[matchingSubIds[4]],
+				},
+			},
+		},
+	}
+	//
+	for k, c := range cases {
+		t.Run(k, func(t *testing.T) {
+			page, err := s.SearchByCondition(ctx, c.q, c.cursor)
+			if c.err == nil {
+				require.Nil(t, err)
+				require.Equal(t, len(c.out), len(page))
+				for i, cm := range c.out {
+					assert.Equal(t, cm.SubscriptionId, page[i].SubscriptionId)
+					assert.True(t, cm.Condition.Equal(page[i].Condition))
+				}
+			} else {
+				assert.ErrorIs(t, err, c.err)
+			}
+		})
+	}
+}
+
+func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
+	//
+	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	dbCfg := config.DbConfig{
+		Uri:  dbUri,
+		Name: "subscriptions",
+	}
+	dbCfg.Table.Name = collName
+	dbCfg.Table.Shard = false
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	s, err := NewStorage(ctx, dbCfg)
+	require.Nil(t, err)
+	defer clear(ctx, t, s.(storageImpl))
+	// expiration not set
+	cond0 := condition.NewTextCondition(
+		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
+		"term0",
+		false,
+	)
+	sub0 := subscription.Data{
+		Enabled:   true,
+		Condition: cond0,
+	}
+	id0, err := s.Create(ctx, "acc0", "user0", sub0)
+	require.Nil(t, err)
+	// already expired
+	cond1 := condition.NewTextCondition(
+		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key1"),
+		"term1",
+		false,
+	)
+	sub1 := subscription.Data{
+		Enabled:   true,
+		Condition: cond1,
+		Expires:   time.Date(2022, 2, 22, 22, 22, 22, 0, time.UTC),
+	}
+	_, err = s.Create(ctx, "acc0", "user0", sub1)
+	require.Nil(t, err)
+	// not expired
+	cond2 := condition.NewTextCondition(
+		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key2"),
+		"term2",
+		false,
+	)
+	sub2 := subscription.Data{
+		Enabled:   true,
+		Condition: cond2,
+		Expires:   time.Now().Add(1 * time.Hour).UTC(),
+	}
+	id2, err := s.Create(ctx, "acc0", "user0", sub2)
+	require.Nil(t, err)
+	//
+	cases := map[string]struct {
+		q      subscription.QueryByCondition
+		cursor string
+		out    []subscription.ConditionMatch
+		err    error
+	}{
+		"2": {
+			q: subscription.QueryByCondition{
+				CondId: "cond0",
+				Limit:  10,
+			},
+			out: []subscription.ConditionMatch{
+				{
+					SubscriptionId: id2,
+					Condition:      cond2,
+				},
+				{
+					SubscriptionId: id0,
+					Condition:      cond0,
 				},
 			},
 		},

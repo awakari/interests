@@ -323,6 +323,7 @@ subscription they need to delete it 1st and then create again.
 | userId    | String                                     | User Id                                                                 |
 | descr     | String                                     | Human readable description                                              |
 | enabled   | Boolean                                    | Defines whether the subscription is searchable for a condition matching |
+| expires   | Time                                       | Defines the deadline when the subscription may be treated as `enabled`  |
 | cond      | Condition (currently may be Group or Text) | Message matching root immutable criteria                                |
 
 #### 5.2.1.2. Group Condition

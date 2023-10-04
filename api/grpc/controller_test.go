@@ -14,8 +14,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"os"
 	"testing"
+	"time"
 )
 
 const port = 50051
@@ -43,15 +45,17 @@ func TestServiceController_Create(t *testing.T) {
 	client := NewServiceClient(conn)
 	//
 	cases := map[string]struct {
-		md   []string
-		cond *Condition
-		err  error
+		md      []string
+		expires *timestamppb.Timestamp
+		cond    *Condition
+		err     error
 	}{
 		"ok1": {
 			md: []string{
 				"x-awakari-group-id", "group0",
 				"X-Awakari-User-ID", "user0",
 			},
+			expires: timestamppb.New(time.Now()),
 			cond: &Condition{
 				Cond: &Condition_Tc{
 					Tc: &TextCondition{},
@@ -152,6 +156,7 @@ func TestServiceController_Create(t *testing.T) {
 			ctx := metadata.AppendToOutgoingContext(context.TODO(), c.md...)
 			_, err = client.Create(ctx, &CreateRequest{
 				Description: k,
+				Expires:     c.expires,
 				Cond:        c.cond,
 			})
 			if c.err == nil {
@@ -179,6 +184,7 @@ func TestServiceController_Read(t *testing.T) {
 			auth: true,
 			sub: &ReadResponse{
 				Description: "description",
+				Expires:     timestamppb.New(time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC)),
 				Enabled:     true,
 				Cond: &Condition{
 					Not: false,
@@ -244,6 +250,7 @@ func TestServiceController_Read(t *testing.T) {
 				require.Nil(t, err)
 				assert.Equal(t, c.sub.Description, sub.Description)
 				assert.Equal(t, c.sub.Enabled, sub.Enabled)
+				assert.Equal(t, c.sub.Expires, sub.Expires)
 				assert.Equal(t, c.sub.Cond.Not, sub.Cond.Not)
 				assert.Equal(t, c.sub.Cond.GetGc().Logic, sub.Cond.GetGc().Logic)
 				assert.Equal(t, len(c.sub.Cond.GetGc().GetGroup()), len(sub.Cond.GetGc().GetGroup()))
@@ -305,6 +312,7 @@ func TestServiceController_Update(t *testing.T) {
 				Id:          k,
 				Description: c.descr,
 				Enabled:     c.enabled,
+				Expires:     timestamppb.Now(),
 			})
 			if c.err == nil {
 				assert.Nil(t, err)
