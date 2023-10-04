@@ -661,12 +661,12 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 			},
 			out: []subscription.ConditionMatch{
 				{
-					SubscriptionId: id2,
-					Condition:      cond2,
-				},
-				{
 					SubscriptionId: id0,
 					Condition:      cond0,
+				},
+				{
+					SubscriptionId: id2,
+					Condition:      cond2,
 				},
 			},
 		},
