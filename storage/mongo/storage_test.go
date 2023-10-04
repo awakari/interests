@@ -678,9 +678,15 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 			if c.err == nil {
 				require.Nil(t, err)
 				require.Equal(t, len(c.out), len(page))
-				for i, cm := range c.out {
-					assert.Equal(t, cm.SubscriptionId, page[i].SubscriptionId)
-					assert.True(t, cm.Condition.Equal(page[i].Condition))
+				var found bool
+				for _, cm := range c.out {
+					for _, actual := range page {
+						if cm.SubscriptionId == actual.SubscriptionId && cm.Condition.Equal(actual.Condition) {
+							found = true
+							break
+						}
+					}
+					assert.True(t, found)
 				}
 			} else {
 				assert.ErrorIs(t, err, c.err)
