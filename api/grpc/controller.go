@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"time"
 )
 
 type serviceController struct {
@@ -32,16 +31,14 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 		var cond condition.Condition
 		cond, err = decodeCondition(req.Cond)
 		if err == nil {
-			var expires time.Time
-			// check is for the backward compatibility
-			if req.Expires != nil {
-				expires = req.Expires.AsTime()
-			}
 			sd := subscription.Data{
 				Description: req.Description,
 				Enabled:     req.Enabled,
-				Expires:     expires,
 				Condition:   cond,
+			}
+			// check is for the backward compatibility
+			if req.Expires != nil {
+				sd.Expires = req.Expires.AsTime()
 			}
 			resp.Id, err = sc.stor.Create(ctx, groupId, userId, sd)
 		}
@@ -79,6 +76,10 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 		sd := subscription.Data{
 			Description: req.Description,
 			Enabled:     req.Enabled,
+		}
+		// check is for the backward compatibility
+		if req.Expires != nil {
+			sd.Expires = req.Expires.AsTime()
 		}
 		err = sc.stor.Update(ctx, req.Id, groupId, userId, sd)
 		err = encodeError(err)
