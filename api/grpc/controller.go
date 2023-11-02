@@ -227,7 +227,7 @@ func encodeCondition(src condition.Condition, dst *Condition) {
 				Id:  c.GetId(),
 				Key: c.GetKey(),
 				Op:  encodeNumOp(c.GetOperation()),
-				Val: 0,
+				Val: c.GetValue(),
 			},
 		}
 	}
