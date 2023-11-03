@@ -120,6 +120,10 @@ var (
 	optsRead = options.
 			FindOne().
 			SetProjection(projData)
+	optsUpdate = options.
+			FindOneAndUpdate().
+			SetProjection(projData).
+			SetReturnDocument(options.Before)
 	optsDelete = options.
 			FindOneAndDelete().
 			SetProjection(projData)
@@ -250,25 +254,32 @@ func decodeSingleResult(id, groupId, userId string, result *mongo.SingleResult) 
 	return
 }
 
-func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d subscription.Data) (err error) {
+func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d subscription.Data) (prev subscription.Data, err error) {
 	q := bson.M{
 		attrId:      id,
 		attrGroupId: groupId,
 		attrUserId:  userId,
 	}
+	cond, condIds := encodeCondition(d.Condition)
 	u := bson.M{
 		"$set": bson.M{
 			attrDescr:   d.Description,
 			attrEnabled: d.Enabled,
 			attrExpires: d.Expires.UTC(),
+			attrCond:    cond,
+			attrCondIds: condIds,
 		},
 	}
-	var result *mongo.UpdateResult
-	result, err = s.coll.UpdateOne(ctx, q, u)
-	if err != nil {
-		err = fmt.Errorf("%w: failed to update metadata, id: %s, err: %s", storage.ErrInternal, id, err)
-	} else if result.MatchedCount < 1 {
+	var result *mongo.SingleResult
+	result = s.coll.FindOneAndUpdate(ctx, q, u, optsUpdate)
+	err = result.Err()
+	switch {
+	case errors.Is(err, mongo.ErrNoDocuments):
 		err = fmt.Errorf("%w: not found, id: %s, acc: %s/%s", storage.ErrNotFound, id, groupId, userId)
+	case err != nil:
+		err = fmt.Errorf("%w: failed to update subscription, id: %s, err: %s", storage.ErrInternal, id, err)
+	default:
+		prev, err = decodeSingleResult(id, groupId, userId, result)
 	}
 	return
 }

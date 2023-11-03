@@ -81,7 +81,12 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 		if req.Expires != nil {
 			sd.Expires = req.Expires.AsTime()
 		}
-		err = sc.stor.Update(ctx, req.Id, groupId, userId, sd)
+		var prev subscription.Data
+		prev, err = sc.stor.Update(ctx, req.Id, groupId, userId, sd)
+		if err == nil {
+			resp.Cond = &Condition{}
+			encodeCondition(prev.Condition, resp.Cond)
+		}
 		err = encodeError(err)
 	}
 	return

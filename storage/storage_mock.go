@@ -64,11 +64,30 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd s
 	return
 }
 
-func (s storageMock) Update(ctx context.Context, id, groupId, userId string, sd subscription.Data) (err error) {
+func (s storageMock) Update(ctx context.Context, id, groupId, userId string, sd subscription.Data) (prev subscription.Data, err error) {
 	if id == "fail" {
 		err = ErrInternal
 	} else if id == "missing" {
 		err = ErrNotFound
+	} else {
+		prev = subscription.Data{
+			Description: "description",
+			Expires:     time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
+			Condition: condition.NewGroupCondition(
+				condition.NewCondition(false),
+				condition.GroupLogicAnd,
+				[]condition.Condition{
+					condition.NewTextCondition(
+						condition.NewKeyCondition(condition.NewCondition(false), "txt_0", "key0"),
+						"pattern0", false,
+					),
+					condition.NewTextCondition(
+						condition.NewKeyCondition(condition.NewCondition(true), "txt_1", "key1"),
+						"pattern1", false,
+					),
+				},
+			),
+		}
 	}
 	return
 }

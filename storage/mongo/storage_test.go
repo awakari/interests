@@ -244,10 +244,11 @@ func TestStorageImpl_Update(t *testing.T) {
 		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 		"pattern0", false,
 	)
-	id0, err := s.Create(ctx, "group0", "user0", subscription.Data{
+	sd0 := subscription.Data{
 		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 		Condition: cond0,
-	})
+	}
+	id0, err := s.Create(ctx, "group0", "user0", sd0)
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
@@ -256,6 +257,7 @@ func TestStorageImpl_Update(t *testing.T) {
 		userId  string
 		err     error
 		sd      subscription.Data
+		prev    subscription.Data
 	}{
 		"ok": {
 			id:      id0,
@@ -264,7 +266,12 @@ func TestStorageImpl_Update(t *testing.T) {
 			sd: subscription.Data{
 				Description: "new description",
 				Expires:     time.Date(2023, 10, 5, 6, 44, 55, 0, time.UTC),
+				Condition: condition.NewTextCondition(
+					condition.NewKeyCondition(condition.NewCondition(false), "cond1", "key1"),
+					"pattern1", true,
+				),
 			},
+			prev: sd0,
 		},
 		"id mismatch": {
 			id:      "id0",
@@ -288,9 +295,11 @@ func TestStorageImpl_Update(t *testing.T) {
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			err = s.Update(ctx, c.id, c.groupId, c.userId, c.sd)
+			var prev subscription.Data
+			prev, err = s.Update(ctx, c.id, c.groupId, c.userId, c.sd)
 			if c.err == nil {
 				assert.Nil(t, err)
+				assert.Equal(t, c.prev, prev)
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}
