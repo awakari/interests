@@ -20,8 +20,8 @@ type (
 		// Read the subscription.Data by the subscription.Subscription id.
 		Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error)
 
-		// Update updates the mutable part of the subscription.Data
-		Update(ctx context.Context, id, groupId, userId string, sd subscription.Data) (err error)
+		// Update updates the subscription.Data
+		Update(ctx context.Context, id, groupId, userId string, sd subscription.Data) (prev subscription.Data, err error)
 
 		// Delete removes the subscription.Subscription specified by its unique id.
 		// Returns the subscription.Data if deleted, error otherwise.

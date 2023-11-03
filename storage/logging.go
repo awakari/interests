@@ -33,7 +33,7 @@ func (lm loggingMiddleware) Read(ctx context.Context, id, groupId, userId string
 	return lm.stor.Read(ctx, id, groupId, userId)
 }
 
-func (lm loggingMiddleware) Update(ctx context.Context, id, groupId, userId string, d subscription.Data) (err error) {
+func (lm loggingMiddleware) Update(ctx context.Context, id, groupId, userId string, d subscription.Data) (prev subscription.Data, err error) {
 	defer func() {
 		lm.log.Debug(fmt.Sprintf("Update(%s, %s, %s, %+v): err=%s", id, groupId, userId, d, err))
 	}()

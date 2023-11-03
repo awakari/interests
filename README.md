@@ -240,7 +240,32 @@ Payload:
 {
    "id": "d3911098-99e7-4a69-94f9-3cea0b236a04",
    "description": "my subscription 1 updated",
-   "enabled": false
+   "enabled": false,
+   "cond": {
+      "not": false,
+      "gc": {
+         "logic": 0,
+         "group": [
+            {
+               "not": false,
+               "tc": {
+                  "id": "cond0",
+                  "key": "key0",
+                  "term": "term0 term1"
+               }
+            },
+            {
+               "not": true,
+               "tc": {
+                  "id": "cond1",
+                  "key": "key1",
+                  "term": "term2",
+                  "exact": true
+               }
+            }
+         ]
+      }
+   }
 }
 ```
 

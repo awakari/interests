@@ -308,14 +308,54 @@ func TestServiceController_Update(t *testing.T) {
 			if c.auth {
 				ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
 			}
-			_, err := client.Update(ctx, &UpdateRequest{
+			resp, err := client.Update(ctx, &UpdateRequest{
 				Id:          k,
 				Description: c.descr,
 				Enabled:     c.enabled,
 				Expires:     timestamppb.Now(),
+				Cond: &Condition{
+					Not: false,
+					Cond: &Condition_Gc{
+						Gc: &GroupCondition{
+							Logic: common.GroupLogic_And,
+							Group: []*Condition{
+								{
+									Not: true,
+									Cond: &Condition_Tc{
+										Tc: &TextCondition{
+											Key:  "key0",
+											Term: "pattern0",
+										},
+									},
+								},
+								{
+									Cond: &Condition_Tc{
+										Tc: &TextCondition{
+											Key:  "key1",
+											Term: "pattern1",
+										},
+									},
+								},
+								{
+									Cond: &Condition_Nc{
+										Nc: &NumberCondition{
+											Key: "key3",
+											Op:  Operation_Gt,
+											Val: 1.23,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			})
 			if c.err == nil {
 				assert.Nil(t, err)
+				assert.NotNil(t, resp.Cond.GetGc())
+				assert.Equal(t, common.GroupLogic_And, resp.Cond.GetGc().Logic)
+				assert.Equal(t, "txt_0", resp.Cond.GetGc().GetGroup()[0].GetTc().Id)
+				assert.Equal(t, "txt_1", resp.Cond.GetGc().GetGroup()[1].GetTc().Id)
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}
