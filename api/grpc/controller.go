@@ -72,10 +72,15 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 	var groupId string
 	var userId string
 	groupId, userId, err = getAuthInfo(ctx)
+	var cond condition.Condition
+	if err == nil {
+		cond, err = decodeCondition(req.Cond)
+	}
 	if err == nil {
 		sd := subscription.Data{
 			Description: req.Description,
 			Enabled:     req.Enabled,
+			Condition:   cond,
 		}
 		// check is for the backward compatibility
 		if req.Expires != nil {
