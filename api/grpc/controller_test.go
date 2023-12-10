@@ -8,13 +8,13 @@ import (
 	"github.com/awakari/subscriptions/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -415,24 +415,36 @@ func TestServiceController_SearchOwn(t *testing.T) {
 	client := NewServiceClient(conn)
 	//
 	cases := map[string]struct {
-		auth bool
-		err  error
-		ids  []string
+		auth   bool
+		cursor string
+		order  Order
+		err    error
+		ids    []string
 	}{
-		"": {
+		"asc": {
 			auth: true,
 			ids: []string{
 				"sub0",
 				"sub1",
 			},
 		},
+		"desc": {
+			auth:  true,
+			order: Order_DESC,
+			ids: []string{
+				"sub1",
+				"sub0",
+			},
+		},
 		"fail": {
-			auth: true,
-			err:  status.Error(codes.Internal, "internal subscription storage failure"),
+			auth:   true,
+			cursor: "fail",
+			err:    status.Error(codes.Internal, "internal subscription storage failure"),
 		},
 		"no auth": {
-			auth: false,
-			err:  status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
+			auth:   false,
+			cursor: "no auth",
+			err:    status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
 		},
 	}
 	//
@@ -442,7 +454,7 @@ func TestServiceController_SearchOwn(t *testing.T) {
 			if c.auth {
 				ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
 			}
-			resp, err := client.SearchOwn(ctx, &SearchOwnRequest{Cursor: k, Limit: 0})
+			resp, err := client.SearchOwn(ctx, &SearchOwnRequest{Cursor: c.cursor, Limit: 0, Order: c.order})
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.ids, resp.Ids)

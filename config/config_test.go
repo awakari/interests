@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/slog"
+	"log/slog"
 	"os"
 	"testing"
 )
@@ -15,5 +15,5 @@ func TestConfig(t *testing.T) {
 	assert.Equal(t, "mongodb://localhost:27017/?retryWrites=true&w=majority", cfg.Db.Uri)
 	assert.Equal(t, "subscriptions", cfg.Db.Name)
 	assert.Equal(t, "subscriptions", cfg.Db.Table.Name)
-	assert.Equal(t, slog.DebugLevel, cfg.Log.Level)
+	assert.Equal(t, int(slog.LevelDebug), cfg.Log.Level)
 }

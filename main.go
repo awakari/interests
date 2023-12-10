@@ -7,7 +7,7 @@ import (
 	"github.com/awakari/subscriptions/config"
 	"github.com/awakari/subscriptions/storage"
 	"github.com/awakari/subscriptions/storage/mongo"
-	"golang.org/x/exp/slog"
+	"log/slog"
 	"os"
 )
 
@@ -19,9 +19,9 @@ func main() {
 		slog.Error("failed to load the config", err)
 	}
 	opts := slog.HandlerOptions{
-		Level: cfg.Log.Level,
+		Level: slog.Level(cfg.Log.Level),
 	}
-	log := slog.New(opts.NewTextHandler(os.Stdout))
+	log := slog.New(slog.NewTextHandler(os.Stdout, &opts))
 	//
 	stor, err := mongo.NewStorage(context.TODO(), cfg.Db)
 	if err == nil {

@@ -444,6 +444,19 @@ func TestStorageImpl_SearchOwn(t *testing.T) {
 			},
 			ids: acc0Ids,
 		},
+		"desc": {
+			q: subscription.QueryOwn{
+				Limit:   2,
+				GroupId: "acc0",
+				UserId:  "user0",
+				Order:   subscription.OrderDesc,
+			},
+			cursor: acc0Ids[3],
+			ids: []string{
+				acc0Ids[2],
+				acc0Ids[1],
+			},
+		},
 		"acc1": {
 			q: subscription.QueryOwn{
 				Limit:   3,

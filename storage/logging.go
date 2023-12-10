@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/awakari/subscriptions/model/subscription"
-	"golang.org/x/exp/slog"
+	"log/slog"
 )
 
 type loggingMiddleware struct {

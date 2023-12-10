@@ -83,6 +83,12 @@ var (
 			Value: 1,
 		},
 	}
+	projIdDesc = bson.D{
+		{
+			Key:   attrId,
+			Value: -1,
+		},
+	}
 	projData = bson.D{
 		{
 			Key:   attrDescr,
@@ -298,9 +304,6 @@ func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd
 
 func (s storageImpl) SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error) {
 	dbQuery := bson.M{
-		attrId: bson.M{
-			"$gt": cursor,
-		},
 		attrGroupId: q.GroupId,
 		attrUserId:  q.UserId,
 	}
@@ -308,8 +311,19 @@ func (s storageImpl) SearchOwn(ctx context.Context, q subscription.QueryOwn, cur
 		Find().
 		SetLimit(int64(q.Limit)).
 		SetProjection(projId).
-		SetShowRecordID(false).
-		SetSort(projId)
+		SetShowRecordID(false)
+	switch q.Order {
+	case subscription.OrderDesc:
+		dbQuery[attrId] = bson.M{
+			"$lt": cursor,
+		}
+		opts = opts.SetSort(projIdDesc)
+	default:
+		dbQuery[attrId] = bson.M{
+			"$gt": cursor,
+		}
+		opts = opts.SetSort(projId)
+	}
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, dbQuery, opts)
 	if err != nil {

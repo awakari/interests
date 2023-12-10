@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/kelseyhightower/envconfig"
-	"golang.org/x/exp/slog"
 )
 
 type Config struct {
@@ -11,7 +10,7 @@ type Config struct {
 	}
 	Db  DbConfig
 	Log struct {
-		Level slog.Level `envconfig:"LOG_LEVEL" default:"-4" required:"true"`
+		Level int `envconfig:"LOG_LEVEL" default:"-4" required:"true"`
 	}
 }
 

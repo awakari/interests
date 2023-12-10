@@ -122,9 +122,17 @@ func (s storageMock) Delete(ctx context.Context, id, groupId, userId string) (sd
 
 func (s storageMock) SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error) {
 	if cursor == "" {
-		ids = []string{
-			"sub0",
-			"sub1",
+		switch q.Order {
+		case subscription.OrderDesc:
+			ids = []string{
+				"sub1",
+				"sub0",
+			}
+		default:
+			ids = []string{
+				"sub0",
+				"sub1",
+			}
 		}
 	} else if cursor == "fail" {
 		err = ErrInternal

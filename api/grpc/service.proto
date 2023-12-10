@@ -109,6 +109,12 @@ message DeleteResponse {
 message SearchOwnRequest {
   string cursor = 1;
   uint32 limit = 2;
+  Order order = 3;
+}
+
+enum Order {
+  ASC = 0;
+  DESC = 1;
 }
 
 message SearchOwnResponse {

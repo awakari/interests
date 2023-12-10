@@ -125,6 +125,12 @@ func (sc serviceController) SearchOwn(ctx context.Context, req *SearchOwnRequest
 			UserId:  userId,
 			Limit:   req.Limit,
 		}
+		switch req.Order {
+		case Order_DESC:
+			q.Order = subscription.OrderDesc
+		default:
+			q.Order = subscription.OrderAsc
+		}
 		resp.Ids, err = sc.stor.SearchOwn(ctx, q, req.Cursor)
 		err = encodeError(err)
 	}

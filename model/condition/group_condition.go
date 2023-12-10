@@ -1,7 +1,7 @@
 package condition
 
 import (
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 type (
