@@ -49,7 +49,7 @@ func (lm loggingMiddleware) Delete(ctx context.Context, id, groupId, userId stri
 
 func (lm loggingMiddleware) SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("SearchOwn(%v, %v): %s", q, cursor, err))
+		lm.log.Debug(fmt.Sprintf("SearchOwn(%v, %v): %d, %s", q, cursor, len(ids), err))
 	}()
 	return lm.stor.SearchOwn(ctx, q, cursor)
 }
