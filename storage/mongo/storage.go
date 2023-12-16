@@ -324,6 +324,9 @@ func (s storageImpl) SearchOwn(ctx context.Context, q subscription.QueryOwn, cur
 		}
 		opts = opts.SetSort(projId)
 	}
+	dbQuery[attrDescr] = bson.M{
+		"$regex": q.Pattern,
+	}
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, dbQuery, opts)
 	if err != nil {

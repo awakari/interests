@@ -124,6 +124,7 @@ func (sc serviceController) SearchOwn(ctx context.Context, req *SearchOwnRequest
 			GroupId: groupId,
 			UserId:  userId,
 			Limit:   req.Limit,
+			Pattern: req.Pattern,
 		}
 		switch req.Order {
 		case Order_DESC:

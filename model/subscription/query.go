@@ -5,6 +5,7 @@ type QueryOwn struct {
 	GroupId string
 	UserId  string
 	Order   Order
+	Pattern string
 }
 
 type QueryByCondition struct {

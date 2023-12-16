@@ -404,7 +404,7 @@ func TestStorageImpl_SearchOwn(t *testing.T) {
 			fmt.Sprintf("pattern%d", i%3), i%2 == 0,
 		)
 		sub := subscription.Data{
-			Description: fmt.Sprintf("description%d", i%2),
+			Description: fmt.Sprintf("description%d", i%3),
 			Expires:     time.Now().Add(time.Duration(i-2) * time.Hour),
 			Condition:   cond,
 		}
@@ -443,6 +443,17 @@ func TestStorageImpl_SearchOwn(t *testing.T) {
 				UserId:  "user0",
 			},
 			ids: acc0Ids,
+		},
+		"pattern filter": {
+			q: subscription.QueryOwn{
+				Limit:   100,
+				GroupId: "acc0",
+				UserId:  "user0",
+				Pattern: "description1",
+			},
+			ids: []string{
+				ids[4],
+			},
 		},
 		"desc": {
 			q: subscription.QueryOwn{
