@@ -4,6 +4,10 @@ metadata:
   name: {{ include "subscriptions.fullname" . }}
   labels:
     {{- include "subscriptions.labels" . | nindent 4 }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "{{ .Values.service.http.port }}"
 spec:
   type: {{ .Values.service.type }}
   ports:
