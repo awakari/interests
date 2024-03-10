@@ -153,3 +153,8 @@ func (s storageMock) SearchByCondition(ctx context.Context, q subscription.Query
 	}
 	return
 }
+
+func (s storageMock) Count(ctx context.Context) (count int64, err error) {
+	count = 42
+	return
+}

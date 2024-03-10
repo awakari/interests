@@ -61,6 +61,12 @@ func (lm loggingMiddleware) SearchByCondition(ctx context.Context, q subscriptio
 	return lm.stor.SearchByCondition(ctx, q, cursor)
 }
 
+func (lm loggingMiddleware) Count(ctx context.Context) (count int64, err error) {
+	count, err = lm.stor.Count(ctx)
+	lm.log.Debug(fmt.Sprintf("Count(): %d, %s", count, err))
+	return
+}
+
 func (lm loggingMiddleware) Close() (err error) {
 	defer func() {
 		lm.log.Debug(fmt.Sprintf("Close(): %s", err))

@@ -32,6 +32,8 @@ spec:
           env:
             - name: API_PORT
               value: "{{ .Values.service.port }}"
+            - name: API_HTTP_PORT
+              value: "{{ .Values.service.http.port }}"
             - name: DB_URI
               value: "{{ .Values.db.protocol }}://{{ .Values.db.hostname }}/?retryWrites=true&w=majority"
             - name: DB_NAME
@@ -65,6 +67,9 @@ spec:
           ports:
             - name: grpc
               containerPort: {{ .Values.service.port }}
+              protocol: TCP
+            - name: http
+              containerPort: {{ .Values.service.http.port }}
               protocol: TCP
           livenessProbe:
             grpc:

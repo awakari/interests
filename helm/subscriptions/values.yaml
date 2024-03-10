@@ -38,6 +38,8 @@ securityContext: {}
 service:
   type: ClusterIP
   port: 50051
+  http:
+    port: 8080
 
 ingress:
   enabled: false

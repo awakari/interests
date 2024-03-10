@@ -33,6 +33,8 @@ type (
 		// SearchByCondition finds all subscriptions those match the specified condition id and feeds these to the
 		// specified consumer func.
 		SearchByCondition(ctx context.Context, q subscription.QueryByCondition, cursor string) (page []subscription.ConditionMatch, err error)
+
+		Count(ctx context.Context) (count int64, err error)
 	}
 )
 

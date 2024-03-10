@@ -394,3 +394,7 @@ func (s storageImpl) SearchByCondition(ctx context.Context, q subscription.Query
 	}
 	return
 }
+
+func (s storageImpl) Count(ctx context.Context) (count int64, err error) {
+	return s.coll.EstimatedDocumentCount(ctx)
+}

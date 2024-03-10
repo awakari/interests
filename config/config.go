@@ -7,6 +7,7 @@ import (
 type Config struct {
 	Api struct {
 		Port uint16 `envconfig:"API_PORT" default:"50051" required:"true"`
+		Http HttpConfig
 	}
 	Db  DbConfig
 	Log struct {
@@ -27,6 +28,10 @@ type DbConfig struct {
 		Enabled  bool `envconfig:"DB_TLS_ENABLED" default:"false" required:"true"`
 		Insecure bool `envconfig:"DB_TLS_INSECURE" default:"false" required:"true"`
 	}
+}
+
+type HttpConfig struct {
+	Port uint16 `envconfig:"API_HTTP_PORT" default:"8080" required:"true"`
 }
 
 func NewConfigFromEnv() (cfg Config, err error) {
