@@ -37,7 +37,7 @@ func main() {
 	prometheus.MustRegister(
 		prometheus.NewGaugeFunc(
 			prometheus.GaugeOpts{
-				Name: "awk_subscriptions_count_total",
+				Name: "awk_subscriptions_count",
 				Help: "Awakari subscriptions total count",
 			},
 			func() (v float64) {
