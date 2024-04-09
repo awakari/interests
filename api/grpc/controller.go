@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"time"
 )
 
 type serviceController struct {
@@ -35,6 +36,7 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 				Description: req.Description,
 				Enabled:     req.Enabled,
 				Condition:   cond,
+				Created:     time.Now().UTC(),
 			}
 			// check is for the backward compatibility
 			if req.Expires != nil {
@@ -60,7 +62,15 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 			encodeCondition(sd.Condition, resp.Cond)
 			resp.Description = sd.Description
 			resp.Enabled = sd.Enabled
-			resp.Expires = timestamppb.New(sd.Expires)
+			if !sd.Expires.IsZero() {
+				resp.Expires = timestamppb.New(sd.Expires)
+			}
+			if !sd.Created.IsZero() {
+				resp.Created = timestamppb.New(sd.Created)
+			}
+			if !sd.Updated.IsZero() {
+				resp.Updated = timestamppb.New(sd.Updated)
+			}
 		}
 		err = encodeError(err)
 	}
@@ -81,6 +91,7 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 			Description: req.Description,
 			Enabled:     req.Enabled,
 			Condition:   cond,
+			Updated:     time.Now().UTC(),
 		}
 		// check is for the backward compatibility
 		if req.Expires != nil {

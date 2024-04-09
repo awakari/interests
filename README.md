@@ -349,6 +349,8 @@ subscription they need to delete it 1st and then create again.
 | descr     | String                                     | Human readable description                                              |
 | enabled   | Boolean                                    | Defines whether the subscription is searchable for a condition matching |
 | expires   | Time                                       | Defines the deadline when the subscription may be treated as `enabled`  |
+| created   | Time                                       |                                                                         |
+| updated   | Time                                       |                                                                         |
 | cond      | Condition (currently may be Group or Text) | Message matching root immutable criteria                                |
 
 #### 5.2.1.2. Group Condition

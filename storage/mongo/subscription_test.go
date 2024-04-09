@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"testing"
+	"time"
 )
 
 func Test_decodeSubscription(t *testing.T) {
@@ -36,6 +37,38 @@ func Test_decodeSubscription(t *testing.T) {
 				UserId:  "acc0",
 				Data: subscription.Data{
 					Description: "description0",
+					Condition: condition.NewTextCondition(
+						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
+						"pattern0", false,
+					),
+				},
+			},
+		},
+		"ok w/ created and updated dates": {
+			in: subscriptionRec{
+				Id:          "sub0",
+				GroupId:     "group0",
+				UserId:      "acc0",
+				Description: "description0",
+				Created:     time.Date(2024, 4, 9, 6, 53, 10, 0, time.UTC),
+				Updated:     time.Date(2024, 4, 9, 6, 53, 20, 0, time.UTC),
+				RawCondition: bson.M{
+					conditionAttrBase: bson.M{
+						conditionAttrNot: false,
+					},
+					numConditionAttrId:    "cond0",
+					numConditionAttrKey:   "key0",
+					textConditionAttrTerm: "pattern0",
+				},
+			},
+			out: subscription.Subscription{
+				Id:      "sub0",
+				GroupId: "group0",
+				UserId:  "acc0",
+				Data: subscription.Data{
+					Description: "description0",
+					Created:     time.Date(2024, 4, 9, 6, 53, 10, 0, time.UTC),
+					Updated:     time.Date(2024, 4, 9, 6, 53, 20, 0, time.UTC),
 					Condition: condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 						"pattern0", false,

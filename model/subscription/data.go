@@ -16,6 +16,12 @@ type Data struct {
 	// Expires defines a deadline when the subscription is treated as Enabled
 	Expires time.Time
 
+	// Created represents the subscription creation time.
+	Created time.Time
+
+	// Updated represents the subscription last update time.
+	Updated time.Time
+
 	// Condition represents the certain criteria to select the Subscription for the further routing.
 	// It's immutable once the Subscription is created.
 	Condition condition.Condition

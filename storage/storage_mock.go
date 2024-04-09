@@ -41,6 +41,8 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd s
 			Description: "description",
 			Enabled:     true,
 			Expires:     time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
+			Created:     time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC),
+			Updated:     time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC),
 			Condition: condition.NewGroupCondition(
 				condition.NewCondition(false),
 				condition.GroupLogicAnd,

@@ -185,6 +185,8 @@ func TestServiceController_Read(t *testing.T) {
 			sub: &ReadResponse{
 				Description: "description",
 				Expires:     timestamppb.New(time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC)),
+				Created:     timestamppb.New(time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC)),
+				Updated:     timestamppb.New(time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC)),
 				Enabled:     true,
 				Cond: &Condition{
 					Not: false,
@@ -251,6 +253,8 @@ func TestServiceController_Read(t *testing.T) {
 				assert.Equal(t, c.sub.Description, sub.Description)
 				assert.Equal(t, c.sub.Enabled, sub.Enabled)
 				assert.Equal(t, c.sub.Expires, sub.Expires)
+				assert.Equal(t, c.sub.Created, sub.Created)
+				assert.Equal(t, c.sub.Updated, sub.Updated)
 				assert.Equal(t, c.sub.Cond.Not, sub.Cond.Not)
 				assert.Equal(t, c.sub.Cond.GetGc().Logic, sub.Cond.GetGc().Logic)
 				assert.Equal(t, len(c.sub.Cond.GetGc().GetGroup()), len(sub.Cond.GetGc().GetGroup()))

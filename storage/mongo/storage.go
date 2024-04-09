@@ -216,6 +216,8 @@ func (s storageImpl) Create(ctx context.Context, groupId, userId string, sd subs
 		Description: sd.Description,
 		Enabled:     sd.Enabled,
 		Expires:     sd.Expires.UTC(),
+		Created:     sd.Created.UTC(),
+		Updated:     sd.Updated.UTC(),
 		Condition:   recCond,
 		CondIds:     condIds,
 	}
@@ -272,6 +274,7 @@ func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d s
 			attrDescr:   d.Description,
 			attrEnabled: d.Enabled,
 			attrExpires: d.Expires.UTC(),
+			attrUpdated: d.Updated.UTC(),
 			attrCond:    cond,
 			attrCondIds: condIds,
 		},

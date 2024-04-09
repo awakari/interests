@@ -78,6 +78,8 @@ message ReadResponse {
   bool enabled = 2;
   Condition cond = 3;
   google.protobuf.Timestamp expires = 4;
+  google.protobuf.Timestamp created = 5;
+  google.protobuf.Timestamp updated = 6;
 }
 
 // Update
