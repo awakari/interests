@@ -35,6 +35,7 @@ type (
 		SearchByCondition(ctx context.Context, q subscription.QueryByCondition, cursor string) (page []subscription.ConditionMatch, err error)
 
 		Count(ctx context.Context) (count int64, err error)
+		CountUsersUnique(ctx context.Context) (count int64, err error)
 	}
 )
 

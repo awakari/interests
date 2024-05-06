@@ -45,6 +45,16 @@ func main() {
 				return float64(count)
 			},
 		),
+		prometheus.NewGaugeFunc(
+			prometheus.GaugeOpts{
+				Name: "awk_subscribers_total",
+				Help: "Awakari unique users who subscribed, total count",
+			},
+			func() (v float64) {
+				count, _ := stor.CountUsersUnique(context.TODO())
+				return float64(count)
+			},
+		),
 	)
 	//
 	log.Info(fmt.Sprintf("starting to listen the API @ port #%d...", cfg.Api.Port))

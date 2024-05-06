@@ -67,6 +67,12 @@ func (lm loggingMiddleware) Count(ctx context.Context) (count int64, err error) 
 	return
 }
 
+func (lm loggingMiddleware) CountUsersUnique(ctx context.Context) (count int64, err error) {
+	count, err = lm.stor.CountUsersUnique(ctx)
+	lm.log.Debug(fmt.Sprintf("CountUsersUnique(): %d, %s", count, err))
+	return
+}
+
 func (lm loggingMiddleware) Close() (err error) {
 	defer func() {
 		lm.log.Debug(fmt.Sprintf("Close(): %s", err))

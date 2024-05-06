@@ -21,6 +21,8 @@ type storageImpl struct {
 	coll *mongo.Collection
 }
 
+const countUsersUnique = "countUsersUnique"
+
 var timeZero = time.Time{}.UTC()
 var (
 	indices = []mongo.IndexModel{
@@ -138,6 +140,19 @@ var (
 				SetProjection(projSearchByCondId).
 				SetShowRecordID(false).
 				SetSort(projId)
+	pipelineCountUsersUniq = mongo.Pipeline{
+		bson.D{{
+			"$group",
+			bson.D{{
+				"_id",
+				"$userId",
+			}},
+		}},
+		bson.D{{
+			"$count",
+			countUsersUnique,
+		}},
+	}
 )
 
 func NewStorage(ctx context.Context, cfgDb config.DbConfig) (s storage.Storage, err error) {
@@ -400,4 +415,25 @@ func (s storageImpl) SearchByCondition(ctx context.Context, q subscription.Query
 
 func (s storageImpl) Count(ctx context.Context) (count int64, err error) {
 	return s.coll.EstimatedDocumentCount(ctx)
+}
+
+func (s storageImpl) CountUsersUnique(ctx context.Context) (count int64, err error) {
+	var cursor *mongo.Cursor
+	cursor, err = s.coll.Aggregate(ctx, pipelineCountUsersUniq)
+	var result bson.M
+	if err == nil && cursor.Next(ctx) {
+		err = cursor.Decode(&result)
+	}
+	if err == nil {
+		rawCount := result[countUsersUnique]
+		switch rawCount.(type) {
+		case int32:
+			count = int64(rawCount.(int32))
+		case int64:
+			count = rawCount.(int64)
+		default:
+			err = fmt.Errorf("%w: failed to convert result to int: %+v", storage.ErrInternal, rawCount)
+		}
+	}
+	return
 }

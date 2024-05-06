@@ -160,3 +160,8 @@ func (s storageMock) Count(ctx context.Context) (count int64, err error) {
 	count = 42
 	return
 }
+
+func (s storageMock) CountUsersUnique(ctx context.Context) (count int64, err error) {
+	count = 42
+	return
+}

@@ -798,3 +798,74 @@ func TestStorageImpl_Count(t *testing.T) {
 		})
 	}
 }
+
+func TestStorageImpl_CountUsersUnique(t *testing.T) {
+	//
+	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	dbCfg := config.DbConfig{
+		Uri:  dbUri,
+		Name: "subscriptions",
+	}
+	dbCfg.Table.Name = collName
+	dbCfg.Table.Shard = false
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	s, err := NewStorage(ctx, dbCfg)
+	require.Nil(t, err)
+	defer clear(ctx, t, s.(storageImpl))
+	//
+	rootConditions := map[string]condition.Condition{}
+	var matchingSubIds []string
+	for i := 0; i < 10; i++ {
+		cond := condition.NewTextCondition(
+			condition.NewKeyCondition(
+				condition.NewCondition(i%4 == 0), "cond0", fmt.Sprintf("key%d", i%3),
+			),
+			fmt.Sprintf("pattern%d", i%3), i%2 == 0,
+		)
+		sub := subscription.Data{
+			Enabled:   i%2 == 0,
+			Condition: cond,
+		}
+		id, err := s.Create(ctx, "acc0", fmt.Sprintf("user%d", i%3), sub)
+		require.Nil(t, err)
+		if sub.Enabled {
+			matchingSubIds = append(matchingSubIds, id)
+			rootConditions[id] = cond
+		}
+	}
+	sort.Strings(matchingSubIds)
+	for i := 0; i < 10; i++ {
+		cond := condition.NewNumberCondition(
+			condition.NewKeyCondition(
+				condition.NewCondition(i%4 == 0), "cond1", fmt.Sprintf("key%d", i%3),
+			),
+			condition.NumOpEq, 42,
+		)
+		sub := subscription.Data{
+			Enabled:   i%2 == 0,
+			Condition: cond,
+		}
+		_, err := s.Create(ctx, "acc0", "user0", sub)
+		require.Nil(t, err)
+	}
+	//
+	cases := map[string]struct {
+		out int64
+		err error
+	}{
+		"3": {
+			out: 3,
+		},
+	}
+	//
+	for k, c := range cases {
+		t.Run(k, func(t *testing.T) {
+			out, err := s.(storageImpl).CountUsersUnique(context.TODO())
+			assert.Equal(t, c.out, out)
+			assert.ErrorIs(t, err, c.err)
+		})
+	}
+}
