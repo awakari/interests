@@ -94,6 +94,10 @@ func (s storageMock) Update(ctx context.Context, id, groupId, userId string, sd 
 	return
 }
 
+func (s storageMock) UpdateRead(ctx context.Context, id string, ts time.Time) (err error) {
+	return
+}
+
 func (s storageMock) Delete(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
 	if id == "fail" {
 		err = ErrInternal

@@ -10,10 +10,18 @@ import "google/protobuf/timestamp.proto";
 service Service {
 
   rpc Create(CreateRequest) returns (CreateResponse);
+
   rpc Read(ReadRequest) returns (ReadResponse);
+
   rpc Update(UpdateRequest) returns (UpdateResponse);
+
+  // Sets the latest observed time when a message matching the subscription has been read
+  rpc UpdateRead(UpdateReadRequest) returns (UpdateReadResponse);
+
   rpc Delete(DeleteRequest) returns (DeleteResponse);
+
   rpc SearchOwn(SearchOwnRequest) returns (SearchOwnResponse);
+
   rpc SearchByCondition(SearchByConditionRequest) returns (SearchByConditionResponse);
 }
 
@@ -80,6 +88,7 @@ message ReadResponse {
   google.protobuf.Timestamp expires = 4;
   google.protobuf.Timestamp created = 5;
   google.protobuf.Timestamp updated = 6;
+  google.protobuf.Timestamp read = 7;
 }
 
 // Update
@@ -94,6 +103,15 @@ message UpdateRequest {
 
 message UpdateResponse {
   Condition cond = 1;
+}
+
+// UpdateRead
+
+message UpdateReadRequest {
+  string id = 1;
+}
+
+message UpdateReadResponse {
 }
 
 // Delete

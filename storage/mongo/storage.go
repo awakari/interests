@@ -108,6 +108,18 @@ var (
 			Key:   attrCond,
 			Value: 1,
 		},
+		{
+			Key:   attrCreated,
+			Value: 1,
+		},
+		{
+			Key:   attrUpdated,
+			Value: 1,
+		},
+		{
+			Key:   attrRead,
+			Value: 1,
+		},
 	}
 	projSearchByCondId = bson.D{
 		{
@@ -317,6 +329,22 @@ func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd
 	var result *mongo.SingleResult
 	result = s.coll.FindOneAndDelete(ctx, q, optsDelete)
 	sd, err = decodeSingleResult(id, groupId, userId, result)
+	return
+}
+
+func (s storageImpl) UpdateRead(ctx context.Context, id string, ts time.Time) (err error) {
+	q := bson.M{
+		attrId: id,
+	}
+	u := bson.M{
+		"$set": bson.M{
+			attrRead: ts,
+		},
+	}
+	_, err = s.coll.UpdateOne(ctx, q, u)
+	if err != nil {
+		err = fmt.Errorf("%w: failed to update the subscription read time, id: %s, err: %s", storage.ErrInternal, id, err)
+	}
 	return
 }
 
