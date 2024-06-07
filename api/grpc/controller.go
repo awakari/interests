@@ -71,9 +71,6 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 			if !sd.Updated.IsZero() {
 				resp.Updated = timestamppb.New(sd.Updated)
 			}
-			if !sd.Read.IsZero() {
-				resp.Read = timestamppb.New(sd.Read)
-			}
 		}
 		err = encodeError(err)
 	}
@@ -108,12 +105,6 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 		}
 		err = encodeError(err)
 	}
-	return
-}
-
-func (sc serviceController) UpdateRead(ctx context.Context, req *UpdateReadRequest) (resp *UpdateReadResponse, err error) {
-	err = sc.stor.UpdateRead(ctx, req.Id, time.Now().UTC())
-	err = encodeError(err)
 	return
 }
 

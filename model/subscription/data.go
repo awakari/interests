@@ -22,9 +22,6 @@ type Data struct {
 	// Updated represents the subscription last update time.
 	Updated time.Time
 
-	// Read represents the latest observed time when a message matching the subscription has been read
-	Read time.Time
-
 	// Condition represents the certain criteria to select the Subscription for the further routing.
 	// It's immutable once the Subscription is created.
 	Condition condition.Condition

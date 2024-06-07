@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/awakari/subscriptions/model/subscription"
 	"io"
-	"time"
 )
 
 type (
@@ -23,9 +22,6 @@ type (
 
 		// Update updates the subscription.Data
 		Update(ctx context.Context, id, groupId, userId string, sd subscription.Data) (prev subscription.Data, err error)
-
-		// UpdateRead updates the subscription.Data.Read
-		UpdateRead(ctx context.Context, id string, ts time.Time) (err error)
 
 		// Delete removes the subscription.Subscription specified by its unique id.
 		// Returns the subscription.Data if deleted, error otherwise.

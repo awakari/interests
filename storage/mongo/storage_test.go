@@ -168,7 +168,6 @@ func TestStorageImpl_Read(t *testing.T) {
 		Enabled:     true,
 		Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 		Condition:   cond0,
-		Read:        time.Date(2023, 10, 4, 6, 44, 56, 0, time.UTC),
 		Created:     time.Date(2023, 10, 4, 6, 44, 57, 0, time.UTC),
 		Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
 	})
@@ -190,7 +189,6 @@ func TestStorageImpl_Read(t *testing.T) {
 				Enabled:     true,
 				Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 				Condition:   cond0,
-				Read:        time.Date(2023, 10, 4, 6, 44, 56, 0, time.UTC),
 				Created:     time.Date(2023, 10, 4, 6, 44, 57, 0, time.UTC),
 				Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
 			},
@@ -309,53 +307,6 @@ func TestStorageImpl_Update(t *testing.T) {
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}
-		})
-	}
-}
-
-func TestStorageImpl_UpdateRead(t *testing.T) {
-	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
-	dbCfg := config.DbConfig{
-		Uri:  dbUri,
-		Name: "subscriptions",
-	}
-	dbCfg.Table.Name = collName
-	dbCfg.Tls.Enabled = true
-	dbCfg.Tls.Insecure = true
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer cancel()
-	s, err := NewStorage(ctx, dbCfg)
-	require.Nil(t, err)
-	defer clear(ctx, t, s.(storageImpl))
-	//
-	cond0 := condition.NewTextCondition(
-		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
-		"pattern0", false,
-	)
-	sd0 := subscription.Data{
-		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
-		Condition: cond0,
-	}
-	id0, err := s.Create(ctx, "group0", "user0", sd0)
-	require.Nil(t, err)
-	//
-	cases := map[string]struct {
-		id  string
-		err error
-	}{
-		"ok": {
-			id: id0,
-		},
-		"id mismatch": {
-			id: "missing",
-		},
-	}
-	//
-	for name, c := range cases {
-		t.Run(name, func(t *testing.T) {
-			err = s.UpdateRead(ctx, c.id, time.Now().UTC())
-			assert.ErrorIs(t, err, c.err)
 		})
 	}
 }

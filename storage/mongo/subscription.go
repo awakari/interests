@@ -48,9 +48,6 @@ type subscriptionRec struct {
 
 	Updated time.Time `bson:"updated,omitempty"`
 
-	// Read represents the latest observed time when a message matching the subscription has been read
-	Read time.Time `bson:"read,omitempty"`
-
 	RawCondition bson.M `bson:"cond"`
 
 	// CondIds contains a flat list of all condition ids.
@@ -66,7 +63,6 @@ const attrEnabled = "enabled"
 const attrExpires = "expires"
 const attrCreated = "created"
 const attrUpdated = "updated"
-const attrRead = "read"
 const attrCondIds = "condIds"
 const attrCond = "cond"
 
@@ -84,7 +80,6 @@ func (rec subscriptionRec) decodeSubscriptionData(sd *subscription.Data) (err er
 	sd.Expires = rec.Expires
 	sd.Created = rec.Created
 	sd.Updated = rec.Updated
-	sd.Read = rec.Read
 	var condRec Condition
 	condRec, err = decodeRawCondition(rec.RawCondition)
 	if err == nil {
