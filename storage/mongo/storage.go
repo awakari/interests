@@ -101,6 +101,10 @@ var (
 	}
 	projFollowersAsc = bson.D{
 		{
+			Key:   attrFollowers,
+			Value: 1,
+		},
+		{
 			Key:   attrId,
 			Value: 1,
 		},
@@ -109,6 +113,10 @@ var (
 		{
 			Key:   attrFollowers,
 			Value: -1,
+		},
+		{
+			Key:   attrId,
+			Value: 1,
 		},
 	}
 	projData = bson.D{
@@ -358,6 +366,11 @@ func (s storageImpl) UpdateFollowers(ctx context.Context, id string, delta int64
 	q := bson.M{
 		attrId: id,
 	}
+	if delta < 0 {
+		q[attrFollowers] = bson.M{
+			"$gte": -delta,
+		}
+	}
 	u := bson.M{
 		"$inc": bson.M{
 			attrFollowers: delta,
@@ -410,18 +423,47 @@ func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor su
 		SetShowRecordID(false)
 	switch q.Sort {
 	case subscription.SortFollowers:
-		dbQuery[attrId] = bson.M{
-			"$ne": cursor.Id,
-		}
 		switch q.Order {
 		case subscription.OrderDesc:
-			dbQuery[attrFollowers] = bson.M{
-				"$lt": cursor.Followers,
+			dbQuery = bson.M{
+				"$and": []bson.M{
+					dbQuery,
+					{
+						"$or": []bson.M{
+							{
+								attrFollowers: bson.M{
+									"$lt": cursor.Followers,
+								},
+							},
+							{
+								attrId: bson.M{
+									"gt": cursor.Id,
+								},
+							},
+						},
+					},
+				},
 			}
 			opts = opts.SetSort(projFollowersDesc)
 		default:
-			dbQuery[attrFollowers] = bson.M{
-				"$gt": cursor.Followers,
+			dbQuery = bson.M{
+				"$and": []bson.M{
+					dbQuery,
+					{
+						"$or": []bson.M{
+							{
+								attrFollowers: bson.M{
+									"$gt": cursor.Followers,
+								},
+							},
+							{
+								attrId: bson.M{
+									"gt": cursor.Id,
+								},
+							},
+						},
+					},
+				},
 			}
 			opts = opts.SetSort(projFollowersAsc)
 		}

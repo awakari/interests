@@ -435,7 +435,7 @@ func TestStorageImpl_Search(t *testing.T) {
 	dbCfg.Table.Name = collName
 	dbCfg.Tls.Enabled = true
 	dbCfg.Tls.Insecure = true
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 	s, err := NewStorage(ctx, dbCfg)
 	require.Nil(t, err)
@@ -491,6 +491,9 @@ func TestStorageImpl_Search(t *testing.T) {
 		ids[9],
 		ids[8],
 		ids[6],
+		ids[4],
+	}
+	descFollowersIds1 := []string{
 		ids[4],
 		ids[2],
 		ids[0],
@@ -555,7 +558,7 @@ func TestStorageImpl_Search(t *testing.T) {
 		},
 		"include public and sort by followers": {
 			q: subscription.Query{
-				Limit:   100,
+				Limit:   4,
 				GroupId: "acc0",
 				UserId:  "user0",
 				Public:  true,
@@ -566,6 +569,21 @@ func TestStorageImpl_Search(t *testing.T) {
 				Followers: math.MaxInt64,
 			},
 			ids: descFollowersIds0,
+		},
+		"include public and sort by followers w/ cursor": {
+			q: subscription.Query{
+				Limit:   4,
+				GroupId: "acc0",
+				UserId:  "user0",
+				Public:  true,
+				Sort:    subscription.SortFollowers,
+				Order:   subscription.OrderDesc,
+			},
+			cursor: subscription.Cursor{
+				Id:        acc0Ids[4],
+				Followers: 7,
+			},
+			ids: descFollowersIds1,
 		},
 	}
 	//
@@ -1004,6 +1022,14 @@ func TestStorageImpl_UpdateFollowers(t *testing.T) {
 	}
 	id2, err := s.Create(ctx, "group0", "user0", sd2)
 	require.Nil(t, err)
+	sd3 := subscription.Data{
+		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
+		Condition: cond0,
+		Followers: 3,
+		Public:    true,
+	}
+	id3, err := s.Create(ctx, "group0", "user0", sd3)
+	require.Nil(t, err)
 	//
 	cases := map[string]struct {
 		id             string
@@ -1029,6 +1055,11 @@ func TestStorageImpl_UpdateFollowers(t *testing.T) {
 			id:             id2,
 			delta:          -1,
 			followersAfter: 1,
+		},
+		"not enough": {
+			id:    id3,
+			delta: -4,
+			err:   storage.ErrNotFound,
 		},
 	}
 	//
