@@ -23,6 +23,10 @@ type subscriptionWrite struct {
 
 	Updated time.Time `bson:"updated,omitempty"`
 
+	Public bool `bson:"public,omitempty"`
+
+	Followers int64 `bson:"followers,omitempty"`
+
 	Condition Condition `bson:"cond"`
 
 	// CondIds contains a flat list of all condition ids.
@@ -48,6 +52,10 @@ type subscriptionRec struct {
 
 	Updated time.Time `bson:"updated,omitempty"`
 
+	Public bool `bson:"public,omitempty"`
+
+	Followers int64 `bson:"followers,omitempty"`
+
 	RawCondition bson.M `bson:"cond"`
 
 	// CondIds contains a flat list of all condition ids.
@@ -63,6 +71,8 @@ const attrEnabled = "enabled"
 const attrExpires = "expires"
 const attrCreated = "created"
 const attrUpdated = "updated"
+const attrPublic = "public"
+const attrFollowers = "followers"
 const attrCondIds = "condIds"
 const attrCond = "cond"
 
@@ -80,6 +90,8 @@ func (rec subscriptionRec) decodeSubscriptionData(sd *subscription.Data) (err er
 	sd.Expires = rec.Expires
 	sd.Created = rec.Created
 	sd.Updated = rec.Updated
+	sd.Public = rec.Public
+	sd.Followers = rec.Followers
 	var condRec Condition
 	condRec, err = decodeRawCondition(rec.RawCondition)
 	if err == nil {

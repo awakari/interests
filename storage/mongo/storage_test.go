@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"math"
 	"os"
 	"sort"
 	"testing"
@@ -77,6 +78,7 @@ func TestStorageImpl_Create(t *testing.T) {
 			sd: subscription.Data{
 				Description: "test subscription 1",
 				Expires:     time.Now().Add(1 * time.Hour),
+				Public:      true,
 				Condition: condition.NewGroupCondition(
 					condition.NewCondition(false),
 					condition.GroupLogicOr,
@@ -172,6 +174,17 @@ func TestStorageImpl_Read(t *testing.T) {
 		Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
 	})
 	require.Nil(t, err)
+	id1, err := s.Create(ctx, "group1", "user1", subscription.Data{
+		Description: "test subscription 1",
+		Enabled:     true,
+		Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
+		Condition:   cond0,
+		Created:     time.Date(2023, 10, 4, 6, 44, 57, 0, time.UTC),
+		Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
+		Public:      true,
+		Followers:   42,
+	})
+	require.Nil(t, err)
 	//
 	cases := map[string]struct {
 		id      string
@@ -211,6 +224,21 @@ func TestStorageImpl_Read(t *testing.T) {
 			userId:  "user1",
 			err:     storage.ErrNotFound,
 		},
+		"found public": {
+			id:      id1,
+			groupId: "group0",
+			userId:  "user0",
+			sd: subscription.Data{
+				Description: "test subscription 1",
+				Enabled:     true,
+				Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
+				Condition:   cond0,
+				Created:     time.Date(2023, 10, 4, 6, 44, 57, 0, time.UTC),
+				Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
+				Public:      true,
+				Followers:   42,
+			},
+		},
 	}
 	//
 	for name, c := range cases {
@@ -221,6 +249,8 @@ func TestStorageImpl_Read(t *testing.T) {
 				assert.True(t, c.sd.Condition.Equal(sd.Condition))
 				assert.Equal(t, c.sd.Description, sd.Description)
 				assert.Equal(t, c.sd.Enabled, sd.Enabled)
+				assert.Equal(t, c.sd.Public, sd.Public)
+				assert.Equal(t, c.sd.Followers, sd.Followers)
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}
@@ -274,6 +304,7 @@ func TestStorageImpl_Update(t *testing.T) {
 					condition.NewKeyCondition(condition.NewCondition(false), "cond1", "key1"),
 					"pattern1", true,
 				),
+				Public: true,
 			},
 			prev: sd0,
 		},
@@ -336,6 +367,12 @@ func TestStorageImpl_Delete(t *testing.T) {
 		Condition: cond0,
 	})
 	require.Nil(t, err)
+	id1, err := s.Create(ctx, "acc0", "user1", subscription.Data{
+		Expires:   time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
+		Condition: cond0,
+		Public:    true,
+	})
+	require.Nil(t, err)
 	//
 	cases := map[string]struct {
 		id      string
@@ -365,6 +402,12 @@ func TestStorageImpl_Delete(t *testing.T) {
 			userId:  "user0",
 			err:     storage.ErrNotFound,
 		},
+		"cannot delete public by id": {
+			id:      id1,
+			groupId: "acc0",
+			userId:  "user0",
+			err:     storage.ErrNotFound,
+		},
 	}
 	//
 	for name, c := range cases {
@@ -382,7 +425,7 @@ func TestStorageImpl_Delete(t *testing.T) {
 	}
 }
 
-func TestStorageImpl_SearchOwn(t *testing.T) {
+func TestStorageImpl_Search(t *testing.T) {
 	//
 	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
@@ -411,6 +454,8 @@ func TestStorageImpl_SearchOwn(t *testing.T) {
 			Description: fmt.Sprintf("description%d", i%3),
 			Expires:     time.Now().Add(time.Duration(i-2) * time.Hour),
 			Condition:   cond,
+			Public:      i%5 == 4,
+			Followers:   int64(i) + 1,
 		}
 		id, err := s.Create(ctx, fmt.Sprintf("acc%d", i%2), fmt.Sprintf("user%d", i%2), sub)
 		require.Nil(t, err)
@@ -433,15 +478,32 @@ func TestStorageImpl_SearchOwn(t *testing.T) {
 		ids[9],
 	}
 	sort.Strings(acc1Ids)
+	publicIds0 := []string{
+		ids[0],
+		ids[2],
+		ids[4],
+		ids[6],
+		ids[8],
+		ids[9],
+	}
+	sort.Strings(publicIds0)
+	descFollowersIds0 := []string{
+		ids[9],
+		ids[8],
+		ids[6],
+		ids[4],
+		ids[2],
+		ids[0],
+	}
 	//
 	cases := map[string]struct {
-		q      subscription.QueryOwn
-		cursor string
+		q      subscription.Query
+		cursor subscription.Cursor
 		ids    []string
 		err    error
 	}{
 		"acc0": {
-			q: subscription.QueryOwn{
+			q: subscription.Query{
 				Limit:   100,
 				GroupId: "acc0",
 				UserId:  "user0",
@@ -449,7 +511,7 @@ func TestStorageImpl_SearchOwn(t *testing.T) {
 			ids: acc0Ids,
 		},
 		"pattern filter": {
-			q: subscription.QueryOwn{
+			q: subscription.Query{
 				Limit:   100,
 				GroupId: "acc0",
 				UserId:  "user0",
@@ -460,31 +522,56 @@ func TestStorageImpl_SearchOwn(t *testing.T) {
 			},
 		},
 		"desc": {
-			q: subscription.QueryOwn{
+			q: subscription.Query{
 				Limit:   2,
 				GroupId: "acc0",
 				UserId:  "user0",
 				Order:   subscription.OrderDesc,
 			},
-			cursor: acc0Ids[3],
+			cursor: subscription.Cursor{
+				Id: acc0Ids[3],
+			},
 			ids: []string{
 				acc0Ids[2],
 				acc0Ids[1],
 			},
 		},
 		"acc1": {
-			q: subscription.QueryOwn{
+			q: subscription.Query{
 				Limit:   3,
 				GroupId: "acc1",
 				UserId:  "user1",
 			},
 			ids: acc1Ids[:3],
 		},
+		"include public": {
+			q: subscription.Query{
+				Limit:   100,
+				GroupId: "acc0",
+				UserId:  "user0",
+				Public:  true,
+			},
+			ids: publicIds0,
+		},
+		"include public and sort by followers": {
+			q: subscription.Query{
+				Limit:   100,
+				GroupId: "acc0",
+				UserId:  "user0",
+				Public:  true,
+				Sort:    subscription.SortFollowers,
+				Order:   subscription.OrderDesc,
+			},
+			cursor: subscription.Cursor{
+				Followers: math.MaxInt64,
+			},
+			ids: descFollowersIds0,
+		},
 	}
 	//
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			p, err := s.SearchOwn(ctx, c.q, c.cursor)
+			p, err := s.Search(ctx, c.q, c.cursor)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.ids, p)
@@ -870,6 +957,93 @@ func TestStorageImpl_CountUsersUnique(t *testing.T) {
 			out, err := s.(storageImpl).CountUsersUnique(context.TODO())
 			assert.Equal(t, c.out, out)
 			assert.ErrorIs(t, err, c.err)
+		})
+	}
+}
+
+func TestStorageImpl_UpdateFollowers(t *testing.T) {
+	//
+	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	dbCfg := config.DbConfig{
+		Uri:  dbUri,
+		Name: "subscriptions",
+	}
+	dbCfg.Table.Name = collName
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	s, err := NewStorage(ctx, dbCfg)
+	require.Nil(t, err)
+	defer clear(ctx, t, s.(storageImpl))
+	//
+	cond0 := condition.NewTextCondition(
+		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
+		"pattern0", false,
+	)
+	sd0 := subscription.Data{
+		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
+		Condition: cond0,
+		Public:    true,
+	}
+	id0, err := s.Create(ctx, "group0", "user0", sd0)
+	require.Nil(t, err)
+	sd1 := subscription.Data{
+		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
+		Condition: cond0,
+		Followers: 1,
+		Public:    true,
+	}
+	id1, err := s.Create(ctx, "group0", "user0", sd1)
+	require.Nil(t, err)
+	sd2 := subscription.Data{
+		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
+		Condition: cond0,
+		Followers: 2,
+		Public:    true,
+	}
+	id2, err := s.Create(ctx, "group0", "user0", sd2)
+	require.Nil(t, err)
+	//
+	cases := map[string]struct {
+		id             string
+		delta          int64
+		followersAfter int64
+		err            error
+	}{
+		"ok1": {
+			id:             id0,
+			delta:          1,
+			followersAfter: 1,
+		},
+		"id mismatch": {
+			id:  "missing",
+			err: storage.ErrNotFound,
+		},
+		"ok2": {
+			id:             id1,
+			delta:          2,
+			followersAfter: 3,
+		},
+		"ok3": {
+			id:             id2,
+			delta:          -1,
+			followersAfter: 1,
+		},
+	}
+	//
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			err = s.UpdateFollowers(ctx, c.id, c.delta)
+			if c.err == nil {
+				assert.Nil(t, err)
+				var sd subscription.Data
+				sd, err = s.Read(ctx, c.id, "group0", "user0")
+				require.Nil(t, err)
+				assert.Equal(t, c.followersAfter, sd.Followers)
+			} else {
+				assert.ErrorIs(t, err, c.err)
+			}
 		})
 	}
 }

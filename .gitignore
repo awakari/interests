@@ -19,4 +19,3 @@ vendor/
 
 helm/subscriptions/values-mongodb-ext-dev.yaml
 ghcr_io_pat.txt
-okteto-kube-config

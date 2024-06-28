@@ -22,6 +22,10 @@ type Data struct {
 	// Updated represents the subscription last update time.
 	Updated time.Time
 
+	Public bool
+
+	Followers int64
+
 	// Condition represents the certain criteria to select the Subscription for the further routing.
 	// It's immutable once the Subscription is created.
 	Condition condition.Condition

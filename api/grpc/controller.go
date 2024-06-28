@@ -37,6 +37,7 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 				Enabled:     req.Enabled,
 				Condition:   cond,
 				Created:     time.Now().UTC(),
+				Public:      req.Public,
 			}
 			// check is for the backward compatibility
 			if req.Expires != nil {
@@ -62,6 +63,8 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 			encodeCondition(sd.Condition, resp.Cond)
 			resp.Description = sd.Description
 			resp.Enabled = sd.Enabled
+			resp.Public = sd.Public
+			resp.Followers = sd.Followers
 			if !sd.Expires.IsZero() {
 				resp.Expires = timestamppb.New(sd.Expires)
 			}
@@ -108,6 +111,13 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 	return
 }
 
+func (sc serviceController) UpdateFollowers(ctx context.Context, req *UpdateFollowersRequest) (resp *UpdateFollowersResponse, err error) {
+	resp = &UpdateFollowersResponse{}
+	err = sc.stor.UpdateFollowers(ctx, req.Id, req.Delta)
+	err = encodeError(err)
+	return
+}
+
 func (sc serviceController) Delete(ctx context.Context, req *DeleteRequest) (resp *DeleteResponse, err error) {
 	resp = &DeleteResponse{}
 	var groupId string
@@ -131,7 +141,7 @@ func (sc serviceController) SearchOwn(ctx context.Context, req *SearchOwnRequest
 	var userId string
 	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
-		q := subscription.QueryOwn{
+		q := subscription.Query{
 			GroupId: groupId,
 			UserId:  userId,
 			Limit:   req.Limit,
@@ -143,7 +153,43 @@ func (sc serviceController) SearchOwn(ctx context.Context, req *SearchOwnRequest
 		default:
 			q.Order = subscription.OrderAsc
 		}
-		resp.Ids, err = sc.stor.SearchOwn(ctx, q, req.Cursor)
+		resp.Ids, err = sc.stor.Search(ctx, q, subscription.Cursor{
+			Id: req.Cursor,
+		})
+		err = encodeError(err)
+	}
+	return
+}
+
+func (sc serviceController) Search(ctx context.Context, req *SearchRequest) (resp *SearchResponse, err error) {
+	resp = &SearchResponse{}
+	var groupId string
+	var userId string
+	groupId, userId, err = getAuthInfo(ctx)
+	if err == nil {
+		q := subscription.Query{
+			GroupId: groupId,
+			UserId:  userId,
+			Limit:   req.Limit,
+			Pattern: req.Pattern,
+			Public:  true,
+		}
+		switch req.Sort {
+		case Sort_FOLLOWERS:
+			q.Sort = subscription.SortFollowers
+		default:
+			q.Sort = subscription.SortId
+		}
+		switch req.Order {
+		case Order_DESC:
+			q.Order = subscription.OrderDesc
+		default:
+			q.Order = subscription.OrderAsc
+		}
+		resp.Ids, err = sc.stor.Search(ctx, q, subscription.Cursor{
+			Id:        req.Cursor.Id,
+			Followers: req.Cursor.Followers,
+		})
 		err = encodeError(err)
 	}
 	return

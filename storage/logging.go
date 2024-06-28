@@ -40,6 +40,13 @@ func (lm loggingMiddleware) Update(ctx context.Context, id, groupId, userId stri
 	return lm.stor.Update(ctx, id, groupId, userId, d)
 }
 
+func (lm loggingMiddleware) UpdateFollowers(ctx context.Context, id string, delta int64) (err error) {
+	defer func() {
+		lm.log.Debug(fmt.Sprintf("UpdateFollowers(%s, %d): err=%s", id, delta, err))
+	}()
+	return lm.stor.UpdateFollowers(ctx, id, delta)
+}
+
 func (lm loggingMiddleware) Delete(ctx context.Context, id, groupId, userId string) (d subscription.Data, err error) {
 	defer func() {
 		lm.log.Debug(fmt.Sprintf("Delete(%s, %s, %s): %s", id, groupId, userId, err))
@@ -47,11 +54,11 @@ func (lm loggingMiddleware) Delete(ctx context.Context, id, groupId, userId stri
 	return lm.stor.Delete(ctx, id, groupId, userId)
 }
 
-func (lm loggingMiddleware) SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error) {
+func (lm loggingMiddleware) Search(ctx context.Context, q subscription.Query, cursor subscription.Cursor) (ids []string, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("SearchOwn(%v, %v): %d, %s", q, cursor, len(ids), err))
+		lm.log.Debug(fmt.Sprintf("Search(%v, %v): %d, %s", q, cursor, len(ids), err))
 	}()
-	return lm.stor.SearchOwn(ctx, q, cursor)
+	return lm.stor.Search(ctx, q, cursor)
 }
 
 func (lm loggingMiddleware) SearchByCondition(ctx context.Context, q subscription.QueryByCondition, cursor string) (page []subscription.ConditionMatch, err error) {

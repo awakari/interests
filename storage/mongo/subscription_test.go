@@ -22,6 +22,7 @@ func Test_decodeSubscription(t *testing.T) {
 				GroupId:     "group0",
 				UserId:      "acc0",
 				Description: "description0",
+				Followers:   42,
 				RawCondition: bson.M{
 					conditionAttrBase: bson.M{
 						conditionAttrNot: false,
@@ -37,6 +38,7 @@ func Test_decodeSubscription(t *testing.T) {
 				UserId:  "acc0",
 				Data: subscription.Data{
 					Description: "description0",
+					Followers:   42,
 					Condition: condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 						"pattern0", false,
@@ -52,6 +54,7 @@ func Test_decodeSubscription(t *testing.T) {
 				Description: "description0",
 				Created:     time.Date(2024, 4, 9, 6, 53, 10, 0, time.UTC),
 				Updated:     time.Date(2024, 4, 9, 6, 53, 20, 0, time.UTC),
+				Public:      true,
 				RawCondition: bson.M{
 					conditionAttrBase: bson.M{
 						conditionAttrNot: false,
@@ -69,6 +72,7 @@ func Test_decodeSubscription(t *testing.T) {
 					Description: "description0",
 					Created:     time.Date(2024, 4, 9, 6, 53, 10, 0, time.UTC),
 					Updated:     time.Date(2024, 4, 9, 6, 53, 20, 0, time.UTC),
+					Public:      true,
 					Condition: condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 						"pattern0", false,

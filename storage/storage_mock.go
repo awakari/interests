@@ -43,6 +43,8 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd s
 			Expires:     time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 			Created:     time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC),
 			Updated:     time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC),
+			Public:      true,
+			Followers:   42,
 			Condition: condition.NewGroupCondition(
 				condition.NewCondition(false),
 				condition.GroupLogicAnd,
@@ -94,7 +96,13 @@ func (s storageMock) Update(ctx context.Context, id, groupId, userId string, sd 
 	return
 }
 
-func (s storageMock) UpdateRead(ctx context.Context, id string, ts time.Time) (err error) {
+func (s storageMock) UpdateFollowers(ctx context.Context, id string, delta int64) (err error) {
+	switch id {
+	case "missing":
+		err = ErrNotFound
+	case "fail":
+		err = ErrInternal
+	}
 	return
 }
 
@@ -126,13 +134,21 @@ func (s storageMock) Delete(ctx context.Context, id, groupId, userId string) (sd
 	return
 }
 
-func (s storageMock) SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error) {
-	if cursor == "" {
+func (s storageMock) Search(ctx context.Context, q subscription.Query, cursor subscription.Cursor) (ids []string, err error) {
+	if cursor.Id == "" {
 		switch q.Order {
 		case subscription.OrderDesc:
-			ids = []string{
-				"sub1",
-				"sub0",
+			switch q.Sort {
+			case subscription.SortFollowers:
+				ids = []string{
+					"sub0",
+					"sub1",
+				}
+			default:
+				ids = []string{
+					"sub1",
+					"sub0",
+				}
 			}
 		default:
 			ids = []string{
@@ -140,7 +156,7 @@ func (s storageMock) SearchOwn(ctx context.Context, q subscription.QueryOwn, cur
 				"sub1",
 			}
 		}
-	} else if cursor == "fail" {
+	} else if cursor.Id == "fail" {
 		err = ErrInternal
 	}
 	return

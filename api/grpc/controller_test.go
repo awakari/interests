@@ -48,6 +48,7 @@ func TestServiceController_Create(t *testing.T) {
 		md      []string
 		expires *timestamppb.Timestamp
 		cond    *Condition
+		public  bool
 		err     error
 	}{
 		"ok1": {
@@ -56,6 +57,7 @@ func TestServiceController_Create(t *testing.T) {
 				"X-Awakari-User-ID", "user0",
 			},
 			expires: timestamppb.New(time.Now()),
+			public:  true,
 			cond: &Condition{
 				Cond: &Condition_Tc{
 					Tc: &TextCondition{},
@@ -158,6 +160,7 @@ func TestServiceController_Create(t *testing.T) {
 				Description: k,
 				Expires:     c.expires,
 				Cond:        c.cond,
+				Public:      c.public,
 			})
 			if c.err == nil {
 				assert.Nil(t, err)
@@ -188,6 +191,8 @@ func TestServiceController_Read(t *testing.T) {
 				Created:     timestamppb.New(time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC)),
 				Updated:     timestamppb.New(time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC)),
 				Enabled:     true,
+				Public:      true,
+				Followers:   42,
 				Cond: &Condition{
 					Not: false,
 					Cond: &Condition_Gc{
@@ -255,6 +260,8 @@ func TestServiceController_Read(t *testing.T) {
 				assert.Equal(t, c.sub.Expires, sub.Expires)
 				assert.Equal(t, c.sub.Created, sub.Created)
 				assert.Equal(t, c.sub.Updated, sub.Updated)
+				assert.Equal(t, c.sub.Public, sub.Public)
+				assert.Equal(t, c.sub.Followers, sub.Followers)
 				assert.Equal(t, c.sub.Cond.Not, sub.Cond.Not)
 				assert.Equal(t, c.sub.Cond.GetGc().Logic, sub.Cond.GetGc().Logic)
 				assert.Equal(t, len(c.sub.Cond.GetGc().GetGroup()), len(sub.Cond.GetGc().GetGroup()))
@@ -367,6 +374,44 @@ func TestServiceController_Update(t *testing.T) {
 	}
 }
 
+func TestServiceController_UpdateFollowers(t *testing.T) {
+	//
+	addr := fmt.Sprintf("localhost:%d", port)
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.Nil(t, err)
+	client := NewServiceClient(conn)
+	//
+	cases := map[string]struct {
+		id  string
+		err error
+	}{
+		"ok": {},
+		"fail": {
+			id:  "fail",
+			err: status.Error(codes.Internal, "internal subscription storage failure"),
+		},
+		"missing": {
+			id:  "missing",
+			err: status.Error(codes.NotFound, "subscription was not found"),
+		},
+	}
+	//
+	for k, c := range cases {
+		t.Run(k, func(t *testing.T) {
+			ctx := context.TODO()
+			ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
+			_, err = client.UpdateFollowers(ctx, &UpdateFollowersRequest{
+				Id: c.id,
+			})
+			if c.err == nil {
+				assert.Nil(t, err)
+			} else {
+				assert.ErrorIs(t, err, c.err)
+			}
+		})
+	}
+}
+
 func TestServiceController_Delete(t *testing.T) {
 	//
 	addr := fmt.Sprintf("localhost:%d", port)
@@ -459,6 +504,78 @@ func TestServiceController_SearchOwn(t *testing.T) {
 				ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
 			}
 			resp, err := client.SearchOwn(ctx, &SearchOwnRequest{Cursor: c.cursor, Limit: 0, Order: c.order})
+			if c.err == nil {
+				assert.Nil(t, err)
+				assert.Equal(t, c.ids, resp.Ids)
+			} else {
+				assert.ErrorIs(t, err, c.err)
+			}
+		})
+	}
+}
+
+func TestServiceController_Search(t *testing.T) {
+	//
+	addr := fmt.Sprintf("localhost:%d", port)
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.Nil(t, err)
+	client := NewServiceClient(conn)
+	//
+	cases := map[string]struct {
+		auth   bool
+		cursor Cursor
+		sort   Sort
+		order  Order
+		err    error
+		ids    []string
+	}{
+		"asc": {
+			auth: true,
+			ids: []string{
+				"sub0",
+				"sub1",
+			},
+		},
+		"desc": {
+			auth:  true,
+			order: Order_DESC,
+			ids: []string{
+				"sub1",
+				"sub0",
+			},
+		},
+		"desc by followers": {
+			auth:  true,
+			sort:  Sort_FOLLOWERS,
+			order: Order_DESC,
+			ids: []string{
+				"sub0",
+				"sub1",
+			},
+		},
+		"fail": {
+			auth: true,
+			cursor: Cursor{
+				Id: "fail",
+			},
+			err: status.Error(codes.Internal, "internal subscription storage failure"),
+		},
+		"no auth": {
+			auth: false,
+			cursor: Cursor{
+				Id: "no auth",
+			},
+			err: status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
+		},
+	}
+	//
+	for k, c := range cases {
+		t.Run(k, func(t *testing.T) {
+			ctx := context.TODO()
+			if c.auth {
+				ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
+			}
+			resp, err := client.Search(ctx, &SearchRequest{Cursor: &c.cursor, Limit: 0, Sort: c.sort, Order: c.order})
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.ids, resp.Ids)

@@ -23,12 +23,15 @@ type (
 		// Update updates the subscription.Data
 		Update(ctx context.Context, id, groupId, userId string, sd subscription.Data) (prev subscription.Data, err error)
 
+		// UpdateFollowers updates the followers count
+		UpdateFollowers(ctx context.Context, id string, delta int64) (err error)
+
 		// Delete removes the subscription.Subscription specified by its unique id.
 		// Returns the subscription.Data if deleted, error otherwise.
 		Delete(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error)
 
-		// SearchOwn returns all subscription ids those have the account matching the query.
-		SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error)
+		// Search returns all subscription ids matching the query.
+		Search(ctx context.Context, q subscription.Query, cursor subscription.Cursor) (ids []string, err error)
 
 		// SearchByCondition finds all subscriptions those match the specified condition id and feeds these to the
 		// specified consumer func.

@@ -53,6 +53,10 @@ var (
 					Key:   attrUserId,
 					Value: "hashed",
 				},
+				{
+					Key:   attrPublic,
+					Value: 1,
+				},
 			},
 			Options: options.
 				Index().
@@ -91,6 +95,18 @@ var (
 			Value: -1,
 		},
 	}
+	projFollowersAsc = bson.D{
+		{
+			Key:   attrId,
+			Value: 1,
+		},
+	}
+	projFollowersDesc = bson.D{
+		{
+			Key:   attrFollowers,
+			Value: -1,
+		},
+	}
 	projData = bson.D{
 		{
 			Key:   attrDescr,
@@ -114,6 +130,14 @@ var (
 		},
 		{
 			Key:   attrUpdated,
+			Value: 1,
+		},
+		{
+			Key:   attrPublic,
+			Value: 1,
+		},
+		{
+			Key:   attrFollowers,
 			Value: 1,
 		},
 	}
@@ -241,6 +265,8 @@ func (s storageImpl) Create(ctx context.Context, groupId, userId string, sd subs
 		Expires:     sd.Expires.UTC(),
 		Created:     sd.Created.UTC(),
 		Updated:     sd.Updated.UTC(),
+		Public:      sd.Public,
+		Followers:   sd.Followers,
 		Condition:   recCond,
 		CondIds:     condIds,
 	}
@@ -255,9 +281,16 @@ func (s storageImpl) Create(ctx context.Context, groupId, userId string, sd subs
 
 func (s storageImpl) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
 	q := bson.M{
-		attrId:      id,
-		attrGroupId: groupId,
-		attrUserId:  userId,
+		attrId: id,
+		"$or": []bson.M{
+			{
+				attrGroupId: groupId,
+				attrUserId:  userId,
+			},
+			{
+				attrPublic: true,
+			},
+		},
 	}
 	var result *mongo.SingleResult
 	result = s.coll.FindOne(ctx, q, optsRead)
@@ -298,6 +331,7 @@ func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d s
 			attrEnabled: d.Enabled,
 			attrExpires: d.Expires.UTC(),
 			attrUpdated: d.Updated.UTC(),
+			attrPublic:  d.Public,
 			attrCond:    cond,
 			attrCondIds: condIds,
 		},
@@ -316,6 +350,26 @@ func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d s
 	return
 }
 
+func (s storageImpl) UpdateFollowers(ctx context.Context, id string, delta int64) (err error) {
+	q := bson.M{
+		attrId: id,
+	}
+	u := bson.M{
+		"$inc": bson.M{
+			attrFollowers: delta,
+		},
+	}
+	var result *mongo.UpdateResult
+	result, err = s.coll.UpdateOne(ctx, q, u)
+	switch {
+	case err == nil && result.MatchedCount < 1:
+		err = fmt.Errorf("%w: not found, id: %s", storage.ErrNotFound, id)
+	case err != nil:
+		err = fmt.Errorf("%w: failed to update subscription, id: %s, err: %s", storage.ErrInternal, id, err)
+	}
+	return
+}
+
 func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
 	q := bson.M{
 		attrId:      id,
@@ -328,27 +382,58 @@ func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd
 	return
 }
 
-func (s storageImpl) SearchOwn(ctx context.Context, q subscription.QueryOwn, cursor string) (ids []string, err error) {
-	dbQuery := bson.M{
-		attrGroupId: q.GroupId,
-		attrUserId:  q.UserId,
+func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor subscription.Cursor) (ids []string, err error) {
+	dbQuery := bson.M{}
+	switch q.Public {
+	case true:
+		dbQuery["$or"] = []bson.M{
+			{
+				attrGroupId: q.GroupId,
+				attrUserId:  q.UserId,
+			},
+			{
+				attrPublic: true,
+			},
+		}
+	default:
+		dbQuery[attrGroupId] = q.GroupId
+		dbQuery[attrUserId] = q.UserId
 	}
 	opts := options.
 		Find().
 		SetLimit(int64(q.Limit)).
 		SetProjection(projId).
 		SetShowRecordID(false)
-	switch q.Order {
-	case subscription.OrderDesc:
+	switch q.Sort {
+	case subscription.SortFollowers:
 		dbQuery[attrId] = bson.M{
-			"$lt": cursor,
+			"$ne": cursor.Id,
 		}
-		opts = opts.SetSort(projIdDesc)
+		switch q.Order {
+		case subscription.OrderDesc:
+			dbQuery[attrFollowers] = bson.M{
+				"$lt": cursor.Followers,
+			}
+			opts = opts.SetSort(projFollowersDesc)
+		default:
+			dbQuery[attrFollowers] = bson.M{
+				"$gt": cursor.Followers,
+			}
+			opts = opts.SetSort(projFollowersAsc)
+		}
 	default:
-		dbQuery[attrId] = bson.M{
-			"$gt": cursor,
+		switch q.Order {
+		case subscription.OrderDesc:
+			dbQuery[attrId] = bson.M{
+				"$lt": cursor.Id,
+			}
+			opts = opts.SetSort(projIdDesc)
+		default:
+			dbQuery[attrId] = bson.M{
+				"$gt": cursor.Id,
+			}
+			opts = opts.SetSort(projId)
 		}
-		opts = opts.SetSort(projId)
 	}
 	dbQuery[attrDescr] = bson.M{
 		"$regex": q.Pattern,
@@ -356,7 +441,7 @@ func (s storageImpl) SearchOwn(ctx context.Context, q subscription.QueryOwn, cur
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, dbQuery, opts)
 	if err != nil {
-		err = fmt.Errorf("%w: failed to find: query=%v, cursor=%s, %s", storage.ErrInternal, dbQuery, cursor, err)
+		err = fmt.Errorf("%w: failed to find: query=%v, cursor=%v, %s", storage.ErrInternal, dbQuery, cursor, err)
 	} else {
 		defer cur.Close(ctx)
 		var recs []subscriptionRec
