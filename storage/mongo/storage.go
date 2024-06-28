@@ -46,6 +46,10 @@ var (
 					Value: 1,
 				},
 				{
+					Key:   attrFollowers,
+					Value: 1,
+				},
+				{
 					Key:   attrGroupId,
 					Value: 1,
 				},
