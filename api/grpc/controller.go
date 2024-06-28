@@ -95,6 +95,7 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 			Enabled:     req.Enabled,
 			Condition:   cond,
 			Updated:     time.Now().UTC(),
+			Public:      req.Public,
 		}
 		// check is for the backward compatibility
 		if req.Expires != nil {
