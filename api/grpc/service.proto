@@ -135,7 +135,7 @@ message SearchOwnRequest {
   string cursor = 1;
   uint32 limit = 2;
   Order order = 3;
-  string Pattern = 4;
+  string pattern = 4;
 }
 
 enum Order {
