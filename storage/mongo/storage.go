@@ -116,7 +116,7 @@ var (
 		},
 		{
 			Key:   attrId,
-			Value: 1,
+			Value: -1,
 		},
 	}
 	projData = bson.D{
@@ -437,7 +437,7 @@ func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor su
 							},
 							{
 								attrId: bson.M{
-									"gt": cursor.Id,
+									"$lt": cursor.Id,
 								},
 							},
 						},
@@ -458,7 +458,7 @@ func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor su
 							},
 							{
 								attrId: bson.M{
-									"gt": cursor.Id,
+									"$gt": cursor.Id,
 								},
 							},
 						},

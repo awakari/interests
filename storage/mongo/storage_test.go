@@ -494,6 +494,7 @@ func TestStorageImpl_Search(t *testing.T) {
 		ids[4],
 	}
 	descFollowersIds1 := []string{
+		ids[6],
 		ids[4],
 		ids[2],
 		ids[0],
