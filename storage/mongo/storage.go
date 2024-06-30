@@ -106,12 +106,12 @@ var (
 			Value: 1,
 		},
 		{
-			Key:   attrId,
+			Key:   attrPublic,
 			Value: 1,
 		},
 		{
-			Key:   attrPublic,
-			Value: -1,
+			Key:   attrId,
+			Value: 1,
 		},
 	}
 	projFollowersDesc = bson.D{
@@ -120,11 +120,11 @@ var (
 			Value: -1,
 		},
 		{
-			Key:   attrId,
+			Key:   attrPublic,
 			Value: -1,
 		},
 		{
-			Key:   attrPublic,
+			Key:   attrId,
 			Value: -1,
 		},
 	}
@@ -458,7 +458,7 @@ func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor su
 						},
 					},
 				}
-			case 1:
+			default:
 				dbQuery = bson.M{
 					"$and": []bson.M{
 						dbQuery,
@@ -476,33 +476,6 @@ func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor su
 												"$exists": false,
 											},
 										},
-									},
-								},
-								{
-									"$and": []bson.M{
-										{
-											attrFollowers: cursor.Followers,
-										},
-										{
-											attrId: bson.M{
-												"$lt": cursor.Id,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}
-			default:
-				dbQuery = bson.M{
-					"$and": []bson.M{
-						dbQuery,
-						{
-							"$or": []bson.M{
-								{
-									attrFollowers: bson.M{
-										"$lt": cursor.Followers,
 									},
 								},
 								{
