@@ -64,6 +64,7 @@ var (
 			},
 			Options: options.
 				Index().
+				SetSparse(true).
 				SetUnique(false),
 		},
 		// query by enabled flag, expires and condition id
@@ -108,6 +109,10 @@ var (
 			Key:   attrId,
 			Value: 1,
 		},
+		{
+			Key:   attrPublic,
+			Value: -1,
+		},
 	}
 	projFollowersDesc = bson.D{
 		{
@@ -116,6 +121,10 @@ var (
 		},
 		{
 			Key:   attrId,
+			Value: -1,
+		},
+		{
+			Key:   attrPublic,
 			Value: -1,
 		},
 	}
@@ -425,45 +434,169 @@ func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor su
 	case subscription.SortFollowers:
 		switch q.Order {
 		case subscription.OrderDesc:
-			dbQuery = bson.M{
-				"$and": []bson.M{
-					dbQuery,
-					{
-						"$or": []bson.M{
-							{
-								attrFollowers: bson.M{
-									"$lt": cursor.Followers,
+			switch cursor.Followers {
+			case 0:
+				dbQuery = bson.M{
+					"$and": []bson.M{
+						dbQuery,
+						{
+							"$or": []bson.M{
+								{
+									attrFollowers: cursor.Followers,
+								},
+								{
+									attrFollowers: bson.M{
+										"$exists": false,
+									},
 								},
 							},
-							{
-								attrId: bson.M{
-									"$lt": cursor.Id,
+						},
+						{
+							attrId: bson.M{
+								"$lt": cursor.Id,
+							},
+						},
+					},
+				}
+			case 1:
+				dbQuery = bson.M{
+					"$and": []bson.M{
+						dbQuery,
+						{
+							"$or": []bson.M{
+								{
+									"$or": []bson.M{
+										{
+											attrFollowers: bson.M{
+												"$lt": cursor.Followers,
+											},
+										},
+										{
+											attrFollowers: bson.M{
+												"$exists": false,
+											},
+										},
+									},
+								},
+								{
+									"$and": []bson.M{
+										{
+											attrFollowers: cursor.Followers,
+										},
+										{
+											attrId: bson.M{
+												"$lt": cursor.Id,
+											},
+										},
+									},
 								},
 							},
 						},
 					},
-				},
+				}
+			default:
+				dbQuery = bson.M{
+					"$and": []bson.M{
+						dbQuery,
+						{
+							"$or": []bson.M{
+								{
+									attrFollowers: bson.M{
+										"$lt": cursor.Followers,
+									},
+								},
+								{
+									"$and": []bson.M{
+										{
+											attrFollowers: cursor.Followers,
+										},
+										{
+											attrId: bson.M{
+												"$lt": cursor.Id,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
 			}
 			opts = opts.SetSort(projFollowersDesc)
 		default:
-			dbQuery = bson.M{
-				"$and": []bson.M{
-					dbQuery,
-					{
-						"$or": []bson.M{
-							{
-								attrFollowers: bson.M{
-									"$gt": cursor.Followers,
+			switch cursor.Followers {
+			case 0:
+				dbQuery = bson.M{
+					"$and": []bson.M{
+						dbQuery,
+						{
+							"$or": []bson.M{
+								{
+									"$or": []bson.M{
+										{
+											attrFollowers: bson.M{
+												"$gt": cursor.Followers,
+											},
+										},
+										{
+											attrFollowers: bson.M{
+												"$exists": true,
+											},
+										},
+									},
 								},
-							},
-							{
-								attrId: bson.M{
-									"$gt": cursor.Id,
+								{
+									"$and": []bson.M{
+										{
+											"$or": []bson.M{
+												{
+													attrFollowers: cursor.Followers,
+												},
+												{
+													attrFollowers: bson.M{
+														"$exists": false,
+													},
+												},
+											},
+										},
+										{
+											attrId: bson.M{
+												"$gt": cursor.Id,
+											},
+										},
+									},
 								},
 							},
 						},
 					},
-				},
+				}
+			default:
+				dbQuery = bson.M{
+					"$and": []bson.M{
+						dbQuery,
+						{
+							"$or": []bson.M{
+								{
+									attrFollowers: bson.M{
+										"$gt": cursor.Followers,
+									},
+								},
+								{
+									"$and": []bson.M{
+										{
+											attrFollowers: cursor.Followers,
+										},
+										{
+											attrId: bson.M{
+												"$gt": cursor.Id,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
 			}
 			opts = opts.SetSort(projFollowersAsc)
 		}

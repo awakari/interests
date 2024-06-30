@@ -462,6 +462,7 @@ func TestStorageImpl_Search(t *testing.T) {
 		rootConditions = append(rootConditions, cond)
 		ids = append(ids, id)
 	}
+	fmt.Println(ids)
 	acc0Ids := []string{
 		ids[0],
 		ids[2],
@@ -571,7 +572,7 @@ func TestStorageImpl_Search(t *testing.T) {
 			},
 			ids: descFollowersIds0,
 		},
-		"include public and sort by followers w/ cursor": {
+		"include public and sort by followers desc w/ cursor": {
 			q: subscription.Query{
 				Limit:   4,
 				GroupId: "acc0",
