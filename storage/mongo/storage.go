@@ -409,6 +409,11 @@ func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd
 }
 
 func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor subscription.Cursor) (ids []string, err error) {
+	opts := options.
+		Find().
+		SetLimit(int64(q.Limit)).
+		SetProjection(projId).
+		SetShowRecordID(false)
 	dbQuery := bson.M{}
 	switch q.Public {
 	case true:
@@ -425,11 +430,6 @@ func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor su
 		dbQuery[attrGroupId] = q.GroupId
 		dbQuery[attrUserId] = q.UserId
 	}
-	opts := options.
-		Find().
-		SetLimit(int64(q.Limit)).
-		SetProjection(projId).
-		SetShowRecordID(false)
 	switch q.Sort {
 	case subscription.SortFollowers:
 		switch q.Order {
