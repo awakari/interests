@@ -114,7 +114,7 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 
 func (sc serviceController) UpdateFollowers(ctx context.Context, req *UpdateFollowersRequest) (resp *UpdateFollowersResponse, err error) {
 	resp = &UpdateFollowersResponse{}
-	err = sc.stor.UpdateFollowers(ctx, req.Id, req.Delta)
+	err = sc.stor.UpdateFollowers(ctx, req.Id, req.Count)
 	err = encodeError(err)
 	return
 }

@@ -1008,72 +1008,39 @@ func TestStorageImpl_UpdateFollowers(t *testing.T) {
 	}
 	id0, err := s.Create(ctx, "group0", "user0", sd0)
 	require.Nil(t, err)
-	sd1 := subscription.Data{
-		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
-		Condition: cond0,
-		Followers: 1,
-		Public:    true,
-	}
-	id1, err := s.Create(ctx, "group0", "user0", sd1)
-	require.Nil(t, err)
-	sd2 := subscription.Data{
-		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
-		Condition: cond0,
-		Followers: 2,
-		Public:    true,
-	}
-	id2, err := s.Create(ctx, "group0", "user0", sd2)
-	require.Nil(t, err)
-	sd3 := subscription.Data{
-		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
-		Condition: cond0,
-		Followers: 3,
-		Public:    true,
-	}
-	id3, err := s.Create(ctx, "group0", "user0", sd3)
-	require.Nil(t, err)
 	//
 	cases := map[string]struct {
-		id             string
-		delta          int64
-		followersAfter int64
-		err            error
+		id       string
+		newCount int64
+		err      error
 	}{
+		"ok0": {
+			id:       id0,
+			newCount: 0,
+		},
 		"ok1": {
-			id:             id0,
-			delta:          1,
-			followersAfter: 1,
+			id:       id0,
+			newCount: 1,
+		},
+		"ok2": {
+			id:       id0,
+			newCount: 2,
 		},
 		"id mismatch": {
 			id:  "missing",
 			err: storage.ErrNotFound,
 		},
-		"ok2": {
-			id:             id1,
-			delta:          2,
-			followersAfter: 3,
-		},
-		"ok3": {
-			id:             id2,
-			delta:          -1,
-			followersAfter: 1,
-		},
-		"not enough": {
-			id:    id3,
-			delta: -4,
-			err:   storage.ErrNotFound,
-		},
 	}
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			err = s.UpdateFollowers(ctx, c.id, c.delta)
+			err = s.UpdateFollowers(ctx, c.id, c.newCount)
 			if c.err == nil {
 				assert.Nil(t, err)
 				var sd subscription.Data
 				sd, err = s.Read(ctx, c.id, "group0", "user0")
 				require.Nil(t, err)
-				assert.Equal(t, c.followersAfter, sd.Followers)
+				assert.Equal(t, c.newCount, sd.Followers)
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}

@@ -371,18 +371,13 @@ func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d s
 	return
 }
 
-func (s storageImpl) UpdateFollowers(ctx context.Context, id string, delta int64) (err error) {
+func (s storageImpl) UpdateFollowers(ctx context.Context, id string, count int64) (err error) {
 	q := bson.M{
 		attrId: id,
 	}
-	if delta < 0 {
-		q[attrFollowers] = bson.M{
-			"$gte": -delta,
-		}
-	}
 	u := bson.M{
-		"$inc": bson.M{
-			attrFollowers: delta,
+		"$set": bson.M{
+			attrFollowers: count,
 		},
 	}
 	var result *mongo.UpdateResult

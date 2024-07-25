@@ -40,11 +40,11 @@ func (lm loggingMiddleware) Update(ctx context.Context, id, groupId, userId stri
 	return lm.stor.Update(ctx, id, groupId, userId, d)
 }
 
-func (lm loggingMiddleware) UpdateFollowers(ctx context.Context, id string, delta int64) (err error) {
+func (lm loggingMiddleware) UpdateFollowers(ctx context.Context, id string, count int64) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("UpdateFollowers(%s, %d): err=%s", id, delta, err))
+		lm.log.Debug(fmt.Sprintf("UpdateFollowers(%s, %d): err=%s", id, count, err))
 	}()
-	return lm.stor.UpdateFollowers(ctx, id, delta)
+	return lm.stor.UpdateFollowers(ctx, id, count)
 }
 
 func (lm loggingMiddleware) Delete(ctx context.Context, id, groupId, userId string) (d subscription.Data, err error) {

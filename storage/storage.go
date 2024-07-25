@@ -24,7 +24,7 @@ type (
 		Update(ctx context.Context, id, groupId, userId string, sd subscription.Data) (prev subscription.Data, err error)
 
 		// UpdateFollowers updates the followers count
-		UpdateFollowers(ctx context.Context, id string, delta int64) (err error)
+		UpdateFollowers(ctx context.Context, id string, count int64) (err error)
 
 		// Delete removes the subscription.Subscription specified by its unique id.
 		// Returns the subscription.Data if deleted, error otherwise.

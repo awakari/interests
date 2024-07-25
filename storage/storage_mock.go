@@ -96,7 +96,7 @@ func (s storageMock) Update(ctx context.Context, id, groupId, userId string, sd 
 	return
 }
 
-func (s storageMock) UpdateFollowers(ctx context.Context, id string, delta int64) (err error) {
+func (s storageMock) UpdateFollowers(ctx context.Context, id string, count int64) (err error) {
 	switch id {
 	case "missing":
 		err = ErrNotFound
