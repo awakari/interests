@@ -19,11 +19,11 @@ func NewLoggingMiddleware(stor Storage, log *slog.Logger) Storage {
 	}
 }
 
-func (lm loggingMiddleware) Create(ctx context.Context, groupId, userId string, sd subscription.Data) (id string, err error) {
+func (lm loggingMiddleware) Create(ctx context.Context, id, groupId, userId string, sd subscription.Data) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Create(%s, %s, %+v): %s, %s", groupId, userId, sd, id, err))
+		lm.log.Debug(fmt.Sprintf("Create(%s, %s, %s, %+v): %s", id, groupId, userId, sd, err))
 	}()
-	return lm.stor.Create(ctx, groupId, userId, sd)
+	return lm.stor.Create(ctx, id, groupId, userId, sd)
 }
 
 func (lm loggingMiddleware) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {

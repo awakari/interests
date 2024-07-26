@@ -6,6 +6,7 @@ import (
 	"github.com/awakari/subscriptions/api/grpc/common"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/storage"
+	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -49,9 +50,10 @@ func TestServiceController_Create(t *testing.T) {
 		expires *timestamppb.Timestamp
 		cond    *Condition
 		public  bool
+		idReq   string
 		err     error
 	}{
-		"ok1": {
+		"generated id": {
 			md: []string{
 				"x-awakari-group-id", "group0",
 				"X-Awakari-User-ID", "user0",
@@ -105,19 +107,33 @@ func TestServiceController_Create(t *testing.T) {
 					},
 				},
 			},
+			idReq: "interest2",
 		},
 		"fail": {
 			md: []string{
 				"x-awakari-group-id", "group0",
 				"X-Awakari-User-ID", "user0",
 			},
-
 			cond: &Condition{
 				Cond: &Condition_Tc{
 					Tc: &TextCondition{},
 				},
 			},
-			err: status.Error(codes.Internal, "internal subscription storage failure"),
+			idReq: "fail",
+			err:   status.Error(codes.Internal, "internal subscription storage failure"),
+		},
+		"conflict": {
+			md: []string{
+				"x-awakari-group-id", "group0",
+				"X-Awakari-User-ID", "user0",
+			},
+			cond: &Condition{
+				Cond: &Condition_Tc{
+					Tc: &TextCondition{},
+				},
+			},
+			idReq: "conflict",
+			err:   status.Error(codes.AlreadyExists, "subscription id is already in use"),
 		},
 		"empty group": {
 			md: []string{
@@ -156,7 +172,9 @@ func TestServiceController_Create(t *testing.T) {
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
 			ctx := metadata.AppendToOutgoingContext(context.TODO(), c.md...)
-			_, err = client.Create(ctx, &CreateRequest{
+			var resp *CreateResponse
+			resp, err = client.Create(ctx, &CreateRequest{
+				Id:          c.idReq,
 				Description: k,
 				Expires:     c.expires,
 				Cond:        c.cond,
@@ -164,6 +182,13 @@ func TestServiceController_Create(t *testing.T) {
 			})
 			if c.err == nil {
 				assert.Nil(t, err)
+				switch c.idReq {
+				case "":
+					_, err = ksuid.Parse(resp.Id)
+					assert.Nil(t, err)
+				default:
+					assert.Equal(t, c.idReq, resp.Id)
+				}
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}

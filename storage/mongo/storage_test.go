@@ -7,7 +7,6 @@ import (
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/storage"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"math"
@@ -59,7 +58,7 @@ func TestStorageImpl_Create(t *testing.T) {
 	require.Nil(t, err)
 	defer clear(ctx, t, s.(storageImpl))
 	//
-	id, err := s.Create(ctx, "group0", "acc0", subscription.Data{
+	err = s.Create(ctx, "interest0", "group0", "acc0", subscription.Data{
 		Description: "test subscription 0",
 		Condition: condition.NewTextCondition(
 			condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
@@ -67,14 +66,14 @@ func TestStorageImpl_Create(t *testing.T) {
 		),
 	})
 	assert.Nil(t, err)
-	_, err = uuid.Parse(id)
-	assert.Nil(t, err)
 	//
 	cases := map[string]struct {
+		id  string
 		sd  subscription.Data
 		err error
 	}{
 		"success": {
+			id: "interest1",
 			sd: subscription.Data{
 				Description: "test subscription 1",
 				Expires:     time.Now().Add(1 * time.Hour),
@@ -99,7 +98,35 @@ func TestStorageImpl_Create(t *testing.T) {
 				),
 			},
 		},
+		"conflict": {
+			id: "interest0",
+			sd: subscription.Data{
+				Description: "test subscription 1",
+				Expires:     time.Now().Add(1 * time.Hour),
+				Public:      true,
+				Condition: condition.NewGroupCondition(
+					condition.NewCondition(false),
+					condition.GroupLogicOr,
+					[]condition.Condition{
+						condition.NewTextCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition(true), "cond0", "key0",
+							),
+							"pattern0", true,
+						),
+						condition.NewNumberCondition(
+							condition.NewKeyCondition(
+								condition.NewCondition(false), "cond1", "key1",
+							),
+							condition.NumOpEq, 42,
+						),
+					},
+				),
+			},
+			err: storage.ErrConflict,
+		},
 		"index allows duplicate condition in the subscription": {
+			id: "interest2",
 			sd: subscription.Data{
 				Description: "test subscription 2",
 				Expires:     time.Now().Add(1 * time.Hour),
@@ -123,10 +150,8 @@ func TestStorageImpl_Create(t *testing.T) {
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			id, err = s.Create(ctx, "group0", "acc0", c.sd)
+			err = s.Create(ctx, c.id, "group0", "acc0", c.sd)
 			if c.err == nil {
-				assert.Nil(t, err)
-				_, err = uuid.Parse(id)
 				assert.Nil(t, err)
 			} else {
 				assert.ErrorIs(t, err, c.err)
@@ -165,7 +190,7 @@ func TestStorageImpl_Read(t *testing.T) {
 			),
 		},
 	)
-	id0, err := s.Create(ctx, "group0", "user0", subscription.Data{
+	err = s.Create(ctx, "interest0", "group0", "user0", subscription.Data{
 		Description: "test subscription 0",
 		Enabled:     true,
 		Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
@@ -174,7 +199,7 @@ func TestStorageImpl_Read(t *testing.T) {
 		Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
 	})
 	require.Nil(t, err)
-	id1, err := s.Create(ctx, "group1", "user1", subscription.Data{
+	err = s.Create(ctx, "interest1", "group1", "user1", subscription.Data{
 		Description: "test subscription 1",
 		Enabled:     true,
 		Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
@@ -194,7 +219,7 @@ func TestStorageImpl_Read(t *testing.T) {
 		err     error
 	}{
 		"success": {
-			id:      id0,
+			id:      "interest0",
 			groupId: "group0",
 			userId:  "user0",
 			sd: subscription.Data{
@@ -207,25 +232,25 @@ func TestStorageImpl_Read(t *testing.T) {
 			},
 		},
 		"not found by id": {
-			id:      "sub1",
+			id:      "interest2",
 			groupId: "group0",
 			userId:  "user0",
 			err:     storage.ErrNotFound,
 		},
 		"not found by group": {
-			id:      id0,
+			id:      "interest0",
 			groupId: "group1",
 			userId:  "user0",
 			err:     storage.ErrNotFound,
 		},
 		"not found by user": {
-			id:      id0,
+			id:      "interest0",
 			groupId: "group0",
 			userId:  "user1",
 			err:     storage.ErrNotFound,
 		},
 		"found public": {
-			id:      id1,
+			id:      "interest1",
 			groupId: "group0",
 			userId:  "user0",
 			sd: subscription.Data{
@@ -282,7 +307,7 @@ func TestStorageImpl_Update(t *testing.T) {
 		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 		Condition: cond0,
 	}
-	id0, err := s.Create(ctx, "group0", "user0", sd0)
+	err = s.Create(ctx, "interest0", "group0", "user0", sd0)
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
@@ -294,7 +319,7 @@ func TestStorageImpl_Update(t *testing.T) {
 		prev    subscription.Data
 	}{
 		"ok": {
-			id:      id0,
+			id:      "interest0",
 			groupId: "group0",
 			userId:  "user0",
 			sd: subscription.Data{
@@ -309,7 +334,7 @@ func TestStorageImpl_Update(t *testing.T) {
 			prev: sd0,
 		},
 		"id mismatch": {
-			id:      "id0",
+			id:      "interest1",
 			groupId: "group0",
 			userId:  "user0",
 			sd: subscription.Data{
@@ -318,7 +343,7 @@ func TestStorageImpl_Update(t *testing.T) {
 			err: storage.ErrNotFound,
 		},
 		"acc mismatch": {
-			id:      id0,
+			id:      "interest0",
 			groupId: "group1",
 			userId:  "user0",
 			sd: subscription.Data{
@@ -362,12 +387,12 @@ func TestStorageImpl_Delete(t *testing.T) {
 		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 		"pattern0", false,
 	)
-	id0, err := s.Create(ctx, "acc0", "user0", subscription.Data{
+	err = s.Create(ctx, "interest0", "acc0", "user0", subscription.Data{
 		Expires:   time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 		Condition: cond0,
 	})
 	require.Nil(t, err)
-	id1, err := s.Create(ctx, "acc0", "user1", subscription.Data{
+	err = s.Create(ctx, "interest1", "acc0", "user1", subscription.Data{
 		Expires:   time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 		Condition: cond0,
 		Public:    true,
@@ -382,7 +407,7 @@ func TestStorageImpl_Delete(t *testing.T) {
 		err     error
 	}{
 		"success": {
-			id:      id0,
+			id:      "interest0",
 			groupId: "acc0",
 			userId:  "user0",
 			sd: subscription.Data{
@@ -397,13 +422,13 @@ func TestStorageImpl_Delete(t *testing.T) {
 			err:     storage.ErrNotFound,
 		},
 		"not found by acc": {
-			id:      id0,
+			id:      "interest0",
 			groupId: "acc1",
 			userId:  "user0",
 			err:     storage.ErrNotFound,
 		},
 		"cannot delete public by id": {
-			id:      id1,
+			id:      "interest1",
 			groupId: "acc0",
 			userId:  "user0",
 			err:     storage.ErrNotFound,
@@ -457,10 +482,10 @@ func TestStorageImpl_Search(t *testing.T) {
 			Public:      i%5 == 4,
 			Followers:   int64(i) + 1,
 		}
-		id, err := s.Create(ctx, fmt.Sprintf("acc%d", i%2), fmt.Sprintf("user%d", i%2), sub)
+		err = s.Create(ctx, fmt.Sprintf("interest%d", i), fmt.Sprintf("acc%d", i%2), fmt.Sprintf("user%d", i%2), sub)
 		require.Nil(t, err)
 		rootConditions = append(rootConditions, cond)
-		ids = append(ids, id)
+		ids = append(ids, fmt.Sprintf("interest%d", i))
 	}
 	fmt.Println(ids)
 	acc0Ids := []string{
@@ -632,7 +657,8 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
-		id, err := s.Create(ctx, "acc0", "user0", sub)
+		id := fmt.Sprintf("interest%d", i)
+		err = s.Create(ctx, id, "acc0", "user0", sub)
 		require.Nil(t, err)
 		if sub.Enabled {
 			matchingSubIds = append(matchingSubIds, id)
@@ -651,7 +677,7 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
-		_, err := s.Create(ctx, "acc0", "user0", sub)
+		err = s.Create(ctx, fmt.Sprintf("interest-%d", i), "acc0", "user0", sub)
 		require.Nil(t, err)
 	}
 	//
@@ -763,7 +789,7 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 		Enabled:   true,
 		Condition: cond0,
 	}
-	id0, err := s.Create(ctx, "acc0", "user0", sub0)
+	err = s.Create(ctx, "interest0", "acc0", "user0", sub0)
 	require.Nil(t, err)
 	// already expired
 	cond1 := condition.NewTextCondition(
@@ -776,7 +802,7 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 		Condition: cond1,
 		Expires:   time.Date(2022, 2, 22, 22, 22, 22, 0, time.UTC),
 	}
-	_, err = s.Create(ctx, "acc0", "user0", sub1)
+	err = s.Create(ctx, "interest1", "acc0", "user0", sub1)
 	require.Nil(t, err)
 	// not expired
 	cond2 := condition.NewTextCondition(
@@ -789,7 +815,7 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 		Condition: cond2,
 		Expires:   time.Now().Add(1 * time.Hour).UTC(),
 	}
-	id2, err := s.Create(ctx, "acc0", "user0", sub2)
+	err = s.Create(ctx, "interest2", "acc0", "user0", sub2)
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
@@ -805,11 +831,11 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 			},
 			out: []subscription.ConditionMatch{
 				{
-					SubscriptionId: id0,
+					SubscriptionId: "interest0",
 					Condition:      cond0,
 				},
 				{
-					SubscriptionId: id2,
+					SubscriptionId: "interest2",
 					Condition:      cond2,
 				},
 			},
@@ -869,7 +895,8 @@ func TestStorageImpl_Count(t *testing.T) {
 			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
-		id, err := s.Create(ctx, "acc0", "user0", sub)
+		id := fmt.Sprintf("interest%d", i)
+		err = s.Create(ctx, id, "acc0", "user0", sub)
 		require.Nil(t, err)
 		if sub.Enabled {
 			matchingSubIds = append(matchingSubIds, id)
@@ -888,7 +915,7 @@ func TestStorageImpl_Count(t *testing.T) {
 			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
-		_, err := s.Create(ctx, "acc0", "user0", sub)
+		err = s.Create(ctx, fmt.Sprintf("interest-%d", i), "acc0", "user0", sub)
 		require.Nil(t, err)
 	}
 	//
@@ -940,7 +967,8 @@ func TestStorageImpl_CountUsersUnique(t *testing.T) {
 			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
-		id, err := s.Create(ctx, "acc0", fmt.Sprintf("user%d", i%3), sub)
+		id := fmt.Sprintf("interest%d", i)
+		err = s.Create(ctx, id, "acc0", fmt.Sprintf("user%d", i%3), sub)
 		require.Nil(t, err)
 		if sub.Enabled {
 			matchingSubIds = append(matchingSubIds, id)
@@ -959,7 +987,7 @@ func TestStorageImpl_CountUsersUnique(t *testing.T) {
 			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
-		_, err := s.Create(ctx, "acc0", "user0", sub)
+		err = s.Create(ctx, fmt.Sprintf("interest-%d", i), "acc0", "user0", sub)
 		require.Nil(t, err)
 	}
 	//
@@ -1006,7 +1034,7 @@ func TestStorageImpl_UpdateFollowers(t *testing.T) {
 		Condition: cond0,
 		Public:    true,
 	}
-	id0, err := s.Create(ctx, "group0", "user0", sd0)
+	err = s.Create(ctx, "interest0", "group0", "user0", sd0)
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
@@ -1015,15 +1043,15 @@ func TestStorageImpl_UpdateFollowers(t *testing.T) {
 		err      error
 	}{
 		"ok0": {
-			id:       id0,
+			id:       "interest0",
 			newCount: 0,
 		},
 		"ok1": {
-			id:       id0,
+			id:       "interest0",
 			newCount: 1,
 		},
 		"ok2": {
-			id:       id0,
+			id:       "interest0",
 			newCount: 2,
 		},
 		"id mismatch": {

@@ -7,6 +7,7 @@ import (
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/storage"
+	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -43,7 +44,13 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 			if req.Expires != nil {
 				sd.Expires = req.Expires.AsTime()
 			}
-			resp.Id, err = sc.stor.Create(ctx, groupId, userId, sd)
+			switch req.Id {
+			case "":
+				resp.Id = ksuid.New().String()
+			default:
+				resp.Id = req.Id
+			}
+			err = sc.stor.Create(ctx, resp.Id, groupId, userId, sd)
 		}
 		err = encodeError(err)
 	}
@@ -341,6 +348,8 @@ func encodeError(svcErr error) (err error) {
 		err = status.Error(codes.Internal, svcErr.Error())
 	case errors.Is(svcErr, storage.ErrNotFound):
 		err = status.Error(codes.NotFound, svcErr.Error())
+	case errors.Is(svcErr, storage.ErrConflict):
+		err = status.Error(codes.AlreadyExists, svcErr.Error())
 	default:
 		err = status.Error(codes.Internal, svcErr.Error())
 	}

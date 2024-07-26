@@ -34,6 +34,7 @@ message CreateRequest {
   Condition cond = 3;
   google.protobuf.Timestamp expires = 4;
   bool public = 5;
+  string id = 6;
 }
 
 message Condition {

@@ -15,7 +15,7 @@ type (
 
 		// Create a subscription with the specified account and data.
 		// Returns a created subscription id if successful.
-		Create(ctx context.Context, groupId, userId string, sd subscription.Data) (id string, err error)
+		Create(ctx context.Context, id, groupId, userId string, sd subscription.Data) (err error)
 
 		// Read the subscription.Data by the subscription.Subscription id.
 		Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error)
@@ -46,6 +46,9 @@ var (
 
 	// ErrNotFound indicates the subscription is missing in the storage and can not be read/updated/deleted.
 	ErrNotFound = errors.New("subscription was not found")
+
+	// ErrConflict indicates the subscription id is already in use.
+	ErrConflict = errors.New("subscription id is already in use")
 
 	// ErrInternal indicates the internal storage failure happened.
 	ErrInternal = errors.New("internal subscription storage failure")

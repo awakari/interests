@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
-	"github.com/google/uuid"
 	"time"
 )
 
@@ -20,13 +19,12 @@ func (s storageMock) Close() error {
 	return nil
 }
 
-func (s storageMock) Create(ctx context.Context, groupId, userId string, sd subscription.Data) (id string, err error) {
-	descr := sd.Description
-	if descr == "fail" {
+func (s storageMock) Create(ctx context.Context, id, groupId, userId string, sd subscription.Data) (err error) {
+	switch id {
+	case "fail":
 		err = ErrInternal
-	}
-	if err == nil {
-		id = uuid.NewString()
+	case "conflict":
+		err = ErrConflict
 	}
 	return
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/awakari/subscriptions/config"
 	"github.com/awakari/subscriptions/model/subscription"
 	"github.com/awakari/subscriptions/storage"
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -275,10 +274,10 @@ func (s storageImpl) Close() error {
 	return s.conn.Disconnect(context.TODO())
 }
 
-func (s storageImpl) Create(ctx context.Context, groupId, userId string, sd subscription.Data) (id string, err error) {
+func (s storageImpl) Create(ctx context.Context, id, groupId, userId string, sd subscription.Data) (err error) {
 	recCond, condIds := encodeCondition(sd.Condition)
 	rec := subscriptionWrite{
-		Id:          uuid.NewString(),
+		Id:          id,
 		GroupId:     groupId,
 		UserId:      userId,
 		Description: sd.Description,
@@ -292,10 +291,11 @@ func (s storageImpl) Create(ctx context.Context, groupId, userId string, sd subs
 		CondIds:     condIds,
 	}
 	_, err = s.coll.InsertOne(ctx, rec)
-	if err != nil {
+	switch {
+	case mongo.IsDuplicateKeyError(err):
+		err = fmt.Errorf("%w: id already in use: %s", storage.ErrConflict, id)
+	case err != nil:
 		err = fmt.Errorf("%w: failed to insert: %s", storage.ErrInternal, err)
-	} else {
-		id = rec.Id
 	}
 	return
 }
