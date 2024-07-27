@@ -56,10 +56,6 @@ var (
 					Key:   attrUserId,
 					Value: "hashed",
 				},
-				{
-					Key:   attrPublic,
-					Value: 1,
-				},
 			},
 			Options: options.
 				Index().
@@ -105,10 +101,6 @@ var (
 			Value: 1,
 		},
 		{
-			Key:   attrPublic,
-			Value: 1,
-		},
-		{
 			Key:   attrId,
 			Value: 1,
 		},
@@ -116,10 +108,6 @@ var (
 	projFollowersDesc = bson.D{
 		{
 			Key:   attrFollowers,
-			Value: -1,
-		},
-		{
-			Key:   attrPublic,
 			Value: -1,
 		},
 		{
