@@ -25,7 +25,7 @@ type subscriptionWrite struct {
 
 	Public bool `bson:"public,omitempty"`
 
-	Followers int64 `bson:"followers,omitempty"`
+	Followers int64 `bson:"followers"`
 
 	Condition Condition `bson:"cond"`
 

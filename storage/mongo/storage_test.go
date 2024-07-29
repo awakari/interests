@@ -480,7 +480,7 @@ func TestStorageImpl_Search(t *testing.T) {
 			Expires:     time.Now().Add(time.Duration(i-2) * time.Hour),
 			Condition:   cond,
 			Public:      i%5 == 4,
-			Followers:   int64(i) + 1,
+			Followers:   (10 - int64(i)) / 2,
 		}
 		err = s.Create(ctx, fmt.Sprintf("interest%d", i), fmt.Sprintf("acc%d", i%2), fmt.Sprintf("user%d", i%2), sub)
 		require.Nil(t, err)
@@ -514,16 +514,16 @@ func TestStorageImpl_Search(t *testing.T) {
 	}
 	sort.Strings(publicIds0)
 	descFollowersIds0 := []string{
-		ids[9],
-		ids[8],
-		ids[6],
+		ids[0],
+		ids[2],
 		ids[4],
+		ids[6],
 	}
 	descFollowersIds1 := []string{
-		ids[6],
 		ids[4],
-		ids[2],
-		ids[0],
+		ids[6],
+		ids[8],
+		ids[9],
 	}
 	//
 	cases := map[string]struct {
@@ -608,7 +608,7 @@ func TestStorageImpl_Search(t *testing.T) {
 			},
 			cursor: subscription.Cursor{
 				Id:        acc0Ids[4],
-				Followers: 7,
+				Followers: 3,
 			},
 			ids: descFollowersIds1,
 		},
