@@ -22,6 +22,9 @@ type Data struct {
 	// Updated represents the subscription last update time.
 	Updated time.Time
 
+	// Result represents the last read result time.
+	Result time.Time
+
 	Public bool
 
 	Followers int64

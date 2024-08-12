@@ -52,6 +52,8 @@ type subscriptionRec struct {
 
 	Updated time.Time `bson:"updated,omitempty"`
 
+	Result time.Time `bson:"result,omitempty"`
+
 	Public bool `bson:"public,omitempty"`
 
 	Followers int64 `bson:"followers,omitempty"`
@@ -71,6 +73,7 @@ const attrEnabled = "enabled"
 const attrExpires = "expires"
 const attrCreated = "created"
 const attrUpdated = "updated"
+const attrResult = "result"
 const attrPublic = "public"
 const attrFollowers = "followers"
 const attrCondIds = "condIds"
@@ -90,6 +93,7 @@ func (rec subscriptionRec) decodeSubscriptionData(sd *subscription.Data) (err er
 	sd.Expires = rec.Expires
 	sd.Created = rec.Created
 	sd.Updated = rec.Updated
+	sd.Result = rec.Result
 	sd.Public = rec.Public
 	sd.Followers = rec.Followers
 	var condRec Condition

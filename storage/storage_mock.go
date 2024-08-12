@@ -41,6 +41,7 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd s
 			Expires:     time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 			Created:     time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC),
 			Updated:     time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC),
+			Result:      time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC),
 			Public:      true,
 			Followers:   42,
 			Condition: condition.NewGroupCondition(
@@ -95,6 +96,16 @@ func (s storageMock) Update(ctx context.Context, id, groupId, userId string, sd 
 }
 
 func (s storageMock) UpdateFollowers(ctx context.Context, id string, count int64) (err error) {
+	switch id {
+	case "missing":
+		err = ErrNotFound
+	case "fail":
+		err = ErrInternal
+	}
+	return
+}
+
+func (s storageMock) UpdateResultTime(ctx context.Context, id string, last time.Time) (err error) {
 	switch id {
 	case "missing":
 		err = ErrNotFound

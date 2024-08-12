@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/awakari/subscriptions/model/subscription"
 	"io"
+	"time"
 )
 
 type (
@@ -25,6 +26,8 @@ type (
 
 		// UpdateFollowers updates the followers count
 		UpdateFollowers(ctx context.Context, id string, count int64) (err error)
+
+		UpdateResultTime(ctx context.Context, id string, last time.Time) (err error)
 
 		// Delete removes the subscription.Subscription specified by its unique id.
 		// Returns the subscription.Data if deleted, error otherwise.

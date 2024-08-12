@@ -1075,3 +1075,62 @@ func TestStorageImpl_UpdateFollowers(t *testing.T) {
 		})
 	}
 }
+
+func TestStorageImpl_UpdateResultTime(t *testing.T) {
+	//
+	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	dbCfg := config.DbConfig{
+		Uri:  dbUri,
+		Name: "subscriptions",
+	}
+	dbCfg.Table.Name = collName
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	s, err := NewStorage(ctx, dbCfg)
+	require.Nil(t, err)
+	defer clear(ctx, t, s.(storageImpl))
+	//
+	cond0 := condition.NewTextCondition(
+		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
+		"pattern0", false,
+	)
+	sd0 := subscription.Data{
+		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
+		Condition: cond0,
+		Public:    true,
+	}
+	err = s.Create(ctx, "interest0", "group0", "user0", sd0)
+	require.Nil(t, err)
+	//
+	cases := map[string]struct {
+		id   string
+		last time.Time
+		err  error
+	}{
+		"ok0": {
+			id:   "interest0",
+			last: time.Date(2024, 8, 12, 18, 7, 0, 0, time.UTC),
+		},
+		"id mismatch": {
+			id:  "missing",
+			err: storage.ErrNotFound,
+		},
+	}
+	//
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			err = s.UpdateResultTime(ctx, c.id, c.last)
+			if c.err == nil {
+				assert.Nil(t, err)
+				var sd subscription.Data
+				sd, err = s.Read(ctx, c.id, "group0", "user0")
+				require.Nil(t, err)
+				assert.Equal(t, c.last, sd.Result)
+			} else {
+				assert.ErrorIs(t, err, c.err)
+			}
+		})
+	}
+}

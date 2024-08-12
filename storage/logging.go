@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/awakari/subscriptions/model/subscription"
 	"log/slog"
+	"time"
 )
 
 type loggingMiddleware struct {
@@ -45,6 +46,13 @@ func (lm loggingMiddleware) UpdateFollowers(ctx context.Context, id string, coun
 		lm.log.Debug(fmt.Sprintf("UpdateFollowers(%s, %d): err=%s", id, count, err))
 	}()
 	return lm.stor.UpdateFollowers(ctx, id, count)
+}
+
+func (lm loggingMiddleware) UpdateResultTime(ctx context.Context, id string, last time.Time) (err error) {
+	defer func() {
+		lm.log.Debug(fmt.Sprintf("UpdateResultTime(%s, %s): err=%s", id, last, err))
+	}()
+	return lm.stor.UpdateResultTime(ctx, id, last)
 }
 
 func (lm loggingMiddleware) Delete(ctx context.Context, id, groupId, userId string) (d subscription.Data, err error) {

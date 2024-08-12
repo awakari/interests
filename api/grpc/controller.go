@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/awakari/subscriptions/api/grpc/common"
 	"github.com/awakari/subscriptions/model/condition"
 	"github.com/awakari/subscriptions/model/subscription"
@@ -81,6 +82,9 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 			if !sd.Updated.IsZero() {
 				resp.Updated = timestamppb.New(sd.Updated)
 			}
+			if !sd.Result.IsZero() {
+				resp.Result = timestamppb.New(sd.Result)
+			}
 		}
 		err = encodeError(err)
 	}
@@ -123,6 +127,18 @@ func (sc serviceController) UpdateFollowers(ctx context.Context, req *UpdateFoll
 	resp = &UpdateFollowersResponse{}
 	err = sc.stor.UpdateFollowers(ctx, req.Id, req.Count)
 	err = encodeError(err)
+	return
+}
+
+func (sc serviceController) UpdateResultTime(ctx context.Context, req *UpdateResultTimeRequest) (resp *UpdateResultTimeResponse, err error) {
+	resp = &UpdateResultTimeResponse{}
+	switch req.Read {
+	case nil:
+		err = status.Error(codes.InvalidArgument, fmt.Sprintf("interest %s update result time missing argument", req.Id))
+	default:
+		err = sc.stor.UpdateResultTime(ctx, req.Id, req.Read.AsTime().UTC())
+		err = encodeError(err)
+	}
 	return
 }
 

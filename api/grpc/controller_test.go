@@ -215,6 +215,7 @@ func TestServiceController_Read(t *testing.T) {
 				Expires:     timestamppb.New(time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC)),
 				Created:     timestamppb.New(time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC)),
 				Updated:     timestamppb.New(time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC)),
+				Result:      timestamppb.New(time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC)),
 				Enabled:     true,
 				Public:      true,
 				Followers:   42,
@@ -285,6 +286,7 @@ func TestServiceController_Read(t *testing.T) {
 				assert.Equal(t, c.sub.Expires, sub.Expires)
 				assert.Equal(t, c.sub.Created, sub.Created)
 				assert.Equal(t, c.sub.Updated, sub.Updated)
+				assert.Equal(t, c.sub.Result, sub.Result)
 				assert.Equal(t, c.sub.Public, sub.Public)
 				assert.Equal(t, c.sub.Followers, sub.Followers)
 				assert.Equal(t, c.sub.Cond.Not, sub.Cond.Not)
@@ -427,6 +429,53 @@ func TestServiceController_UpdateFollowers(t *testing.T) {
 			ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
 			_, err = client.UpdateFollowers(ctx, &UpdateFollowersRequest{
 				Id: c.id,
+			})
+			if c.err == nil {
+				assert.Nil(t, err)
+			} else {
+				assert.ErrorIs(t, err, c.err)
+			}
+		})
+	}
+}
+
+func TestServiceController_UpdateResultTime(t *testing.T) {
+	//
+	addr := fmt.Sprintf("localhost:%d", port)
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.Nil(t, err)
+	client := NewServiceClient(conn)
+	//
+	cases := map[string]struct {
+		id  string
+		t   *timestamppb.Timestamp
+		err error
+	}{
+		"ok": {
+			t: &timestamppb.Timestamp{},
+		},
+		"invalid": {
+			err: status.Error(codes.InvalidArgument, "interest  update result time missing argument"),
+		},
+		"fail": {
+			id:  "fail",
+			t:   &timestamppb.Timestamp{},
+			err: status.Error(codes.Internal, "internal subscription storage failure"),
+		},
+		"missing": {
+			id:  "missing",
+			t:   &timestamppb.Timestamp{},
+			err: status.Error(codes.NotFound, "subscription was not found"),
+		},
+	}
+	//
+	for k, c := range cases {
+		t.Run(k, func(t *testing.T) {
+			ctx := context.TODO()
+			ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
+			_, err = client.UpdateResultTime(ctx, &UpdateResultTimeRequest{
+				Id:   c.id,
+				Read: c.t,
 			})
 			if c.err == nil {
 				assert.Nil(t, err)

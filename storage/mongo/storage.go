@@ -141,6 +141,10 @@ var (
 			Value: 1,
 		},
 		{
+			Key:   attrResult,
+			Value: 1,
+		},
+		{
 			Key:   attrPublic,
 			Value: 1,
 		},
@@ -366,6 +370,26 @@ func (s storageImpl) UpdateFollowers(ctx context.Context, id string, count int64
 	u := bson.M{
 		"$set": bson.M{
 			attrFollowers: count,
+		},
+	}
+	var result *mongo.UpdateResult
+	result, err = s.coll.UpdateOne(ctx, q, u)
+	switch {
+	case err == nil && result.MatchedCount < 1:
+		err = fmt.Errorf("%w: not found, id: %s", storage.ErrNotFound, id)
+	case err != nil:
+		err = fmt.Errorf("%w: failed to update subscription, id: %s, err: %s", storage.ErrInternal, id, err)
+	}
+	return
+}
+
+func (s storageImpl) UpdateResultTime(ctx context.Context, id string, last time.Time) (err error) {
+	q := bson.M{
+		attrId: id,
+	}
+	u := bson.M{
+		"$set": bson.M{
+			attrResult: last.UTC(),
 		},
 	}
 	var result *mongo.UpdateResult

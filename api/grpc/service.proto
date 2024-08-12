@@ -17,6 +17,8 @@ service Service {
 
   rpc UpdateFollowers(UpdateFollowersRequest) returns (UpdateFollowersResponse);
 
+  rpc UpdateResultTime(UpdateResultTimeRequest) returns (UpdateResultTimeResponse);
+
   rpc Delete(DeleteRequest) returns (DeleteResponse);
 
   rpc SearchOwn(SearchOwnRequest) returns (SearchOwnResponse);
@@ -93,6 +95,7 @@ message ReadResponse {
   google.protobuf.Timestamp updated = 6;
   bool public = 7;
   int64 followers = 8;
+  google.protobuf.Timestamp result = 9;
 }
 
 // Update
@@ -118,6 +121,16 @@ message UpdateFollowersRequest {
 }
 
 message UpdateFollowersResponse {
+}
+
+// UpdateLastResultTime
+
+message UpdateResultTimeRequest {
+  string id = 1;
+  google.protobuf.Timestamp read = 4;
+}
+
+message UpdateResultTimeResponse {
 }
 
 // Delete
