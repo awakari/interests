@@ -35,21 +35,22 @@ spec:
             - name: API_HTTP_PORT
               value: "{{ .Values.service.http.port }}"
             - name: DB_URI
-              value: "{{ .Values.db.protocol }}://{{ .Values.db.hostname }}/?retryWrites=true&w=majority"
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.secret.name }}"
+                  key: "{{ .Values.db.secret.keys.url }}"
             - name: DB_NAME
               value: {{ .Values.db.name }}
             - name: DB_USERNAME
-              value: {{ .Values.db.username }}
-            {{- if .Values.db.password.secret.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.secret.name }}"
+                  key: "{{ .Values.db.secret.keys.username }}"
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Values.db.password.secret.name }}"
-                  key: "{{ .Values.db.password.secret.key }}"
-            {{- else }}
-            - name: DB_PASSWORD
-              value: "{{ .Values.db.password.raw }}"
-            {{- end }}
+                  name: "{{ .Values.db.secret.name }}"
+                  key: "{{ .Values.db.secret.keys.password }}"
             - name: DB_TABLE_NAME
               value: {{ .Values.db.table.name }}
             - name: DB_TABLE_SHARD
