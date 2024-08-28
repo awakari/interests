@@ -139,6 +139,14 @@ kubectl create secret docker-registry github-registry \
   --docker-email=<USER_EMAIL>
 ```
 
+When using external DB, create the corresponding secret:
+```shell
+kubectl create secret generic db-mongo \
+  --from-literal=url=<MONGO_URL> \
+  --from-literal=username=<MONGO_USERNAME> \
+  --from-literal=password=<MONGO_PASSWORD>
+```
+
 ### 3.4.1. Helm
 
 Create a helm package from the sources:
