@@ -82,7 +82,7 @@ db:
   # Database name to use.
   name: subscriptions
   secret:
-    name: "db-mongodb"
+    name: "db-mongo"
     keys:
       url: "url"
       username: "username"
