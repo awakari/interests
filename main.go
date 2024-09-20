@@ -19,7 +19,7 @@ func main() {
 	slog.Info("starting...")
 	cfg, err := config.NewConfigFromEnv()
 	if err != nil {
-		slog.Error("failed to load the config", err)
+		slog.Error(fmt.Sprintf("failed to load the config: %s", err))
 	}
 	opts := slog.HandlerOptions{
 		Level: slog.Level(cfg.Log.Level),

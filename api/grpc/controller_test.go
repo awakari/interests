@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 	go func() {
 		err := Serve(stor, port)
 		if err != nil {
-			log.Error("", err)
+			log.Error(err.Error())
 		}
 	}()
 	code := m.Run()
