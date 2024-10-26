@@ -692,3 +692,48 @@ func TestServiceController_SearchByCondition(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceController_SetEnabledBatch(t *testing.T) {
+	//
+	addr := fmt.Sprintf("localhost:%d", port)
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.Nil(t, err)
+	client := NewServiceClient(conn)
+	//
+	cases := map[string]struct {
+		ids []string
+		n   int64
+		err error
+	}{
+		"ok": {
+			ids: []string{
+				"interest0",
+				"interest1",
+			},
+			n: 2,
+		},
+		"fail": {
+			ids: []string{
+				"fail",
+				"interest1",
+			},
+			err: status.Error(codes.Internal, "internal subscription storage failure"),
+		},
+	}
+	//
+	for k, c := range cases {
+		t.Run(k, func(t *testing.T) {
+			ctx := context.TODO()
+			ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
+			var resp *SetEnabledBatchResponse
+			resp, err = client.SetEnabledBatch(ctx, &SetEnabledBatchRequest{
+				Ids:     c.ids,
+				Enabled: true,
+			})
+			if c.err == nil {
+				assert.Equal(t, c.n, resp.N)
+			}
+			assert.ErrorIs(t, err, c.err)
+		})
+	}
+}

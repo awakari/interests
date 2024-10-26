@@ -142,6 +142,13 @@ func (sc serviceController) UpdateResultTime(ctx context.Context, req *UpdateRes
 	return
 }
 
+func (sc serviceController) SetEnabledBatch(ctx context.Context, req *SetEnabledBatchRequest) (resp *SetEnabledBatchResponse, err error) {
+	resp = &SetEnabledBatchResponse{}
+	resp.N, err = sc.stor.SetEnabledBatch(ctx, req.Ids, req.Enabled)
+	err = encodeError(err)
+	return
+}
+
 func (sc serviceController) Delete(ctx context.Context, req *DeleteRequest) (resp *DeleteResponse, err error) {
 	resp = &DeleteResponse{}
 	var groupId string

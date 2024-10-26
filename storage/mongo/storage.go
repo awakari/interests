@@ -403,6 +403,28 @@ func (s storageImpl) UpdateResultTime(ctx context.Context, id string, last time.
 	return
 }
 
+func (s storageImpl) SetEnabledBatch(ctx context.Context, ids []string, enabled bool) (n int64, err error) {
+	q := bson.M{
+		attrId: bson.M{
+			"$in": ids,
+		},
+	}
+	u := bson.M{
+		"$set": bson.M{
+			attrEnabled: enabled,
+		},
+	}
+	var result *mongo.UpdateResult
+	result, err = s.coll.UpdateMany(ctx, q, u)
+	switch {
+	case err == nil:
+		n = result.ModifiedCount
+	default:
+		err = fmt.Errorf("%w: failed to update subscription, ids: %s, err: %s", storage.ErrInternal, ids, err)
+	}
+	return
+}
+
 func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
 	q := bson.M{
 		attrId:      id,

@@ -19,6 +19,8 @@ service Service {
 
   rpc UpdateResultTime(UpdateResultTimeRequest) returns (UpdateResultTimeResponse);
 
+  rpc SetEnabledBatch(SetEnabledBatchRequest) returns (SetEnabledBatchResponse);
+
   rpc Delete(DeleteRequest) returns (DeleteResponse);
 
   rpc SearchOwn(SearchOwnRequest) returns (SearchOwnResponse);
@@ -131,6 +133,17 @@ message UpdateResultTimeRequest {
 }
 
 message UpdateResultTimeResponse {
+}
+
+// SetEnabledBatch
+
+message SetEnabledBatchRequest {
+  repeated string ids = 1;
+  bool enabled = 2;
+}
+
+message SetEnabledBatchResponse {
+  int64 n = 1;
 }
 
 // Delete

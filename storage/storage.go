@@ -29,6 +29,8 @@ type (
 
 		UpdateResultTime(ctx context.Context, id string, last time.Time) (err error)
 
+		SetEnabledBatch(ctx context.Context, ids []string, enabled bool) (n int64, err error)
+
 		// Delete removes the subscription.Subscription specified by its unique id.
 		// Returns the subscription.Data if deleted, error otherwise.
 		Delete(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error)

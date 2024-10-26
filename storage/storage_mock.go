@@ -115,6 +115,15 @@ func (s storageMock) UpdateResultTime(ctx context.Context, id string, last time.
 	return
 }
 
+func (s storageMock) SetEnabledBatch(ctx context.Context, ids []string, enabled bool) (n int64, err error) {
+	if len(ids) > 0 && ids[0] == "fail" {
+		err = ErrInternal
+	} else {
+		n = int64(len(ids))
+	}
+	return
+}
+
 func (s storageMock) Delete(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
 	if id == "fail" {
 		err = ErrInternal

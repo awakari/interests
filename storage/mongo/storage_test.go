@@ -1134,3 +1134,72 @@ func TestStorageImpl_UpdateResultTime(t *testing.T) {
 		})
 	}
 }
+
+func TestStorageImpl_SetEnabledBatch(t *testing.T) {
+	//
+	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	dbCfg := config.DbConfig{
+		Uri:  dbUri,
+		Name: "subscriptions",
+	}
+	dbCfg.Table.Name = collName
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	s, err := NewStorage(ctx, dbCfg)
+	require.Nil(t, err)
+	defer clear(ctx, t, s.(storageImpl))
+	//
+	cond0 := condition.NewTextCondition(
+		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
+		"pattern0", false,
+	)
+	sd0 := subscription.Data{
+		Condition: cond0,
+		Enabled:   true,
+	}
+	err = s.Create(ctx, "interest0", "group0", "user0", sd0)
+	require.Nil(t, err)
+	err = s.Create(ctx, "interest1", "group0", "user0", sd0)
+	require.Nil(t, err)
+	sd1 := subscription.Data{
+		Condition: cond0,
+		Enabled:   false,
+	}
+	err = s.Create(ctx, "interest2", "group0", "user0", sd1)
+	require.Nil(t, err)
+	err = s.Create(ctx, "interest3", "group0", "user0", sd1)
+	require.Nil(t, err)
+	err = s.Create(ctx, "interest4", "group0", "user0", sd1)
+	require.Nil(t, err)
+	//
+	cases := map[string]struct {
+		ids     []string
+		enabled bool
+		n       int64
+		err     error
+	}{
+		"disable": {
+			ids: []string{"interest0", "interest1", "interest2"},
+			n:   2,
+		},
+		"enable": {
+			ids:     []string{"interest2", "interest3", "interest4"},
+			enabled: true,
+			n:       3,
+		},
+		"none": {
+			ids: []string{"interest5", "interest6", "interest7"},
+		},
+	}
+	//
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			var n int64
+			n, err = s.SetEnabledBatch(context.TODO(), c.ids, c.enabled)
+			assert.Equal(t, c.n, n)
+			assert.ErrorIs(t, err, c.err)
+		})
+	}
+}
