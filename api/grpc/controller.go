@@ -85,6 +85,7 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 			if !sd.Result.IsZero() {
 				resp.Result = timestamppb.New(sd.Result)
 			}
+			resp.Own = sd.Own
 		}
 		err = encodeError(err)
 	}

@@ -256,6 +256,7 @@ func TestServiceController_Read(t *testing.T) {
 						},
 					},
 				},
+				Own: true,
 			},
 		},
 		"fail": {
@@ -298,6 +299,7 @@ func TestServiceController_Read(t *testing.T) {
 				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].Not, sub.Cond.GetGc().GetGroup()[1].Not)
 				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].GetTc().Key, sub.Cond.GetGc().GetGroup()[1].GetTc().Key)
 				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].GetTc().Term, sub.Cond.GetGc().GetGroup()[1].GetTc().Term)
+				assert.Equal(t, c.sub.Own, sub.Own)
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}

@@ -32,4 +32,7 @@ type Data struct {
 	// Condition represents the certain criteria to select the Subscription for the further routing.
 	// It's immutable once the Subscription is created.
 	Condition condition.Condition
+
+	// Own is a synthetic field, use for read only.
+	Own bool
 }

@@ -98,6 +98,7 @@ message ReadResponse {
   bool public = 7;
   int64 followers = 8;
   google.protobuf.Timestamp result = 9;
+  bool own = 10;
 }
 
 // Update

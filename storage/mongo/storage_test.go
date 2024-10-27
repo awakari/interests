@@ -229,6 +229,7 @@ func TestStorageImpl_Read(t *testing.T) {
 				Condition:   cond0,
 				Created:     time.Date(2023, 10, 4, 6, 44, 57, 0, time.UTC),
 				Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
+				Own:         true,
 			},
 		},
 		"not found by id": {
@@ -276,6 +277,7 @@ func TestStorageImpl_Read(t *testing.T) {
 				assert.Equal(t, c.sd.Enabled, sd.Enabled)
 				assert.Equal(t, c.sd.Public, sd.Public)
 				assert.Equal(t, c.sd.Followers, sd.Followers)
+				assert.Equal(t, c.sd.Own, sd.Own)
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}
@@ -306,6 +308,7 @@ func TestStorageImpl_Update(t *testing.T) {
 	sd0 := subscription.Data{
 		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 		Condition: cond0,
+		Own:       true,
 	}
 	err = s.Create(ctx, "interest0", "group0", "user0", sd0)
 	require.Nil(t, err)

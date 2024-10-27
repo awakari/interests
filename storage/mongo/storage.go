@@ -152,6 +152,14 @@ var (
 			Key:   attrFollowers,
 			Value: 1,
 		},
+		{
+			Key:   attrGroupId,
+			Value: 1,
+		},
+		{
+			Key:   attrUserId,
+			Value: 1,
+		},
 	}
 	projSearchByCondId = bson.D{
 		{
@@ -326,6 +334,9 @@ func decodeSingleResult(id, groupId, userId string, result *mongo.SingleResult) 
 			err = fmt.Errorf("%w: failed to decode, id=%s, acc=%s/%s, %s", storage.ErrInternal, id, groupId, userId, err)
 		} else {
 			err = rec.decodeSubscriptionData(&sd)
+			if groupId == rec.GroupId && userId == rec.UserId {
+				sd.Own = true
+			}
 		}
 	}
 	return

@@ -62,6 +62,7 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd s
 					),
 				},
 			),
+			Own: true,
 		}
 	}
 	return
