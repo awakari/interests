@@ -1,13 +1,14 @@
 package subscription
 
 type Query struct {
-	Limit   uint32
-	GroupId string
-	UserId  string
-	Sort    Sort
-	Order   Order
-	Pattern string
-	Public  bool // include public non-own?
+	Limit         uint32
+	GroupId       string
+	UserId        string
+	Sort          Sort
+	Order         Order
+	Pattern       string
+	IncludePublic bool // include public non-own?
+	PrivateOnly   bool // private own only?
 }
 
 type QueryByCondition struct {

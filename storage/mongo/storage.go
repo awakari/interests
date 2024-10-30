@@ -455,8 +455,21 @@ func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor su
 		SetProjection(projId).
 		SetShowRecordID(false)
 	dbQuery := bson.M{}
-	switch q.Public {
-	case true:
+	switch {
+	case q.PrivateOnly:
+		dbQuery[attrGroupId] = q.GroupId
+		dbQuery[attrUserId] = q.UserId
+		dbQuery["$or"] = []bson.M{
+			{
+				attrPublic: false,
+			},
+			{
+				attrPublic: bson.M{
+					"$exists": false,
+				},
+			},
+		}
+	case q.IncludePublic:
 		dbQuery["$or"] = []bson.M{
 			{
 				attrGroupId: q.GroupId,

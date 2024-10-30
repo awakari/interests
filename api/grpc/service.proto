@@ -164,6 +164,7 @@ message SearchOwnRequest {
   uint32 limit = 2;
   Order order = 3;
   string pattern = 4;
+  bool private = 5; // private interests only
 }
 
 enum Order {

@@ -174,10 +174,11 @@ func (sc serviceController) SearchOwn(ctx context.Context, req *SearchOwnRequest
 	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
 		q := subscription.Query{
-			GroupId: groupId,
-			UserId:  userId,
-			Limit:   req.Limit,
-			Pattern: req.Pattern,
+			GroupId:     groupId,
+			UserId:      userId,
+			Limit:       req.Limit,
+			Pattern:     req.Pattern,
+			PrivateOnly: req.Private,
 		}
 		switch req.Order {
 		case Order_DESC:
@@ -200,11 +201,11 @@ func (sc serviceController) Search(ctx context.Context, req *SearchRequest) (res
 	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
 		q := subscription.Query{
-			GroupId: groupId,
-			UserId:  userId,
-			Limit:   req.Limit,
-			Pattern: req.Pattern,
-			Public:  true,
+			GroupId:       groupId,
+			UserId:        userId,
+			Limit:         req.Limit,
+			Pattern:       req.Pattern,
+			IncludePublic: true,
 		}
 		switch req.Sort {
 		case Sort_FOLLOWERS:

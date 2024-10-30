@@ -579,21 +579,21 @@ func TestStorageImpl_Search(t *testing.T) {
 		},
 		"include public": {
 			q: subscription.Query{
-				Limit:   100,
-				GroupId: "acc0",
-				UserId:  "user0",
-				Public:  true,
+				Limit:         100,
+				GroupId:       "acc0",
+				UserId:        "user0",
+				IncludePublic: true,
 			},
 			ids: publicIds0,
 		},
 		"include public and sort by followers": {
 			q: subscription.Query{
-				Limit:   4,
-				GroupId: "acc0",
-				UserId:  "user0",
-				Public:  true,
-				Sort:    subscription.SortFollowers,
-				Order:   subscription.OrderDesc,
+				Limit:         4,
+				GroupId:       "acc0",
+				UserId:        "user0",
+				IncludePublic: true,
+				Sort:          subscription.SortFollowers,
+				Order:         subscription.OrderDesc,
 			},
 			cursor: subscription.Cursor{
 				Followers: math.MaxInt64,
@@ -602,18 +602,32 @@ func TestStorageImpl_Search(t *testing.T) {
 		},
 		"include public and sort by followers desc w/ cursor": {
 			q: subscription.Query{
-				Limit:   4,
-				GroupId: "acc0",
-				UserId:  "user0",
-				Public:  true,
-				Sort:    subscription.SortFollowers,
-				Order:   subscription.OrderDesc,
+				Limit:         4,
+				GroupId:       "acc0",
+				UserId:        "user0",
+				IncludePublic: true,
+				Sort:          subscription.SortFollowers,
+				Order:         subscription.OrderDesc,
 			},
 			cursor: subscription.Cursor{
 				Id:        acc0Ids[4],
 				Followers: 3,
 			},
 			ids: descFollowersIds1,
+		},
+		"private only": {
+			q: subscription.Query{
+				Limit:       100,
+				GroupId:     "acc0",
+				UserId:      "user0",
+				PrivateOnly: true,
+			},
+			ids: []string{
+				ids[0],
+				ids[2],
+				ids[6],
+				ids[8],
+			},
 		},
 	}
 	//
@@ -1176,6 +1190,10 @@ func TestStorageImpl_SetEnabledBatch(t *testing.T) {
 	require.Nil(t, err)
 	err = s.Create(ctx, "interest4", "group0", "user0", sd1)
 	require.Nil(t, err)
+	err = s.Create(ctx, "interest5", "group0", "user0", sd1)
+	require.Nil(t, err)
+	err = s.Create(ctx, "interest7", "group0", "user0", sd0)
+	require.Nil(t, err)
 	//
 	cases := map[string]struct {
 		ids     []string
@@ -1188,12 +1206,16 @@ func TestStorageImpl_SetEnabledBatch(t *testing.T) {
 			n:   2,
 		},
 		"enable": {
-			ids:     []string{"interest2", "interest3", "interest4"},
+			ids:     []string{"interest3", "interest4", "interest5"},
 			enabled: true,
 			n:       3,
 		},
+		"some missing": {
+			ids: []string{"interest6", "interest7"},
+			n:   1,
+		},
 		"none": {
-			ids: []string{"interest5", "interest6", "interest7"},
+			ids: []string{"interest8", "interest9"},
 		},
 	}
 	//
