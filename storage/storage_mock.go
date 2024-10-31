@@ -29,7 +29,7 @@ func (s storageMock) Create(ctx context.Context, id, groupId, userId string, sd 
 	return
 }
 
-func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
+func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, ownerGroupId, ownerUserId string, err error) {
 	if id == "fail" {
 		err = ErrInternal
 	} else if id == "missing" {
@@ -62,8 +62,9 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd s
 					),
 				},
 			),
-			Own: true,
 		}
+		ownerGroupId = groupId
+		ownerUserId = userId
 	}
 	return
 }

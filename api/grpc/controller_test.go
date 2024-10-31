@@ -256,7 +256,8 @@ func TestServiceController_Read(t *testing.T) {
 						},
 					},
 				},
-				Own: true,
+				GroupId: "group0",
+				UserId:  "user0",
 			},
 		},
 		"fail": {

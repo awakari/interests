@@ -300,7 +300,7 @@ func (s storageImpl) Create(ctx context.Context, id, groupId, userId string, sd 
 	return
 }
 
-func (s storageImpl) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
+func (s storageImpl) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, ownerGroupId, ownerUserId string, err error) {
 	q := bson.M{
 		attrId: id,
 		"$or": []bson.M{
@@ -315,11 +315,11 @@ func (s storageImpl) Read(ctx context.Context, id, groupId, userId string) (sd s
 	}
 	var result *mongo.SingleResult
 	result = s.coll.FindOne(ctx, q, optsRead)
-	sd, err = decodeSingleResult(id, groupId, userId, result)
+	sd, ownerGroupId, ownerUserId, err = decodeSingleResult(id, result)
 	return
 }
 
-func decodeSingleResult(id, groupId, userId string, result *mongo.SingleResult) (sd subscription.Data, err error) {
+func decodeSingleResult(id string, result *mongo.SingleResult) (sd subscription.Data, groupId, userId string, err error) {
 	err = result.Err()
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -334,9 +334,8 @@ func decodeSingleResult(id, groupId, userId string, result *mongo.SingleResult) 
 			err = fmt.Errorf("%w: failed to decode, id=%s, acc=%s/%s, %s", storage.ErrInternal, id, groupId, userId, err)
 		} else {
 			err = rec.decodeSubscriptionData(&sd)
-			if groupId == rec.GroupId && userId == rec.UserId {
-				sd.Own = true
-			}
+			groupId = rec.GroupId
+			userId = rec.UserId
 		}
 	}
 	return
@@ -369,7 +368,7 @@ func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d s
 	case err != nil:
 		err = fmt.Errorf("%w: failed to update subscription, id: %s, err: %s", storage.ErrInternal, id, err)
 	default:
-		prev, err = decodeSingleResult(id, groupId, userId, result)
+		prev, _, _, err = decodeSingleResult(id, result)
 	}
 	return
 }
@@ -444,7 +443,7 @@ func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd
 	}
 	var result *mongo.SingleResult
 	result = s.coll.FindOneAndDelete(ctx, q, optsDelete)
-	sd, err = decodeSingleResult(id, groupId, userId, result)
+	sd, _, _, err = decodeSingleResult(id, result)
 	return
 }
 

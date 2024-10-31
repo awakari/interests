@@ -19,7 +19,7 @@ type (
 		Create(ctx context.Context, id, groupId, userId string, sd subscription.Data) (err error)
 
 		// Read the subscription.Data by the subscription.Subscription id.
-		Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error)
+		Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, ownerGroupId, ownerUserId string, err error)
 
 		// Update updates the subscription.Data
 		Update(ctx context.Context, id, groupId, userId string, sd subscription.Data) (prev subscription.Data, err error)

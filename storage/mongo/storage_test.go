@@ -212,11 +212,13 @@ func TestStorageImpl_Read(t *testing.T) {
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
-		id      string
-		groupId string
-		userId  string
-		sd      subscription.Data
-		err     error
+		id           string
+		groupId      string
+		userId       string
+		sd           subscription.Data
+		ownerGroupId string
+		ownerUserId  string
+		err          error
 	}{
 		"success": {
 			id:      "interest0",
@@ -229,8 +231,9 @@ func TestStorageImpl_Read(t *testing.T) {
 				Condition:   cond0,
 				Created:     time.Date(2023, 10, 4, 6, 44, 57, 0, time.UTC),
 				Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
-				Own:         true,
 			},
+			ownerGroupId: "group0",
+			ownerUserId:  "user0",
 		},
 		"not found by id": {
 			id:      "interest2",
@@ -264,12 +267,14 @@ func TestStorageImpl_Read(t *testing.T) {
 				Public:      true,
 				Followers:   42,
 			},
+			ownerGroupId: "group1",
+			ownerUserId:  "user1",
 		},
 	}
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			sd, err := s.Read(ctx, c.id, c.groupId, c.userId)
+			sd, ownerGroupId, ownerUserId, err := s.Read(ctx, c.id, c.groupId, c.userId)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.True(t, c.sd.Condition.Equal(sd.Condition))
@@ -277,7 +282,8 @@ func TestStorageImpl_Read(t *testing.T) {
 				assert.Equal(t, c.sd.Enabled, sd.Enabled)
 				assert.Equal(t, c.sd.Public, sd.Public)
 				assert.Equal(t, c.sd.Followers, sd.Followers)
-				assert.Equal(t, c.sd.Own, sd.Own)
+				assert.Equal(t, c.ownerGroupId, ownerGroupId)
+				assert.Equal(t, c.ownerUserId, ownerUserId)
 			} else {
 				assert.ErrorIs(t, err, c.err)
 			}
@@ -308,7 +314,6 @@ func TestStorageImpl_Update(t *testing.T) {
 	sd0 := subscription.Data{
 		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 		Condition: cond0,
-		Own:       true,
 	}
 	err = s.Create(ctx, "interest0", "group0", "user0", sd0)
 	require.Nil(t, err)
@@ -1083,7 +1088,7 @@ func TestStorageImpl_UpdateFollowers(t *testing.T) {
 			if c.err == nil {
 				assert.Nil(t, err)
 				var sd subscription.Data
-				sd, err = s.Read(ctx, c.id, "group0", "user0")
+				sd, _, _, err = s.Read(ctx, c.id, "group0", "user0")
 				require.Nil(t, err)
 				assert.Equal(t, c.newCount, sd.Followers)
 			} else {
@@ -1142,7 +1147,7 @@ func TestStorageImpl_UpdateResultTime(t *testing.T) {
 			if c.err == nil {
 				assert.Nil(t, err)
 				var sd subscription.Data
-				sd, err = s.Read(ctx, c.id, "group0", "user0")
+				sd, _, _, err = s.Read(ctx, c.id, "group0", "user0")
 				require.Nil(t, err)
 				assert.Equal(t, c.last, sd.Result)
 			} else {
