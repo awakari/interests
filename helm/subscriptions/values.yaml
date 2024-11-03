@@ -83,7 +83,7 @@ affinity: {}
 # Database related configuration.
 db:
   # Database name to use.
-  name: subscriptions
+  name: interests
   secret:
     name: "db-mongo"
     keys:
@@ -92,7 +92,7 @@ db:
       password: "password"
   table:
     # Database table name to use.
-    name: subscriptions
+    name: interests
     shard: true
   tls:
     enabled: false
