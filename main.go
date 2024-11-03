@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	grpcApi "github.com/awakari/subscriptions/api/grpc"
-	"github.com/awakari/subscriptions/config"
-	"github.com/awakari/subscriptions/storage"
-	"github.com/awakari/subscriptions/storage/mongo"
+	grpcApi "github.com/awakari/interests/api/grpc"
+	"github.com/awakari/interests/config"
+	"github.com/awakari/interests/storage"
+	"github.com/awakari/interests/storage/mongo"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log/slog"
@@ -37,8 +37,8 @@ func main() {
 	prometheus.MustRegister(
 		prometheus.NewGaugeFunc(
 			prometheus.GaugeOpts{
-				Name: "awk_subscriptions_count",
-				Help: "Awakari subscriptions total count",
+				Name: "awk_interests_count",
+				Help: "Awakari interests total count",
 			},
 			func() (v float64) {
 				count, _ := stor.Count(context.TODO())
@@ -47,8 +47,8 @@ func main() {
 		),
 		prometheus.NewGaugeFunc(
 			prometheus.GaugeOpts{
-				Name: "awk_subscribers_total",
-				Help: "Awakari unique users who subscribed, total count",
+				Name: "awk_interested_users_total",
+				Help: "Awakari unique users who have interests, total count",
 			},
 			func() (v float64) {
 				count, _ := stor.CountUsersUnique(context.TODO())

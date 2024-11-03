@@ -1,2 +1,2 @@
-// Package storage contains the subscriptions storage common interfaces.
+// Package storage contains the interests storage common interfaces.
 package storage

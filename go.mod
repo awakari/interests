@@ -1,4 +1,4 @@
-module github.com/awakari/subscriptions
+module github.com/awakari/interests
 
 go 1.23
 

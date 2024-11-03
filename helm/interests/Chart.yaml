@@ -1,6 +1,6 @@
 apiVersion: v2
-name: subscriptions
-description: A Helm chart for Awakari Subscriptions
+name: interests
+description: A Helm chart for Awakari Interests
 
 # A chart can be either an 'application' or a 'library' chart.
 #

@@ -1,7 +1,7 @@
 package mongo
 
 import (
-	"github.com/awakari/subscriptions/model/condition"
+	"github.com/awakari/interests/model/condition"
 	"go.mongodb.org/mongo-driver/bson"
 )
 

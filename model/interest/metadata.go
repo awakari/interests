@@ -1,4 +1,4 @@
-package subscription
+package interest
 
 type Metadata struct {
 	Description string

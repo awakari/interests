@@ -17,11 +17,11 @@ type Config struct {
 
 type DbConfig struct {
 	Uri      string `envconfig:"DB_URI" default:"mongodb://localhost:27017/?retryWrites=true&w=majority" required:"true"`
-	Name     string `envconfig:"DB_NAME" default:"subscriptions" required:"true"`
+	Name     string `envconfig:"DB_NAME" default:"interests" required:"true"`
 	UserName string `envconfig:"DB_USERNAME" default:""`
 	Password string `envconfig:"DB_PASSWORD" default:""`
 	Table    struct {
-		Name  string `envconfig:"DB_NAME" default:"subscriptions" required:"true"`
+		Name  string `envconfig:"DB_NAME" default:"interests" required:"true"`
 		Shard bool   `envconfig:"DB_TABLE_SHARD" default:"true"`
 	}
 	Tls struct {

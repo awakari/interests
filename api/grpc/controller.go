@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/awakari/subscriptions/api/grpc/common"
-	"github.com/awakari/subscriptions/model/condition"
-	"github.com/awakari/subscriptions/model/subscription"
-	"github.com/awakari/subscriptions/storage"
+	"github.com/awakari/interests/api/grpc/common"
+	"github.com/awakari/interests/model/condition"
+	"github.com/awakari/interests/model/interest"
+	"github.com/awakari/interests/storage"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -34,7 +34,7 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 		var cond condition.Condition
 		cond, err = decodeCondition(req.Cond)
 		if err == nil {
-			sd := subscription.Data{
+			sd := interest.Data{
 				Description: req.Description,
 				Enabled:     req.Enabled,
 				Condition:   cond,
@@ -64,7 +64,7 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 	var userId string
 	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
-		var sd subscription.Data
+		var sd interest.Data
 		var ownerGroupId string
 		var ownerUserId string
 		sd, ownerGroupId, ownerUserId, err = sc.stor.Read(ctx, req.Id, groupId, userId)
@@ -105,7 +105,7 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 		cond, err = decodeCondition(req.Cond)
 	}
 	if err == nil {
-		sd := subscription.Data{
+		sd := interest.Data{
 			Description: req.Description,
 			Enabled:     req.Enabled,
 			Condition:   cond,
@@ -116,7 +116,7 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 		if req.Expires != nil {
 			sd.Expires = req.Expires.AsTime()
 		}
-		var prev subscription.Data
+		var prev interest.Data
 		prev, err = sc.stor.Update(ctx, req.Id, groupId, userId, sd)
 		if err == nil {
 			resp.Cond = &Condition{}
@@ -159,7 +159,7 @@ func (sc serviceController) Delete(ctx context.Context, req *DeleteRequest) (res
 	var userId string
 	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
-		var sd subscription.Data
+		var sd interest.Data
 		sd, err = sc.stor.Delete(ctx, req.Id, groupId, userId)
 		if err == nil {
 			resp.Cond = &Condition{}
@@ -176,7 +176,7 @@ func (sc serviceController) SearchOwn(ctx context.Context, req *SearchOwnRequest
 	var userId string
 	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
-		q := subscription.Query{
+		q := interest.Query{
 			GroupId:     groupId,
 			UserId:      userId,
 			Limit:       req.Limit,
@@ -185,11 +185,11 @@ func (sc serviceController) SearchOwn(ctx context.Context, req *SearchOwnRequest
 		}
 		switch req.Order {
 		case Order_DESC:
-			q.Order = subscription.OrderDesc
+			q.Order = interest.OrderDesc
 		default:
-			q.Order = subscription.OrderAsc
+			q.Order = interest.OrderAsc
 		}
-		resp.Ids, err = sc.stor.Search(ctx, q, subscription.Cursor{
+		resp.Ids, err = sc.stor.Search(ctx, q, interest.Cursor{
 			Id: req.Cursor,
 		})
 		err = encodeError(err)
@@ -203,7 +203,7 @@ func (sc serviceController) Search(ctx context.Context, req *SearchRequest) (res
 	var userId string
 	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
-		q := subscription.Query{
+		q := interest.Query{
 			GroupId:       groupId,
 			UserId:        userId,
 			Limit:         req.Limit,
@@ -212,17 +212,17 @@ func (sc serviceController) Search(ctx context.Context, req *SearchRequest) (res
 		}
 		switch req.Sort {
 		case Sort_FOLLOWERS:
-			q.Sort = subscription.SortFollowers
+			q.Sort = interest.SortFollowers
 		default:
-			q.Sort = subscription.SortId
+			q.Sort = interest.SortId
 		}
 		switch req.Order {
 		case Order_DESC:
-			q.Order = subscription.OrderDesc
+			q.Order = interest.OrderDesc
 		default:
-			q.Order = subscription.OrderAsc
+			q.Order = interest.OrderAsc
 		}
-		resp.Ids, err = sc.stor.Search(ctx, q, subscription.Cursor{
+		resp.Ids, err = sc.stor.Search(ctx, q, interest.Cursor{
 			Id:        req.Cursor.Id,
 			Followers: req.Cursor.Followers,
 		})
@@ -232,11 +232,11 @@ func (sc serviceController) Search(ctx context.Context, req *SearchRequest) (res
 }
 
 func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchByConditionRequest) (resp *SearchByConditionResponse, err error) {
-	q := subscription.QueryByCondition{
+	q := interest.QueryByCondition{
 		CondId: req.CondId,
 		Limit:  req.Limit,
 	}
-	var page []subscription.ConditionMatch
+	var page []interest.ConditionMatch
 	page, err = sc.stor.SearchByCondition(ctx, q, req.Cursor)
 	if err == nil {
 		resp = &SearchByConditionResponse{}
@@ -362,8 +362,8 @@ func encodeNumOp(src condition.NumOp) (dst Operation) {
 	return
 }
 
-func encodeConditionMatch(src subscription.ConditionMatch, dst *SearchByConditionResult) {
-	dst.Id = src.SubscriptionId
+func encodeConditionMatch(src interest.ConditionMatch, dst *SearchByConditionResult) {
+	dst.Id = src.InterestId
 	dst.Cond = &Condition{}
 	encodeCondition(src.Condition, dst.Cond)
 }

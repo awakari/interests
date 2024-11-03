@@ -2,8 +2,8 @@ package mongo
 
 import (
 	"fmt"
-	"github.com/awakari/subscriptions/model/condition"
-	"github.com/awakari/subscriptions/storage"
+	"github.com/awakari/interests/model/condition"
+	"github.com/awakari/interests/storage"
 	"go.mongodb.org/mongo-driver/bson"
 )
 

@@ -1,4 +1,4 @@
-package subscription
+package interest
 
 type Cursor struct {
 	Id        string

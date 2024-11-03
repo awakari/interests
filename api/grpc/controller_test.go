@@ -3,9 +3,9 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"github.com/awakari/subscriptions/api/grpc/common"
-	"github.com/awakari/subscriptions/model/subscription"
-	"github.com/awakari/subscriptions/storage"
+	"github.com/awakari/interests/api/grpc/common"
+	"github.com/awakari/interests/model/interest"
+	"github.com/awakari/interests/storage"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +26,7 @@ const port = 50051
 var log = slog.Default()
 
 func TestMain(m *testing.M) {
-	stor := storage.NewStorageMock(make(map[string]subscription.Data))
+	stor := storage.NewStorageMock(make(map[string]interest.Data))
 	stor = storage.NewLoggingMiddleware(stor, log)
 	go func() {
 		err := Serve(stor, port)
@@ -120,7 +120,7 @@ func TestServiceController_Create(t *testing.T) {
 				},
 			},
 			idReq: "fail",
-			err:   status.Error(codes.Internal, "internal subscription storage failure"),
+			err:   status.Error(codes.Internal, "internal interest storage failure"),
 		},
 		"conflict": {
 			md: []string{
@@ -133,7 +133,7 @@ func TestServiceController_Create(t *testing.T) {
 				},
 			},
 			idReq: "conflict",
-			err:   status.Error(codes.AlreadyExists, "subscription id is already in use"),
+			err:   status.Error(codes.AlreadyExists, "interest id is already in use"),
 		},
 		"empty group": {
 			md: []string{
@@ -262,11 +262,11 @@ func TestServiceController_Read(t *testing.T) {
 		},
 		"fail": {
 			auth: true,
-			err:  status.Error(codes.Internal, "internal subscription storage failure"),
+			err:  status.Error(codes.Internal, "internal interest storage failure"),
 		},
 		"missing": {
 			auth: true,
-			err:  status.Error(codes.NotFound, "subscription was not found"),
+			err:  status.Error(codes.NotFound, "interest was not found"),
 		},
 		"no auth": {
 			auth: false,
@@ -331,11 +331,11 @@ func TestServiceController_Update(t *testing.T) {
 		},
 		"fail": {
 			auth: true,
-			err:  status.Error(codes.Internal, "internal subscription storage failure"),
+			err:  status.Error(codes.Internal, "internal interest storage failure"),
 		},
 		"missing": {
 			auth: true,
-			err:  status.Error(codes.NotFound, "subscription was not found"),
+			err:  status.Error(codes.NotFound, "interest was not found"),
 		},
 		"no auth": {
 			auth: false,
@@ -418,11 +418,11 @@ func TestServiceController_UpdateFollowers(t *testing.T) {
 		"ok": {},
 		"fail": {
 			id:  "fail",
-			err: status.Error(codes.Internal, "internal subscription storage failure"),
+			err: status.Error(codes.Internal, "internal interest storage failure"),
 		},
 		"missing": {
 			id:  "missing",
-			err: status.Error(codes.NotFound, "subscription was not found"),
+			err: status.Error(codes.NotFound, "interest was not found"),
 		},
 	}
 	//
@@ -463,12 +463,12 @@ func TestServiceController_UpdateResultTime(t *testing.T) {
 		"fail": {
 			id:  "fail",
 			t:   &timestamppb.Timestamp{},
-			err: status.Error(codes.Internal, "internal subscription storage failure"),
+			err: status.Error(codes.Internal, "internal interest storage failure"),
 		},
 		"missing": {
 			id:  "missing",
 			t:   &timestamppb.Timestamp{},
-			err: status.Error(codes.NotFound, "subscription was not found"),
+			err: status.Error(codes.NotFound, "interest was not found"),
 		},
 	}
 	//
@@ -505,11 +505,11 @@ func TestServiceController_Delete(t *testing.T) {
 		},
 		"fail": {
 			auth: true,
-			err:  status.Error(codes.Internal, "internal subscription storage failure"),
+			err:  status.Error(codes.Internal, "internal interest storage failure"),
 		},
 		"missing": {
 			auth: true,
-			err:  status.Error(codes.NotFound, "subscription was not found"),
+			err:  status.Error(codes.NotFound, "interest was not found"),
 		},
 		"no auth": {
 			auth: false,
@@ -565,7 +565,7 @@ func TestServiceController_SearchOwn(t *testing.T) {
 		"fail": {
 			auth:   true,
 			cursor: "fail",
-			err:    status.Error(codes.Internal, "internal subscription storage failure"),
+			err:    status.Error(codes.Internal, "internal interest storage failure"),
 		},
 		"no auth": {
 			auth:   false,
@@ -635,7 +635,7 @@ func TestServiceController_Search(t *testing.T) {
 			cursor: Cursor{
 				Id: "fail",
 			},
-			err: status.Error(codes.Internal, "internal subscription storage failure"),
+			err: status.Error(codes.Internal, "internal interest storage failure"),
 		},
 		"no auth": {
 			auth: false,
@@ -720,7 +720,7 @@ func TestServiceController_SetEnabledBatch(t *testing.T) {
 				"fail",
 				"interest1",
 			},
-			err: status.Error(codes.Internal, "internal subscription storage failure"),
+			err: status.Error(codes.Internal, "internal interest storage failure"),
 		},
 	}
 	//

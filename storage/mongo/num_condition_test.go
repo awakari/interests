@@ -1,8 +1,8 @@
 package mongo
 
 import (
-	"github.com/awakari/subscriptions/model/condition"
-	"github.com/awakari/subscriptions/storage"
+	"github.com/awakari/interests/model/condition"
+	"github.com/awakari/interests/storage"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"testing"

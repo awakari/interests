@@ -1,23 +1,23 @@
 package mongo
 
 import (
-	"github.com/awakari/subscriptions/model/condition"
-	"github.com/awakari/subscriptions/model/subscription"
-	"github.com/awakari/subscriptions/storage"
+	"github.com/awakari/interests/model/condition"
+	"github.com/awakari/interests/model/interest"
+	"github.com/awakari/interests/storage"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"testing"
 	"time"
 )
 
-func Test_decodeSubscription(t *testing.T) {
+func Test_decodeInterest(t *testing.T) {
 	cases := map[string]struct {
-		in  subscriptionRec
-		out subscription.Subscription
+		in  interestRec
+		out interest.Interest
 		err error
 	}{
 		"ok": {
-			in: subscriptionRec{
+			in: interestRec{
 				Id:          "sub0",
 				GroupId:     "group0",
 				UserId:      "acc0",
@@ -32,11 +32,11 @@ func Test_decodeSubscription(t *testing.T) {
 					textConditionAttrTerm: "pattern0",
 				},
 			},
-			out: subscription.Subscription{
+			out: interest.Interest{
 				Id:      "sub0",
 				GroupId: "group0",
 				UserId:  "acc0",
-				Data: subscription.Data{
+				Data: interest.Data{
 					Description: "description0",
 					Followers:   42,
 					Condition: condition.NewTextCondition(
@@ -47,7 +47,7 @@ func Test_decodeSubscription(t *testing.T) {
 			},
 		},
 		"ok w/ created, updated, read dates": {
-			in: subscriptionRec{
+			in: interestRec{
 				Id:          "sub0",
 				GroupId:     "group0",
 				UserId:      "acc0",
@@ -64,11 +64,11 @@ func Test_decodeSubscription(t *testing.T) {
 					textConditionAttrTerm: "pattern0",
 				},
 			},
-			out: subscription.Subscription{
+			out: interest.Interest{
 				Id:      "sub0",
 				GroupId: "group0",
 				UserId:  "acc0",
-				Data: subscription.Data{
+				Data: interest.Data{
 					Description: "description0",
 					Created:     time.Date(2024, 4, 9, 6, 53, 10, 0, time.UTC),
 					Updated:     time.Date(2024, 4, 9, 6, 53, 20, 0, time.UTC),
@@ -81,7 +81,7 @@ func Test_decodeSubscription(t *testing.T) {
 			},
 		},
 		"fail": {
-			in: subscriptionRec{
+			in: interestRec{
 				Id:           "sub0",
 				GroupId:      "group0",
 				UserId:       "acc0",
@@ -93,8 +93,8 @@ func Test_decodeSubscription(t *testing.T) {
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			var out subscription.Subscription
-			err := c.in.decodeSubscription(&out)
+			var out interest.Interest
+			err := c.in.decodeInterest(&out)
 			assert.ErrorIs(t, err, c.err)
 			if c.err == nil {
 				assert.Equal(t, c.out, out)

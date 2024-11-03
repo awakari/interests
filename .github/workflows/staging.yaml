@@ -6,7 +6,7 @@ on:
       - "master"
 
 env:
-  COMPONENT: subscriptions
+  COMPONENT: interests
   VERSION: latest
   CHART_VERSION: 0.0.0
 

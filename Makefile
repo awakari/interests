@@ -1,7 +1,7 @@
 .PHONY: test clean
 default: build
 
-BINARY_FILE_NAME=subscriptions
+BINARY_FILE_NAME=interests
 COVERAGE_FILE_NAME=cover.out
 COVERAGE_TMP_FILE_NAME=cover.tmp
 
@@ -28,15 +28,15 @@ build: proto
 	chmod ugo+x ${BINARY_FILE_NAME}
 
 docker:
-	docker build -t awakari/subscriptions .
+	docker build -t awakari/interests .
 
 run: docker
 	docker run \
 		-d \
-		--name awakari-subscriptions \
+		--name awakari-interests \
 		-p 50051:50051 \
 		--expose 50051 \
-		awakari/subscriptions
+		awakari/interests
 
 staging: docker
 	./scripts/staging.sh

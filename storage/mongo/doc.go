@@ -1,2 +1,2 @@
-// Package mongo contains the MongoDB subscriptions storage implementation.
+// Package mongo contains the MongoDB interests storage implementation.
 package mongo

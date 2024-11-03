@@ -4,7 +4,7 @@
 *.dll
 *.so
 *.dylib
-./subscriptions
+./interests
 cover.tmp
 
 # Test binary, built with `go test -c`
@@ -17,5 +17,5 @@ cover.tmp
 vendor/
 *.pb.go
 
-helm/subscriptions/values-mongodb-ext-dev.yaml
+helm/interests/values-mongodb-ext-dev.yaml
 ghcr_io_pat.txt

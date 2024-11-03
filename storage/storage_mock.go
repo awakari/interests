@@ -3,15 +3,15 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/awakari/subscriptions/model/condition"
-	"github.com/awakari/subscriptions/model/subscription"
+	"github.com/awakari/interests/model/condition"
+	"github.com/awakari/interests/model/interest"
 	"time"
 )
 
 type storageMock struct {
 }
 
-func NewStorageMock(storage map[string]subscription.Data) Storage {
+func NewStorageMock(storage map[string]interest.Data) Storage {
 	return storageMock{}
 }
 
@@ -19,7 +19,7 @@ func (s storageMock) Close() error {
 	return nil
 }
 
-func (s storageMock) Create(ctx context.Context, id, groupId, userId string, sd subscription.Data) (err error) {
+func (s storageMock) Create(ctx context.Context, id, groupId, userId string, sd interest.Data) (err error) {
 	switch id {
 	case "fail":
 		err = ErrInternal
@@ -29,13 +29,13 @@ func (s storageMock) Create(ctx context.Context, id, groupId, userId string, sd 
 	return
 }
 
-func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, ownerGroupId, ownerUserId string, err error) {
+func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd interest.Data, ownerGroupId, ownerUserId string, err error) {
 	if id == "fail" {
 		err = ErrInternal
 	} else if id == "missing" {
 		err = ErrNotFound
 	} else {
-		sd = subscription.Data{
+		sd = interest.Data{
 			Description: "description",
 			Enabled:     true,
 			Expires:     time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
@@ -69,13 +69,13 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd s
 	return
 }
 
-func (s storageMock) Update(ctx context.Context, id, groupId, userId string, sd subscription.Data) (prev subscription.Data, err error) {
+func (s storageMock) Update(ctx context.Context, id, groupId, userId string, sd interest.Data) (prev interest.Data, err error) {
 	if id == "fail" {
 		err = ErrInternal
 	} else if id == "missing" {
 		err = ErrNotFound
 	} else {
-		prev = subscription.Data{
+		prev = interest.Data{
 			Description: "description",
 			Expires:     time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 			Condition: condition.NewGroupCondition(
@@ -126,13 +126,13 @@ func (s storageMock) SetEnabledBatch(ctx context.Context, ids []string, enabled 
 	return
 }
 
-func (s storageMock) Delete(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
+func (s storageMock) Delete(ctx context.Context, id, groupId, userId string) (sd interest.Data, err error) {
 	if id == "fail" {
 		err = ErrInternal
 	} else if id == "missing" {
 		err = ErrNotFound
 	} else {
-		sd = subscription.Data{
+		sd = interest.Data{
 			Description: "description",
 			Expires:     time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 			Condition: condition.NewGroupCondition(
@@ -154,12 +154,12 @@ func (s storageMock) Delete(ctx context.Context, id, groupId, userId string) (sd
 	return
 }
 
-func (s storageMock) Search(ctx context.Context, q subscription.Query, cursor subscription.Cursor) (ids []string, err error) {
+func (s storageMock) Search(ctx context.Context, q interest.Query, cursor interest.Cursor) (ids []string, err error) {
 	if cursor.Id == "" {
 		switch q.Order {
-		case subscription.OrderDesc:
+		case interest.OrderDesc:
 			switch q.Sort {
-			case subscription.SortFollowers:
+			case interest.SortFollowers:
 				ids = []string{
 					"sub0",
 					"sub1",
@@ -182,10 +182,10 @@ func (s storageMock) Search(ctx context.Context, q subscription.Query, cursor su
 	return
 }
 
-func (s storageMock) SearchByCondition(ctx context.Context, q subscription.QueryByCondition, cursor string) (page []subscription.ConditionMatch, err error) {
+func (s storageMock) SearchByCondition(ctx context.Context, q interest.QueryByCondition, cursor string) (page []interest.ConditionMatch, err error) {
 	for i := 0; i < int(q.Limit); i++ {
-		cm := subscription.ConditionMatch{
-			SubscriptionId: fmt.Sprintf("sub%d", i),
+		cm := interest.ConditionMatch{
+			InterestId: fmt.Sprintf("sub%d", i),
 			Condition: condition.NewTextCondition(
 				condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 				"pattern0", false,

@@ -1,4 +1,4 @@
-package subscription
+package interest
 
 type Query struct {
 	Limit         uint32

@@ -5,9 +5,9 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/awakari/subscriptions/config"
-	"github.com/awakari/subscriptions/model/subscription"
-	"github.com/awakari/subscriptions/storage"
+	"github.com/awakari/interests/config"
+	"github.com/awakari/interests/model/interest"
+	"github.com/awakari/interests/storage"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -274,9 +274,9 @@ func (s storageImpl) Close() error {
 	return s.conn.Disconnect(context.TODO())
 }
 
-func (s storageImpl) Create(ctx context.Context, id, groupId, userId string, sd subscription.Data) (err error) {
+func (s storageImpl) Create(ctx context.Context, id, groupId, userId string, sd interest.Data) (err error) {
 	recCond, condIds := encodeCondition(sd.Condition)
-	rec := subscriptionWrite{
+	rec := interestWrite{
 		Id:          id,
 		GroupId:     groupId,
 		UserId:      userId,
@@ -300,7 +300,7 @@ func (s storageImpl) Create(ctx context.Context, id, groupId, userId string, sd 
 	return
 }
 
-func (s storageImpl) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, ownerGroupId, ownerUserId string, err error) {
+func (s storageImpl) Read(ctx context.Context, id, groupId, userId string) (sd interest.Data, ownerGroupId, ownerUserId string, err error) {
 	q := bson.M{
 		attrId: id,
 		"$or": []bson.M{
@@ -319,7 +319,7 @@ func (s storageImpl) Read(ctx context.Context, id, groupId, userId string) (sd s
 	return
 }
 
-func decodeSingleResult(id string, result *mongo.SingleResult) (sd subscription.Data, groupId, userId string, err error) {
+func decodeSingleResult(id string, result *mongo.SingleResult) (sd interest.Data, groupId, userId string, err error) {
 	err = result.Err()
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -328,12 +328,12 @@ func decodeSingleResult(id string, result *mongo.SingleResult) (sd subscription.
 			err = fmt.Errorf("%w: failed to find by id: %s, acc: %s/%s, %s", storage.ErrInternal, id, groupId, userId, err)
 		}
 	} else {
-		var rec subscriptionRec
+		var rec interestRec
 		err = result.Decode(&rec)
 		if err != nil {
 			err = fmt.Errorf("%w: failed to decode, id=%s, acc=%s/%s, %s", storage.ErrInternal, id, groupId, userId, err)
 		} else {
-			err = rec.decodeSubscriptionData(&sd)
+			err = rec.decodeInterestData(&sd)
 			groupId = rec.GroupId
 			userId = rec.UserId
 		}
@@ -341,7 +341,7 @@ func decodeSingleResult(id string, result *mongo.SingleResult) (sd subscription.
 	return
 }
 
-func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d subscription.Data) (prev subscription.Data, err error) {
+func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d interest.Data) (prev interest.Data, err error) {
 	q := bson.M{
 		attrId:      id,
 		attrGroupId: groupId,
@@ -366,7 +366,7 @@ func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d s
 	case errors.Is(err, mongo.ErrNoDocuments):
 		err = fmt.Errorf("%w: not found, id: %s, acc: %s/%s", storage.ErrNotFound, id, groupId, userId)
 	case err != nil:
-		err = fmt.Errorf("%w: failed to update subscription, id: %s, err: %s", storage.ErrInternal, id, err)
+		err = fmt.Errorf("%w: failed to update interest, id: %s, err: %s", storage.ErrInternal, id, err)
 	default:
 		prev, _, _, err = decodeSingleResult(id, result)
 	}
@@ -388,7 +388,7 @@ func (s storageImpl) UpdateFollowers(ctx context.Context, id string, count int64
 	case err == nil && result.MatchedCount < 1:
 		err = fmt.Errorf("%w: not found, id: %s", storage.ErrNotFound, id)
 	case err != nil:
-		err = fmt.Errorf("%w: failed to update subscription, id: %s, err: %s", storage.ErrInternal, id, err)
+		err = fmt.Errorf("%w: failed to update interest, id: %s, err: %s", storage.ErrInternal, id, err)
 	}
 	return
 }
@@ -408,7 +408,7 @@ func (s storageImpl) UpdateResultTime(ctx context.Context, id string, last time.
 	case err == nil && result.MatchedCount < 1:
 		err = fmt.Errorf("%w: not found, id: %s", storage.ErrNotFound, id)
 	case err != nil:
-		err = fmt.Errorf("%w: failed to update subscription, id: %s, err: %s", storage.ErrInternal, id, err)
+		err = fmt.Errorf("%w: failed to update interest, id: %s, err: %s", storage.ErrInternal, id, err)
 	}
 	return
 }
@@ -430,12 +430,12 @@ func (s storageImpl) SetEnabledBatch(ctx context.Context, ids []string, enabled 
 	case err == nil:
 		n = result.ModifiedCount
 	default:
-		err = fmt.Errorf("%w: failed to update subscription, ids: %s, err: %s", storage.ErrInternal, ids, err)
+		err = fmt.Errorf("%w: failed to update interest, ids: %s, err: %s", storage.ErrInternal, ids, err)
 	}
 	return
 }
 
-func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd subscription.Data, err error) {
+func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd interest.Data, err error) {
 	q := bson.M{
 		attrId:      id,
 		attrGroupId: groupId,
@@ -447,7 +447,7 @@ func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd
 	return
 }
 
-func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor subscription.Cursor) (ids []string, err error) {
+func (s storageImpl) Search(ctx context.Context, q interest.Query, cursor interest.Cursor) (ids []string, err error) {
 	opts := options.
 		Find().
 		SetLimit(int64(q.Limit)).
@@ -483,9 +483,9 @@ func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor su
 		dbQuery[attrUserId] = q.UserId
 	}
 	switch q.Sort {
-	case subscription.SortFollowers:
+	case interest.SortFollowers:
 		switch q.Order {
-		case subscription.OrderDesc:
+		case interest.OrderDesc:
 			switch cursor.Followers {
 			case 0:
 				dbQuery = bson.M{
@@ -627,7 +627,7 @@ func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor su
 		}
 	default:
 		switch q.Order {
-		case subscription.OrderDesc:
+		case interest.OrderDesc:
 			dbQuery[attrId] = bson.M{
 				"$lt": cursor.Id,
 			}
@@ -648,7 +648,7 @@ func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor su
 		err = fmt.Errorf("%w: failed to find: query=%v, cursor=%v, %s", storage.ErrInternal, dbQuery, cursor, err)
 	} else {
 		defer cur.Close(ctx)
-		var recs []subscriptionRec
+		var recs []interestRec
 		err = cur.All(ctx, &recs)
 		if err != nil {
 			err = fmt.Errorf("%w: failed to decode: %s", storage.ErrInternal, err)
@@ -661,7 +661,7 @@ func (s storageImpl) Search(ctx context.Context, q subscription.Query, cursor su
 	return
 }
 
-func (s storageImpl) SearchByCondition(ctx context.Context, q subscription.QueryByCondition, cursor string) (page []subscription.ConditionMatch, err error) {
+func (s storageImpl) SearchByCondition(ctx context.Context, q interest.QueryByCondition, cursor string) (page []interest.ConditionMatch, err error) {
 	dbQuery := bson.M{
 		attrId: bson.M{
 			"$gt": cursor,
@@ -691,16 +691,16 @@ func (s storageImpl) SearchByCondition(ctx context.Context, q subscription.Query
 		err = fmt.Errorf("%w: failed to find: query=%+v, %s", storage.ErrInternal, dbQuery, err)
 	} else {
 		defer cur.Close(ctx)
-		var recs []subscriptionRec
+		var recs []interestRec
 		err = cur.All(ctx, &recs)
 		if err != nil {
-			err = fmt.Errorf("%w: failed to decode subscription record @ cursor %v: %s", storage.ErrInternal, cur.Current, err)
+			err = fmt.Errorf("%w: failed to decode interest record @ cursor %v: %s", storage.ErrInternal, cur.Current, err)
 		} else {
 			for _, rec := range recs {
-				var cm subscription.ConditionMatch
-				err = rec.decodeSubscriptionConditionMatch(&cm)
+				var cm interest.ConditionMatch
+				err = rec.decodeInterestConditionMatch(&cm)
 				if err != nil {
-					err = fmt.Errorf("%w: failed to decode subscription record %v: %s", storage.ErrInternal, rec, err)
+					err = fmt.Errorf("%w: failed to decode interest record %v: %s", storage.ErrInternal, rec, err)
 					break
 				}
 				page = append(page, cm)

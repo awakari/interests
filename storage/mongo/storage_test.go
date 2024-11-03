@@ -3,10 +3,10 @@ package mongo
 import (
 	"context"
 	"fmt"
-	"github.com/awakari/subscriptions/config"
-	"github.com/awakari/subscriptions/model/condition"
-	"github.com/awakari/subscriptions/model/subscription"
-	"github.com/awakari/subscriptions/storage"
+	"github.com/awakari/interests/config"
+	"github.com/awakari/interests/model/condition"
+	"github.com/awakari/interests/model/interest"
+	"github.com/awakari/interests/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"math"
@@ -20,10 +20,10 @@ var dbUri = os.Getenv("DB_URI_TEST_MONGO")
 
 func TestNewStorage(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Tls.Enabled = true
@@ -44,10 +44,10 @@ func clear(ctx context.Context, t *testing.T, s storageImpl) {
 
 func TestStorageImpl_Create(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Tls.Enabled = true
@@ -58,8 +58,8 @@ func TestStorageImpl_Create(t *testing.T) {
 	require.Nil(t, err)
 	defer clear(ctx, t, s.(storageImpl))
 	//
-	err = s.Create(ctx, "interest0", "group0", "acc0", subscription.Data{
-		Description: "test subscription 0",
+	err = s.Create(ctx, "interest0", "group0", "acc0", interest.Data{
+		Description: "test interest 0",
 		Condition: condition.NewTextCondition(
 			condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 			"pattern0", false,
@@ -69,13 +69,13 @@ func TestStorageImpl_Create(t *testing.T) {
 	//
 	cases := map[string]struct {
 		id  string
-		sd  subscription.Data
+		sd  interest.Data
 		err error
 	}{
 		"success": {
 			id: "interest1",
-			sd: subscription.Data{
-				Description: "test subscription 1",
+			sd: interest.Data{
+				Description: "test interest 1",
 				Expires:     time.Now().Add(1 * time.Hour),
 				Public:      true,
 				Condition: condition.NewGroupCondition(
@@ -100,8 +100,8 @@ func TestStorageImpl_Create(t *testing.T) {
 		},
 		"conflict": {
 			id: "interest0",
-			sd: subscription.Data{
-				Description: "test subscription 1",
+			sd: interest.Data{
+				Description: "test interest 1",
 				Expires:     time.Now().Add(1 * time.Hour),
 				Public:      true,
 				Condition: condition.NewGroupCondition(
@@ -125,10 +125,10 @@ func TestStorageImpl_Create(t *testing.T) {
 			},
 			err: storage.ErrConflict,
 		},
-		"index allows duplicate condition in the subscription": {
+		"index allows duplicate condition in the interest": {
 			id: "interest2",
-			sd: subscription.Data{
-				Description: "test subscription 2",
+			sd: interest.Data{
+				Description: "test interest 2",
 				Expires:     time.Now().Add(1 * time.Hour),
 				Condition: condition.NewGroupCondition(
 					condition.NewCondition(false),
@@ -162,10 +162,10 @@ func TestStorageImpl_Create(t *testing.T) {
 
 func TestStorageImpl_Read(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Tls.Enabled = true
@@ -190,8 +190,8 @@ func TestStorageImpl_Read(t *testing.T) {
 			),
 		},
 	)
-	err = s.Create(ctx, "interest0", "group0", "user0", subscription.Data{
-		Description: "test subscription 0",
+	err = s.Create(ctx, "interest0", "group0", "user0", interest.Data{
+		Description: "test interest 0",
 		Enabled:     true,
 		Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 		Condition:   cond0,
@@ -199,8 +199,8 @@ func TestStorageImpl_Read(t *testing.T) {
 		Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
 	})
 	require.Nil(t, err)
-	err = s.Create(ctx, "interest1", "group1", "user1", subscription.Data{
-		Description: "test subscription 1",
+	err = s.Create(ctx, "interest1", "group1", "user1", interest.Data{
+		Description: "test interest 1",
 		Enabled:     true,
 		Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 		Condition:   cond0,
@@ -215,7 +215,7 @@ func TestStorageImpl_Read(t *testing.T) {
 		id           string
 		groupId      string
 		userId       string
-		sd           subscription.Data
+		sd           interest.Data
 		ownerGroupId string
 		ownerUserId  string
 		err          error
@@ -224,8 +224,8 @@ func TestStorageImpl_Read(t *testing.T) {
 			id:      "interest0",
 			groupId: "group0",
 			userId:  "user0",
-			sd: subscription.Data{
-				Description: "test subscription 0",
+			sd: interest.Data{
+				Description: "test interest 0",
 				Enabled:     true,
 				Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 				Condition:   cond0,
@@ -257,8 +257,8 @@ func TestStorageImpl_Read(t *testing.T) {
 			id:      "interest1",
 			groupId: "group0",
 			userId:  "user0",
-			sd: subscription.Data{
-				Description: "test subscription 1",
+			sd: interest.Data{
+				Description: "test interest 1",
 				Enabled:     true,
 				Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 				Condition:   cond0,
@@ -293,10 +293,10 @@ func TestStorageImpl_Read(t *testing.T) {
 
 func TestStorageImpl_Update(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Tls.Enabled = true
@@ -311,7 +311,7 @@ func TestStorageImpl_Update(t *testing.T) {
 		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 		"pattern0", false,
 	)
-	sd0 := subscription.Data{
+	sd0 := interest.Data{
 		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 		Condition: cond0,
 	}
@@ -323,14 +323,14 @@ func TestStorageImpl_Update(t *testing.T) {
 		groupId string
 		userId  string
 		err     error
-		sd      subscription.Data
-		prev    subscription.Data
+		sd      interest.Data
+		prev    interest.Data
 	}{
 		"ok": {
 			id:      "interest0",
 			groupId: "group0",
 			userId:  "user0",
-			sd: subscription.Data{
+			sd: interest.Data{
 				Description: "new description",
 				Expires:     time.Date(2023, 10, 5, 6, 44, 55, 0, time.UTC),
 				Condition: condition.NewTextCondition(
@@ -345,7 +345,7 @@ func TestStorageImpl_Update(t *testing.T) {
 			id:      "interest1",
 			groupId: "group0",
 			userId:  "user0",
-			sd: subscription.Data{
+			sd: interest.Data{
 				Description: "new description",
 			},
 			err: storage.ErrNotFound,
@@ -354,7 +354,7 @@ func TestStorageImpl_Update(t *testing.T) {
 			id:      "interest0",
 			groupId: "group1",
 			userId:  "user0",
-			sd: subscription.Data{
+			sd: interest.Data{
 				Description: "new description",
 			},
 			err: storage.ErrNotFound,
@@ -363,7 +363,7 @@ func TestStorageImpl_Update(t *testing.T) {
 	//
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			var prev subscription.Data
+			var prev interest.Data
 			prev, err = s.Update(ctx, c.id, c.groupId, c.userId, c.sd)
 			if c.err == nil {
 				assert.Nil(t, err)
@@ -377,10 +377,10 @@ func TestStorageImpl_Update(t *testing.T) {
 
 func TestStorageImpl_Delete(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Tls.Enabled = true
@@ -395,12 +395,12 @@ func TestStorageImpl_Delete(t *testing.T) {
 		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 		"pattern0", false,
 	)
-	err = s.Create(ctx, "interest0", "acc0", "user0", subscription.Data{
+	err = s.Create(ctx, "interest0", "acc0", "user0", interest.Data{
 		Expires:   time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 		Condition: cond0,
 	})
 	require.Nil(t, err)
-	err = s.Create(ctx, "interest1", "acc0", "user1", subscription.Data{
+	err = s.Create(ctx, "interest1", "acc0", "user1", interest.Data{
 		Expires:   time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 		Condition: cond0,
 		Public:    true,
@@ -411,14 +411,14 @@ func TestStorageImpl_Delete(t *testing.T) {
 		id      string
 		groupId string
 		userId  string
-		sd      subscription.Data
+		sd      interest.Data
 		err     error
 	}{
 		"success": {
 			id:      "interest0",
 			groupId: "acc0",
 			userId:  "user0",
-			sd: subscription.Data{
+			sd: interest.Data{
 				Expires:   time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
 				Condition: cond0,
 			},
@@ -460,10 +460,10 @@ func TestStorageImpl_Delete(t *testing.T) {
 
 func TestStorageImpl_Search(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Tls.Enabled = true
@@ -483,7 +483,7 @@ func TestStorageImpl_Search(t *testing.T) {
 			),
 			fmt.Sprintf("pattern%d", i%3), i%2 == 0,
 		)
-		sub := subscription.Data{
+		sub := interest.Data{
 			Description: fmt.Sprintf("description%d", i%3),
 			Expires:     time.Now().Add(time.Duration(i-2) * time.Hour),
 			Condition:   cond,
@@ -535,13 +535,13 @@ func TestStorageImpl_Search(t *testing.T) {
 	}
 	//
 	cases := map[string]struct {
-		q      subscription.Query
-		cursor subscription.Cursor
+		q      interest.Query
+		cursor interest.Cursor
 		ids    []string
 		err    error
 	}{
 		"acc0": {
-			q: subscription.Query{
+			q: interest.Query{
 				Limit:   100,
 				GroupId: "acc0",
 				UserId:  "user0",
@@ -549,7 +549,7 @@ func TestStorageImpl_Search(t *testing.T) {
 			ids: acc0Ids,
 		},
 		"pattern filter": {
-			q: subscription.Query{
+			q: interest.Query{
 				Limit:   100,
 				GroupId: "acc0",
 				UserId:  "user0",
@@ -560,13 +560,13 @@ func TestStorageImpl_Search(t *testing.T) {
 			},
 		},
 		"desc": {
-			q: subscription.Query{
+			q: interest.Query{
 				Limit:   2,
 				GroupId: "acc0",
 				UserId:  "user0",
-				Order:   subscription.OrderDesc,
+				Order:   interest.OrderDesc,
 			},
-			cursor: subscription.Cursor{
+			cursor: interest.Cursor{
 				Id: acc0Ids[3],
 			},
 			ids: []string{
@@ -575,7 +575,7 @@ func TestStorageImpl_Search(t *testing.T) {
 			},
 		},
 		"acc1": {
-			q: subscription.Query{
+			q: interest.Query{
 				Limit:   3,
 				GroupId: "acc1",
 				UserId:  "user1",
@@ -583,7 +583,7 @@ func TestStorageImpl_Search(t *testing.T) {
 			ids: acc1Ids[:3],
 		},
 		"include public": {
-			q: subscription.Query{
+			q: interest.Query{
 				Limit:         100,
 				GroupId:       "acc0",
 				UserId:        "user0",
@@ -592,36 +592,36 @@ func TestStorageImpl_Search(t *testing.T) {
 			ids: publicIds0,
 		},
 		"include public and sort by followers": {
-			q: subscription.Query{
+			q: interest.Query{
 				Limit:         4,
 				GroupId:       "acc0",
 				UserId:        "user0",
 				IncludePublic: true,
-				Sort:          subscription.SortFollowers,
-				Order:         subscription.OrderDesc,
+				Sort:          interest.SortFollowers,
+				Order:         interest.OrderDesc,
 			},
-			cursor: subscription.Cursor{
+			cursor: interest.Cursor{
 				Followers: math.MaxInt64,
 			},
 			ids: descFollowersIds0,
 		},
 		"include public and sort by followers desc w/ cursor": {
-			q: subscription.Query{
+			q: interest.Query{
 				Limit:         4,
 				GroupId:       "acc0",
 				UserId:        "user0",
 				IncludePublic: true,
-				Sort:          subscription.SortFollowers,
-				Order:         subscription.OrderDesc,
+				Sort:          interest.SortFollowers,
+				Order:         interest.OrderDesc,
 			},
-			cursor: subscription.Cursor{
+			cursor: interest.Cursor{
 				Id:        acc0Ids[4],
 				Followers: 3,
 			},
 			ids: descFollowersIds1,
 		},
 		"private only": {
-			q: subscription.Query{
+			q: interest.Query{
 				Limit:       100,
 				GroupId:     "acc0",
 				UserId:      "user0",
@@ -651,10 +651,10 @@ func TestStorageImpl_Search(t *testing.T) {
 
 func TestStorageImpl_SearchByCondition(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Table.Shard = false
@@ -675,7 +675,7 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 			),
 			fmt.Sprintf("pattern%d", i%3), i%2 == 0,
 		)
-		sub := subscription.Data{
+		sub := interest.Data{
 			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
@@ -695,7 +695,7 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 			),
 			condition.NumOpEq, 42,
 		)
-		sub := subscription.Data{
+		sub := interest.Data{
 			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
@@ -704,65 +704,65 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 	}
 	//
 	cases := map[string]struct {
-		q      subscription.QueryByCondition
+		q      interest.QueryByCondition
 		cursor string
-		out    []subscription.ConditionMatch
+		out    []interest.ConditionMatch
 		err    error
 	}{
 		"limit=1": {
-			q: subscription.QueryByCondition{
+			q: interest.QueryByCondition{
 				CondId: "cond0",
 				Limit:  1,
 			},
-			out: []subscription.ConditionMatch{
+			out: []interest.ConditionMatch{
 				{
-					SubscriptionId: matchingSubIds[0],
-					Condition:      rootConditions[matchingSubIds[0]],
+					InterestId: matchingSubIds[0],
+					Condition:  rootConditions[matchingSubIds[0]],
 				},
 			},
 		},
 		"limit=10": {
-			q: subscription.QueryByCondition{
+			q: interest.QueryByCondition{
 				CondId: "cond0",
 				Limit:  10,
 			},
-			out: []subscription.ConditionMatch{
+			out: []interest.ConditionMatch{
 				{
-					SubscriptionId: matchingSubIds[0],
-					Condition:      rootConditions[matchingSubIds[0]],
+					InterestId: matchingSubIds[0],
+					Condition:  rootConditions[matchingSubIds[0]],
 				},
 				{
-					SubscriptionId: matchingSubIds[1],
-					Condition:      rootConditions[matchingSubIds[1]],
+					InterestId: matchingSubIds[1],
+					Condition:  rootConditions[matchingSubIds[1]],
 				},
 				{
-					SubscriptionId: matchingSubIds[2],
-					Condition:      rootConditions[matchingSubIds[2]],
+					InterestId: matchingSubIds[2],
+					Condition:  rootConditions[matchingSubIds[2]],
 				},
 				{
-					SubscriptionId: matchingSubIds[3],
-					Condition:      rootConditions[matchingSubIds[3]],
+					InterestId: matchingSubIds[3],
+					Condition:  rootConditions[matchingSubIds[3]],
 				},
 				{
-					SubscriptionId: matchingSubIds[4],
-					Condition:      rootConditions[matchingSubIds[4]],
+					InterestId: matchingSubIds[4],
+					Condition:  rootConditions[matchingSubIds[4]],
 				},
 			},
 		},
 		"with cursor": {
-			q: subscription.QueryByCondition{
+			q: interest.QueryByCondition{
 				CondId: "cond0",
 				Limit:  10,
 			},
 			cursor: matchingSubIds[2],
-			out: []subscription.ConditionMatch{
+			out: []interest.ConditionMatch{
 				{
-					SubscriptionId: matchingSubIds[3],
-					Condition:      rootConditions[matchingSubIds[3]],
+					InterestId: matchingSubIds[3],
+					Condition:  rootConditions[matchingSubIds[3]],
 				},
 				{
-					SubscriptionId: matchingSubIds[4],
-					Condition:      rootConditions[matchingSubIds[4]],
+					InterestId: matchingSubIds[4],
+					Condition:  rootConditions[matchingSubIds[4]],
 				},
 			},
 		},
@@ -775,7 +775,7 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 				require.Nil(t, err)
 				require.Equal(t, len(c.out), len(page))
 				for i, cm := range c.out {
-					assert.Equal(t, cm.SubscriptionId, page[i].SubscriptionId)
+					assert.Equal(t, cm.InterestId, page[i].InterestId)
 					assert.True(t, cm.Condition.Equal(page[i].Condition))
 				}
 			} else {
@@ -787,10 +787,10 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 
 func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Table.Shard = false
@@ -807,7 +807,7 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 		"term0",
 		false,
 	)
-	sub0 := subscription.Data{
+	sub0 := interest.Data{
 		Enabled:   true,
 		Condition: cond0,
 	}
@@ -819,7 +819,7 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 		"term1",
 		false,
 	)
-	sub1 := subscription.Data{
+	sub1 := interest.Data{
 		Enabled:   true,
 		Condition: cond1,
 		Expires:   time.Date(2022, 2, 22, 22, 22, 22, 0, time.UTC),
@@ -832,7 +832,7 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 		"term2",
 		false,
 	)
-	sub2 := subscription.Data{
+	sub2 := interest.Data{
 		Enabled:   true,
 		Condition: cond2,
 		Expires:   time.Now().Add(1 * time.Hour).UTC(),
@@ -841,24 +841,24 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
-		q      subscription.QueryByCondition
+		q      interest.QueryByCondition
 		cursor string
-		out    []subscription.ConditionMatch
+		out    []interest.ConditionMatch
 		err    error
 	}{
 		"2": {
-			q: subscription.QueryByCondition{
+			q: interest.QueryByCondition{
 				CondId: "cond0",
 				Limit:  10,
 			},
-			out: []subscription.ConditionMatch{
+			out: []interest.ConditionMatch{
 				{
-					SubscriptionId: "interest0",
-					Condition:      cond0,
+					InterestId: "interest0",
+					Condition:  cond0,
 				},
 				{
-					SubscriptionId: "interest2",
-					Condition:      cond2,
+					InterestId: "interest2",
+					Condition:  cond2,
 				},
 			},
 		},
@@ -873,7 +873,7 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 				var found bool
 				for _, cm := range c.out {
 					for _, actual := range page {
-						if cm.SubscriptionId == actual.SubscriptionId && cm.Condition.Equal(actual.Condition) {
+						if cm.InterestId == actual.InterestId && cm.Condition.Equal(actual.Condition) {
 							found = true
 							break
 						}
@@ -889,10 +889,10 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 
 func TestStorageImpl_Count(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Table.Shard = false
@@ -913,7 +913,7 @@ func TestStorageImpl_Count(t *testing.T) {
 			),
 			fmt.Sprintf("pattern%d", i%3), i%2 == 0,
 		)
-		sub := subscription.Data{
+		sub := interest.Data{
 			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
@@ -933,7 +933,7 @@ func TestStorageImpl_Count(t *testing.T) {
 			),
 			condition.NumOpEq, 42,
 		)
-		sub := subscription.Data{
+		sub := interest.Data{
 			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
@@ -961,10 +961,10 @@ func TestStorageImpl_Count(t *testing.T) {
 
 func TestStorageImpl_CountUsersUnique(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Table.Shard = false
@@ -985,7 +985,7 @@ func TestStorageImpl_CountUsersUnique(t *testing.T) {
 			),
 			fmt.Sprintf("pattern%d", i%3), i%2 == 0,
 		)
-		sub := subscription.Data{
+		sub := interest.Data{
 			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
@@ -1005,7 +1005,7 @@ func TestStorageImpl_CountUsersUnique(t *testing.T) {
 			),
 			condition.NumOpEq, 42,
 		)
-		sub := subscription.Data{
+		sub := interest.Data{
 			Enabled:   i%2 == 0,
 			Condition: cond,
 		}
@@ -1033,10 +1033,10 @@ func TestStorageImpl_CountUsersUnique(t *testing.T) {
 
 func TestStorageImpl_UpdateFollowers(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Tls.Enabled = true
@@ -1051,7 +1051,7 @@ func TestStorageImpl_UpdateFollowers(t *testing.T) {
 		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 		"pattern0", false,
 	)
-	sd0 := subscription.Data{
+	sd0 := interest.Data{
 		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 		Condition: cond0,
 		Public:    true,
@@ -1087,7 +1087,7 @@ func TestStorageImpl_UpdateFollowers(t *testing.T) {
 			err = s.UpdateFollowers(ctx, c.id, c.newCount)
 			if c.err == nil {
 				assert.Nil(t, err)
-				var sd subscription.Data
+				var sd interest.Data
 				sd, _, _, err = s.Read(ctx, c.id, "group0", "user0")
 				require.Nil(t, err)
 				assert.Equal(t, c.newCount, sd.Followers)
@@ -1100,10 +1100,10 @@ func TestStorageImpl_UpdateFollowers(t *testing.T) {
 
 func TestStorageImpl_UpdateResultTime(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Tls.Enabled = true
@@ -1118,7 +1118,7 @@ func TestStorageImpl_UpdateResultTime(t *testing.T) {
 		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 		"pattern0", false,
 	)
-	sd0 := subscription.Data{
+	sd0 := interest.Data{
 		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
 		Condition: cond0,
 		Public:    true,
@@ -1146,7 +1146,7 @@ func TestStorageImpl_UpdateResultTime(t *testing.T) {
 			err = s.UpdateResultTime(ctx, c.id, c.last)
 			if c.err == nil {
 				assert.Nil(t, err)
-				var sd subscription.Data
+				var sd interest.Data
 				sd, _, _, err = s.Read(ctx, c.id, "group0", "user0")
 				require.Nil(t, err)
 				assert.Equal(t, c.last, sd.Result)
@@ -1159,10 +1159,10 @@ func TestStorageImpl_UpdateResultTime(t *testing.T) {
 
 func TestStorageImpl_SetEnabledBatch(t *testing.T) {
 	//
-	collName := fmt.Sprintf("subscriptions-test-%d", time.Now().UnixMicro())
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
 		Uri:  dbUri,
-		Name: "subscriptions",
+		Name: "interests",
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Tls.Enabled = true
@@ -1177,7 +1177,7 @@ func TestStorageImpl_SetEnabledBatch(t *testing.T) {
 		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 		"pattern0", false,
 	)
-	sd0 := subscription.Data{
+	sd0 := interest.Data{
 		Condition: cond0,
 		Enabled:   true,
 	}
@@ -1185,7 +1185,7 @@ func TestStorageImpl_SetEnabledBatch(t *testing.T) {
 	require.Nil(t, err)
 	err = s.Create(ctx, "interest1", "group0", "user0", sd0)
 	require.Nil(t, err)
-	sd1 := subscription.Data{
+	sd1 := interest.Data{
 		Condition: cond0,
 		Enabled:   false,
 	}

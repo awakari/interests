@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package awakari.subscriptions.common;
+package awakari.interests.common;
 
-option go_package = "github.com/awakari/subscriptions/api/grpc/common";
+option go_package = "github.com/awakari/interests/api/grpc/common";
 
 enum GroupLogic {
   And = 0;

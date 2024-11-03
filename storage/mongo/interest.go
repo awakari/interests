@@ -1,12 +1,12 @@
 package mongo
 
 import (
-	"github.com/awakari/subscriptions/model/subscription"
+	"github.com/awakari/interests/model/interest"
 	"go.mongodb.org/mongo-driver/bson"
 	"time"
 )
 
-type subscriptionWrite struct {
+type interestWrite struct {
 	Id string `bson:"id"`
 
 	GroupId string `bson:"groupId"`
@@ -30,12 +30,12 @@ type subscriptionWrite struct {
 	Condition Condition `bson:"cond"`
 
 	// CondIds contains a flat list of all condition ids.
-	// The CondIds field is necessary to support the subscriptions search by a condition id.
+	// The CondIds field is necessary to support the interests search by a condition id.
 	CondIds []string `bson:"condIds"`
 }
 
 // intermediate read result that contains the condition not decoded yet
-type subscriptionRec struct {
+type interestRec struct {
 	Id string `bson:"id"`
 
 	GroupId string `bson:"groupId"`
@@ -61,7 +61,7 @@ type subscriptionRec struct {
 	RawCondition bson.M `bson:"cond"`
 
 	// CondIds contains a flat list of all condition ids.
-	// The CondIds field is necessary to support the subscriptions search by a condition id.
+	// The CondIds field is necessary to support the interests search by a condition id.
 	CondIds []string `bson:"condIds"`
 }
 
@@ -79,15 +79,15 @@ const attrFollowers = "followers"
 const attrCondIds = "condIds"
 const attrCond = "cond"
 
-func (rec subscriptionRec) decodeSubscription(sub *subscription.Subscription) (err error) {
+func (rec interestRec) decodeInterest(sub *interest.Interest) (err error) {
 	sub.Id = rec.Id
 	sub.GroupId = rec.GroupId
 	sub.UserId = rec.UserId
-	err = rec.decodeSubscriptionData(&sub.Data)
+	err = rec.decodeInterestData(&sub.Data)
 	return
 }
 
-func (rec subscriptionRec) decodeSubscriptionData(sd *subscription.Data) (err error) {
+func (rec interestRec) decodeInterestData(sd *interest.Data) (err error) {
 	sd.Description = rec.Description
 	sd.Enabled = rec.Enabled
 	sd.Expires = rec.Expires
@@ -104,8 +104,8 @@ func (rec subscriptionRec) decodeSubscriptionData(sd *subscription.Data) (err er
 	return
 }
 
-func (rec subscriptionRec) decodeSubscriptionConditionMatch(cm *subscription.ConditionMatch) (err error) {
-	cm.SubscriptionId = rec.Id
+func (rec interestRec) decodeInterestConditionMatch(cm *interest.ConditionMatch) (err error) {
+	cm.InterestId = rec.Id
 	var condRec Condition
 	condRec, err = decodeRawCondition(rec.RawCondition)
 	if err == nil {

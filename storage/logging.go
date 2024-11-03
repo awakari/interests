@@ -3,7 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/awakari/subscriptions/model/subscription"
+	"github.com/awakari/interests/model/interest"
 	"log/slog"
 	"time"
 )
@@ -20,21 +20,21 @@ func NewLoggingMiddleware(stor Storage, log *slog.Logger) Storage {
 	}
 }
 
-func (lm loggingMiddleware) Create(ctx context.Context, id, groupId, userId string, sd subscription.Data) (err error) {
+func (lm loggingMiddleware) Create(ctx context.Context, id, groupId, userId string, sd interest.Data) (err error) {
 	defer func() {
 		lm.log.Debug(fmt.Sprintf("Create(%s, %s, %s, %+v): %s", id, groupId, userId, sd, err))
 	}()
 	return lm.stor.Create(ctx, id, groupId, userId, sd)
 }
 
-func (lm loggingMiddleware) Read(ctx context.Context, id, groupId, userId string) (sd subscription.Data, ownerGroupId, ownerUserId string, err error) {
+func (lm loggingMiddleware) Read(ctx context.Context, id, groupId, userId string) (sd interest.Data, ownerGroupId, ownerUserId string, err error) {
 	defer func() {
 		lm.log.Debug(fmt.Sprintf("Read(%s, %s, %s): (%v, %s, %s, %s)", id, groupId, userId, sd, ownerGroupId, ownerUserId, err))
 	}()
 	return lm.stor.Read(ctx, id, groupId, userId)
 }
 
-func (lm loggingMiddleware) Update(ctx context.Context, id, groupId, userId string, d subscription.Data) (prev subscription.Data, err error) {
+func (lm loggingMiddleware) Update(ctx context.Context, id, groupId, userId string, d interest.Data) (prev interest.Data, err error) {
 	defer func() {
 		lm.log.Debug(fmt.Sprintf("Update(%s, %s, %s, %+v): err=%s", id, groupId, userId, d, err))
 	}()
@@ -62,21 +62,21 @@ func (lm loggingMiddleware) SetEnabledBatch(ctx context.Context, ids []string, e
 	return lm.stor.SetEnabledBatch(ctx, ids, enabled)
 }
 
-func (lm loggingMiddleware) Delete(ctx context.Context, id, groupId, userId string) (d subscription.Data, err error) {
+func (lm loggingMiddleware) Delete(ctx context.Context, id, groupId, userId string) (d interest.Data, err error) {
 	defer func() {
 		lm.log.Debug(fmt.Sprintf("Delete(%s, %s, %s): %s", id, groupId, userId, err))
 	}()
 	return lm.stor.Delete(ctx, id, groupId, userId)
 }
 
-func (lm loggingMiddleware) Search(ctx context.Context, q subscription.Query, cursor subscription.Cursor) (ids []string, err error) {
+func (lm loggingMiddleware) Search(ctx context.Context, q interest.Query, cursor interest.Cursor) (ids []string, err error) {
 	defer func() {
 		lm.log.Debug(fmt.Sprintf("Search(%v, %v): %d, %s", q, cursor, len(ids), err))
 	}()
 	return lm.stor.Search(ctx, q, cursor)
 }
 
-func (lm loggingMiddleware) SearchByCondition(ctx context.Context, q subscription.QueryByCondition, cursor string) (page []subscription.ConditionMatch, err error) {
+func (lm loggingMiddleware) SearchByCondition(ctx context.Context, q interest.QueryByCondition, cursor string) (page []interest.ConditionMatch, err error) {
 	defer func() {
 		lm.log.Debug(fmt.Sprintf("SearchByCondition(q=%+v, cursor=%s): %d, %s", q, cursor, len(page), err))
 	}()

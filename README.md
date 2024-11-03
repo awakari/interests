@@ -7,7 +7,7 @@
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.1. [Group Condition](#1211-group-condition)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.2. [Key Condition](#1212-key-condition)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2.1.3. [Text Condition](#1213-text-condition)<br/>
-   &nbsp;&nbsp;&nbsp;1.2.2. [Subscription](#122-subscription)<br/>
+   &nbsp;&nbsp;&nbsp;1.2.2. [Interest](#122-interest)<br/>
 2. [Configuration](#2-configuration)<br/>
 3. [Deployment](#3-deployment)<br/>
    3.1. [Prerequisites](#31-prerequisites)<br/>
@@ -27,7 +27,7 @@
    5.1. [Requirements](#51-requirements)<br/>
    5.2. [Approach](#52-approach)<br/>
    &nbsp;&nbsp;&nbsp;5.2.1. [Data Schema](#521-data-schema)<br/>
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.1. [Subscription](#5211-subscription)<br/>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.1. [Interest](#5211-interest)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.2. [Group Condition](#5212-group-condition)<br/>
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.2.1.3. [Text Condition](#5213-text-condition)<br/>
    5.2. [Limitations](#52-limitations)<br/>
@@ -42,14 +42,14 @@
 
 # 1. Overview
 
-Subscriptions storage service.
+Interests storage service.
 
 ## 1.1. Purpose
 
-The purpose is to serve both public subscriptions API (CRUD + Search) and internal Search.
+The purpose is to serve both public interests API (CRUD + Search) and internal Search.
 
-The main internal function of the service is to find all subscriptions by a condition. For example, a message metadata 
-is matching a certain pattern. Then it's necessary to find all subscriptions those have this pattern in the 
+The main internal function of the service is to find all interests by a condition. For example, a message metadata 
+is matching a certain pattern. Then it's necessary to find all interests those have this pattern in the 
 corresponding condition.
 
 ## 1.2. Definitions
@@ -76,10 +76,10 @@ A text condition is a key condition containing the terms for a text search.
 
 A key condition containing also a number comparison condition.
 
-### 1.2.2. Subscription
+### 1.2.2. Interest
 
-Subscription is an entity linking the message matching [condition](#121-condition) with the user account. 
-A subscription also has:
+Interest is an entity linking the message matching [condition](#121-condition) with the user account. 
+An interest also has:
 * unique id generated on creation
 * human-readable description
 
@@ -91,10 +91,10 @@ The service is configurable using the environment variables:
 |----------------|--------------------------------------------------------|-------------------------------------------------------------|
 | API_PORT       | `50051`                                                | gRPC API port                                               |
 | DB_URI         | `mongodb+srv://localhost/?retryWrites=true&w=majority` | DB connection URI                                           |
-| DB_NAME        | `subscriptions`                                        | DB name to store the data                                   |
-| DB_USERNAME    | `subscriptions`                                        | DB connection username                                      |
-| DB_PASSWORD    | `subscriptions`                                        | DB connection password                                      |
-| DB_TABLE_NAME  | `subscriptions`                                        | DB table name to store the data                             |
+| DB_NAME        | `interests`                                            | DB name to store the data                                   |
+| DB_USERNAME    | `interests`                                            | DB connection username                                      |
+| DB_PASSWORD    | `interests`                                            | DB connection password                                      |
+| DB_TABLE_NAME  | `interests`                                            | DB table name to store the data                             |
 | DB_TABLE_SHARD | `true`                                                 | Defines whether the service should shard the table on start |
 
 # 3. Deployment
@@ -114,9 +114,9 @@ Then run the command:
 ```shell
 API_PORT=50051 \
 DB_URI=mongodb+srv://localhost/\?retryWrites=true\&w=majority \
-DB_NAME=subscriptions \
-DB_TABLE_NAME=subscriptions \
-./subscriptions
+DB_NAME=interests \
+DB_TABLE_NAME=interests \
+./interests
 ```
 
 ## 3.3. Docker
@@ -151,13 +151,13 @@ kubectl create secret generic db-mongo \
 
 Create a helm package from the sources:
 ```shell
-helm package helm/subscriptions/
+helm package helm/interests/
 ```
 
 Install the helm chart:
 ```shell
-helm install subscriptions ./subscriptions-<CHART_VERSION>.tgz \
-  --values helm/subscriptions/values-db-uri.yaml
+helm install interests ./interests-<CHART_VERSION>.tgz \
+  --values helm/interests/values-db-uri.yaml
 ```
 
 where
@@ -166,7 +166,7 @@ where
 
 # 4. Usage
 
-The service provides basic gRPC interface to perform the operation on subscriptions.
+The service provides basic gRPC interface to perform the operation on interests.
 
 ## 4.1. Create
 
@@ -179,13 +179,13 @@ grpcurl \
   -H 'X-Awakari-User-Id: user0' \
   -d @ \
   localhost:50051 \
-  awakari.subscriptions.Service/Create
+  awakari.interests.Service/Create
 ```
 
 Payload:
 ```json
 {
-   "description": "my subscription 1",
+   "description": "my interest 1",
    "enabled": true,
    "cond": {
       "not": false,
@@ -226,7 +226,7 @@ grpcurl \
   -H 'X-Awakari-User-Id: user0' \
   -d '{"id": "17861cda-edc0-4655-be5a-e69a8129aff5"}' \
   localhost:50051 \
-  awakari.subscriptions.Service/Read
+  awakari.interests.Service/Read
 ```
 
 ## 4.3. Update
@@ -240,14 +240,14 @@ grpcurl \
   -H 'X-Awakari-User-Id: user0' \
   -d @ \
   localhost:50051 \
-  awakari.subscriptions.Service/UpdateMetadata
+  awakari.interests.Service/UpdateMetadata
 ```
 
 Payload:
 ```json
 {
    "id": "d3911098-99e7-4a69-94f9-3cea0b236a04",
-   "description": "my subscription 1 updated",
+   "description": "my interest 1 updated",
    "enabled": false,
    "cond": {
       "not": false,
@@ -288,14 +288,14 @@ grpcurl \
   -H 'X-Awakari-User-Id: user0' \
   -d '{"id": "f7102c87-3ce4-4bb0-8527-b4644f685b13"}' \
   localhost:50051 \
-  awakari.subscriptions.Service/Delete
+  awakari.interests.Service/Delete
 ```
 
 ## 4.5. Search
 
 ### 4.5.1. By Account
 
-The search by account purpose is to be used by a user to find own subscriptions.
+The search by account purpose is to be used by a user to find own interests.
 
 Example:
 ```shell
@@ -306,13 +306,13 @@ grpcurl \
   -H 'X-Awakari-User-Id: user0' \
   -d '{"limit": 100, "cursor": "0123456789abcdef"}' \
   localhost:50051 \
-  awakari.subscriptions.Service/SearchOwn
+  awakari.interests.Service/SearchOwn
 ```
 
 ### 4.5.2. By Condition
 
 The search by condition purpose is to be used by a [resolver](https://github.com/awakari/resolver) to find the matching 
-subscriptions.
+interests.
 
 Example:
 ```shell
@@ -321,45 +321,42 @@ grpcurl \
   -proto api/grpc/private/service.proto \
   -d '{"condId": "14cadd71-c662-4f1a-8b0f-3b17dfb107f5", "limit": 16}' \
   localhost:50051 \
-  awakari.subscriptions.private.Service/SearchByCondition
+  awakari.interests.private.Service/SearchByCondition
 ```
 
 # 5. Design
 
 ## 5.1. Requirements
 
-| #     | Summary           | Description                                                                              |
-|-------|-------------------|------------------------------------------------------------------------------------------|
-| REQ-1 | Basic matching    | Resolve subscriptions matching the input value                                           |
-| REQ-2 | Logic             | Support subscription logics for the multiple key-value matches (*and*, *or*, *not*)      |
-| REQ-3 | Partial matching  | Support partial (value might be split to lexemes) value matching                         |
-| REQ-4 | Pagination        | Support query results pagination                                                         |
-| REQ-5 | On/off switch     | Support subscription disabling for internal query by condition without removing it       |
-| REQ-6 | Metadata update   | Support changing a subscription description, priority and enabled flag                   |
-| REQ-7 | Authentication    | Authenticate public API calls: `Create`, `Read`, `UpdateMetadata`, `Delete`, `SearchOwn` |
+| #     | Summary          | Description                                                                              |
+|-------|------------------|------------------------------------------------------------------------------------------|
+| REQ-1 | Basic matching   | Resolve interests matching the input value                                               |
+| REQ-2 | Logic            | Support interest logics for the multiple key-value matches (*and*, *or*, *not*)          |
+| REQ-3 | Partial matching | Support partial (value might be split to lexemes) value matching                         |
+| REQ-4 | Pagination       | Support query results pagination                                                         |
+| REQ-5 | On/off switch    | Support interest disabling for internal query by condition without removing it           |
+| REQ-6 | Metadata update  | Support changing a interest description, priority and enabled flag                       |
+| REQ-7 | Authentication   | Authenticate public API calls: `Create`, `Read`, `UpdateMetadata`, `Delete`, `SearchOwn` |
 
 ## 5.2. Approach
 
 ### 5.2.1. Data Schema
 
-Subscriptions are stored in the single table under the denormalized schema.
+Interests are stored in the single table under the denormalized schema.
 
-#### 5.2.1.1. Subscription
+#### 5.2.1.1. Interest
 
-A subscription is immutable by design, hence there's no update operation for this. If a user wants to change a 
-subscription they need to delete it 1st and then create again.
-
-| Attribute | Type                                       | Description                                                             |
-|-----------|--------------------------------------------|-------------------------------------------------------------------------|
-| id        | String                                     | Subscription UUID (generated on creation)                               |
-| groupId   | String                                     | User Group Id                                                           |
-| userId    | String                                     | User Id                                                                 |
-| descr     | String                                     | Human readable description                                              |
-| enabled   | Boolean                                    | Defines whether the subscription is searchable for a condition matching |
-| expires   | Time                                       | Defines the deadline when the subscription may be treated as `enabled`  |
-| created   | Time                                       |                                                                         |
-| updated   | Time                                       |                                                                         |
-| cond      | Condition (currently may be Group or Text) | Message matching root immutable criteria                                |
+| Attribute | Type                                       | Description                                                         |
+|-----------|--------------------------------------------|---------------------------------------------------------------------|
+| id        | String                                     | Interest ID (generated on creation if not specified)                |
+| groupId   | String                                     | User Group Id                                                       |
+| userId    | String                                     | User Id                                                             |
+| descr     | String                                     | Human readable description                                          |
+| enabled   | Boolean                                    | Defines whether the interest is searchable for a condition matching |
+| expires   | Time                                       | Defines the deadline when the interest may be treated as `enabled`  |
+| created   | Time                                       |                                                                     |
+| updated   | Time                                       |                                                                     |
+| cond      | Condition (currently may be Group or Text) | Message matching root immutable criteria                            |
 
 #### 5.2.1.2. Group Condition
 
@@ -404,7 +401,7 @@ TODO
 ```shell
 make build
 ```
-Generates the sources from proto files, compiles and creates the `subscriptions` executable.
+Generates the sources from proto files, compiles and creates the `interests` executable.
 
 ## 6.4. Testing
 
