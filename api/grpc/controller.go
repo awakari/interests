@@ -62,12 +62,14 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 	resp = &ReadResponse{}
 	var groupId string
 	var userId string
-	groupId, userId, err = getAuthInfo(ctx)
+	if !req.Internal {
+		groupId, userId, err = getAuthInfo(ctx)
+	}
 	if err == nil {
 		var sd interest.Data
 		var ownerGroupId string
 		var ownerUserId string
-		sd, ownerGroupId, ownerUserId, err = sc.stor.Read(ctx, req.Id, groupId, userId)
+		sd, ownerGroupId, ownerUserId, err = sc.stor.Read(ctx, req.Id, groupId, userId, req.Internal)
 		if err == nil {
 			resp.Cond = &Condition{}
 			encodeCondition(sd.Condition, resp.Cond)

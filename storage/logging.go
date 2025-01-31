@@ -27,11 +27,11 @@ func (lm loggingMiddleware) Create(ctx context.Context, id, groupId, userId stri
 	return lm.stor.Create(ctx, id, groupId, userId, sd)
 }
 
-func (lm loggingMiddleware) Read(ctx context.Context, id, groupId, userId string) (sd interest.Data, ownerGroupId, ownerUserId string, err error) {
+func (lm loggingMiddleware) Read(ctx context.Context, id, groupId, userId string, internal bool) (sd interest.Data, ownerGroupId, ownerUserId string, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Read(%s, %s, %s): (%v, %s, %s, %s)", id, groupId, userId, sd, ownerGroupId, ownerUserId, err))
+		lm.log.Debug(fmt.Sprintf("Read(%s, %s, %s, %t): (%v, %s, %s, %s)", id, groupId, userId, internal, sd, ownerGroupId, ownerUserId, err))
 	}()
-	return lm.stor.Read(ctx, id, groupId, userId)
+	return lm.stor.Read(ctx, id, groupId, userId, internal)
 }
 
 func (lm loggingMiddleware) Update(ctx context.Context, id, groupId, userId string, d interest.Data) (prev interest.Data, err error) {

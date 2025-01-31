@@ -300,10 +300,12 @@ func (s storageImpl) Create(ctx context.Context, id, groupId, userId string, sd 
 	return
 }
 
-func (s storageImpl) Read(ctx context.Context, id, groupId, userId string) (sd interest.Data, ownerGroupId, ownerUserId string, err error) {
+func (s storageImpl) Read(ctx context.Context, id, groupId, userId string, internal bool) (sd interest.Data, ownerGroupId, ownerUserId string, err error) {
 	q := bson.M{
 		attrId: id,
-		"$or": []bson.M{
+	}
+	if !internal {
+		q["$or"] = []bson.M{
 			{
 				attrGroupId: groupId,
 				attrUserId:  userId,
@@ -311,7 +313,7 @@ func (s storageImpl) Read(ctx context.Context, id, groupId, userId string) (sd i
 			{
 				attrPublic: true,
 			},
-		},
+		}
 	}
 	var result *mongo.SingleResult
 	result = s.coll.FindOne(ctx, q, optsRead)

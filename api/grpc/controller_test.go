@@ -204,9 +204,10 @@ func TestServiceController_Read(t *testing.T) {
 	client := NewServiceClient(conn)
 	//
 	cases := map[string]struct {
-		auth bool
-		sub  *ReadResponse
-		err  error
+		auth     bool
+		internal bool
+		sub      *ReadResponse
+		err      error
 	}{
 		"ok": {
 			auth: true,
@@ -272,6 +273,59 @@ func TestServiceController_Read(t *testing.T) {
 			auth: false,
 			err:  status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
 		},
+		"internal": {
+			auth:     false,
+			internal: true,
+			sub: &ReadResponse{
+				Description: "description",
+				Expires:     timestamppb.New(time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC)),
+				Created:     timestamppb.New(time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC)),
+				Updated:     timestamppb.New(time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC)),
+				Result:      timestamppb.New(time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC)),
+				Enabled:     true,
+				Public:      true,
+				Followers:   42,
+				Cond: &Condition{
+					Not: false,
+					Cond: &Condition_Gc{
+						Gc: &GroupCondition{
+							Logic: common.GroupLogic_And,
+							Group: []*Condition{
+								{
+									Not: false,
+									Cond: &Condition_Tc{
+										Tc: &TextCondition{
+											Key:  "key0",
+											Term: "pattern0",
+										},
+									},
+								},
+								{
+									Not: true,
+									Cond: &Condition_Tc{
+										Tc: &TextCondition{
+											Key:  "key1",
+											Term: "pattern1",
+										},
+									},
+								},
+								{
+									Cond: &Condition_Nc{
+										Nc: &NumberCondition{
+											Key: "key2",
+											Op:  Operation_Eq,
+											Val: 42,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				GroupId: "group0",
+				UserId:  "user0",
+			},
+		},
 	}
 	//
 	for k, c := range cases {
@@ -280,7 +334,10 @@ func TestServiceController_Read(t *testing.T) {
 			if c.auth {
 				ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
 			}
-			sub, err := client.Read(ctx, &ReadRequest{Id: k})
+			sub, err := client.Read(ctx, &ReadRequest{
+				Id:       k,
+				Internal: c.internal,
+			})
 			if c.err == nil {
 				require.Nil(t, err)
 				assert.Equal(t, c.sub.Description, sub.Description)

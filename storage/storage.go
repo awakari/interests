@@ -19,7 +19,7 @@ type (
 		Create(ctx context.Context, id, groupId, userId string, sd interest.Data) (err error)
 
 		// Read the interest.Data by the interest.Interest id.
-		Read(ctx context.Context, id, groupId, userId string) (sd interest.Data, ownerGroupId, ownerUserId string, err error)
+		Read(ctx context.Context, id, groupId, userId string, internal bool) (sd interest.Data, ownerGroupId, ownerUserId string, err error)
 
 		// Update updates the interest.Data
 		Update(ctx context.Context, id, groupId, userId string, sd interest.Data) (prev interest.Data, err error)

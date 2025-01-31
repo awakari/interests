@@ -29,7 +29,7 @@ func (s storageMock) Create(ctx context.Context, id, groupId, userId string, sd 
 	return
 }
 
-func (s storageMock) Read(ctx context.Context, id, groupId, userId string) (sd interest.Data, ownerGroupId, ownerUserId string, err error) {
+func (s storageMock) Read(ctx context.Context, id, groupId, userId string, internal bool) (sd interest.Data, ownerGroupId, ownerUserId string, err error) {
 	if id == "fail" {
 		err = ErrInternal
 	} else if id == "missing" {
