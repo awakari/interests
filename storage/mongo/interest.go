@@ -46,6 +46,8 @@ type interestRec struct {
 
 	Enabled bool `bson:"enabled"`
 
+	EnabledSince time.Time `bson:"enabledSince,omitempty"`
+
 	Expires time.Time `bson:"expires,omitempty"`
 
 	Created time.Time `bson:"created,omitempty"`
@@ -70,6 +72,7 @@ const attrGroupId = "groupId"
 const attrUserId = "userId"
 const attrDescr = "descr"
 const attrEnabled = "enabled"
+const attrEnabledSince = "enabledSince"
 const attrExpires = "expires"
 const attrCreated = "created"
 const attrUpdated = "updated"
@@ -90,6 +93,7 @@ func (rec interestRec) decodeInterest(sub *interest.Interest) (err error) {
 func (rec interestRec) decodeInterestData(sd *interest.Data) (err error) {
 	sd.Description = rec.Description
 	sd.Enabled = rec.Enabled
+	sd.EnabledSince = rec.EnabledSince
 	sd.Expires = rec.Expires
 	sd.Created = rec.Created
 	sd.Updated = rec.Updated

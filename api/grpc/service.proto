@@ -102,6 +102,7 @@ message ReadResponse {
   bool own = 10; // deprecated
   string groupId = 11;
   string userId = 12;
+  google.protobuf.Timestamp enabledSince = 13;
 }
 
 // Update
@@ -144,6 +145,7 @@ message UpdateResultTimeResponse {
 message SetEnabledBatchRequest {
   repeated string ids = 1;
   bool enabled = 2;
+  google.protobuf.Timestamp enabledSince = 3;
 }
 
 message SetEnabledBatchResponse {

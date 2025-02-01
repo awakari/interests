@@ -55,11 +55,11 @@ func (lm loggingMiddleware) UpdateResultTime(ctx context.Context, id string, las
 	return lm.stor.UpdateResultTime(ctx, id, last)
 }
 
-func (lm loggingMiddleware) SetEnabledBatch(ctx context.Context, ids []string, enabled bool) (n int64, err error) {
+func (lm loggingMiddleware) SetEnabledBatch(ctx context.Context, ids []string, enabled bool, enabledSince time.Time) (n int64, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("SetEnabledBatch(%+v, %t): %d, err=%s", ids, enabled, n, err))
+		lm.log.Debug(fmt.Sprintf("SetEnabledBatch(%+v, %t, %s): %d, err=%s", ids, enabled, enabledSince, n, err))
 	}()
-	return lm.stor.SetEnabledBatch(ctx, ids, enabled)
+	return lm.stor.SetEnabledBatch(ctx, ids, enabled, enabledSince)
 }
 
 func (lm loggingMiddleware) Delete(ctx context.Context, id, groupId, userId string) (d interest.Data, err error) {

@@ -36,14 +36,15 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string, inter
 		err = ErrNotFound
 	} else {
 		sd = interest.Data{
-			Description: "description",
-			Enabled:     true,
-			Expires:     time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
-			Created:     time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC),
-			Updated:     time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC),
-			Result:      time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC),
-			Public:      true,
-			Followers:   42,
+			Description:  "description",
+			Enabled:      true,
+			EnabledSince: time.Date(2025, 2, 1, 7, 20, 45, 0, time.UTC),
+			Expires:      time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
+			Created:      time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC),
+			Updated:      time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC),
+			Result:       time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC),
+			Public:       true,
+			Followers:    42,
 			Condition: condition.NewGroupCondition(
 				condition.NewCondition(false),
 				condition.GroupLogicAnd,
@@ -117,7 +118,7 @@ func (s storageMock) UpdateResultTime(ctx context.Context, id string, last time.
 	return
 }
 
-func (s storageMock) SetEnabledBatch(ctx context.Context, ids []string, enabled bool) (n int64, err error) {
+func (s storageMock) SetEnabledBatch(ctx context.Context, ids []string, enabled bool, enabledSince time.Time) (n int64, err error) {
 	if len(ids) > 0 && ids[0] == "fail" {
 		err = ErrInternal
 	} else {

@@ -70,6 +70,10 @@ var (
 					Value: 1,
 				},
 				{
+					Key:   attrEnabledSince,
+					Value: 1,
+				},
+				{
 					Key:   attrExpires,
 					Value: 1,
 				},
@@ -80,6 +84,7 @@ var (
 			},
 			Options: options.
 				Index().
+				SetSparse(true).
 				SetUnique(false),
 		},
 	}
@@ -122,6 +127,10 @@ var (
 		},
 		{
 			Key:   attrEnabled,
+			Value: 1,
+		},
+		{
+			Key:   attrEnabledSince,
 			Value: 1,
 		},
 		{
@@ -415,16 +424,27 @@ func (s storageImpl) UpdateResultTime(ctx context.Context, id string, last time.
 	return
 }
 
-func (s storageImpl) SetEnabledBatch(ctx context.Context, ids []string, enabled bool) (n int64, err error) {
+func (s storageImpl) SetEnabledBatch(ctx context.Context, ids []string, enabled bool, enabledSince time.Time) (n int64, err error) {
 	q := bson.M{
 		attrId: bson.M{
 			"$in": ids,
 		},
 	}
-	u := bson.M{
-		"$set": bson.M{
-			attrEnabled: enabled,
-		},
+	var u bson.M
+	switch enabledSince.IsZero() {
+	case true:
+		u = bson.M{
+			"$set": bson.M{
+				attrEnabled: enabled,
+			},
+		}
+	default:
+		u = bson.M{
+			"$set": bson.M{
+				attrEnabled:      enabled,
+				attrEnabledSince: enabledSince,
+			},
+		}
 	}
 	var result *mongo.UpdateResult
 	result, err = s.coll.UpdateMany(ctx, q, u)
@@ -664,16 +684,35 @@ func (s storageImpl) Search(ctx context.Context, q interest.Query, cursor intere
 }
 
 func (s storageImpl) SearchByCondition(ctx context.Context, q interest.QueryByCondition, cursor string) (page []interest.ConditionMatch, err error) {
+	now := time.Now().UTC()
 	dbQuery := bson.M{
 		attrId: bson.M{
 			"$gt": cursor,
 		},
 		attrCondIds: q.CondId,
-		attrEnabled: true,
+		"$and": []bson.M{
+			{
+				attrEnabled: true,
+			},
+			{
+				"$or": []bson.M{
+					{
+						attrEnabledSince: bson.M{
+							"$exists": false,
+						},
+					},
+					{
+						attrEnabledSince: bson.M{
+							"$lt": now,
+						},
+					},
+				},
+			},
+		},
 		"$or": []bson.M{
 			{
 				attrExpires: bson.M{
-					"$gt": time.Now().UTC(),
+					"$gt": now,
 				},
 			},
 			{

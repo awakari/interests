@@ -48,13 +48,16 @@ func Test_decodeInterest(t *testing.T) {
 		},
 		"ok w/ created, updated, read dates": {
 			in: interestRec{
-				Id:          "sub0",
-				GroupId:     "group0",
-				UserId:      "acc0",
-				Description: "description0",
-				Created:     time.Date(2024, 4, 9, 6, 53, 10, 0, time.UTC),
-				Updated:     time.Date(2024, 4, 9, 6, 53, 20, 0, time.UTC),
-				Public:      true,
+				Id:           "sub0",
+				GroupId:      "group0",
+				UserId:       "acc0",
+				Description:  "description0",
+				Enabled:      false,
+				EnabledSince: time.Date(2025, 2, 1, 6, 53, 10, 0, time.UTC),
+				Expires:      time.Date(2025, 2, 2, 6, 53, 10, 0, time.UTC),
+				Created:      time.Date(2024, 4, 9, 6, 53, 10, 0, time.UTC),
+				Updated:      time.Date(2024, 4, 9, 6, 53, 20, 0, time.UTC),
+				Public:       true,
 				RawCondition: bson.M{
 					conditionAttrBase: bson.M{
 						conditionAttrNot: false,
@@ -69,10 +72,13 @@ func Test_decodeInterest(t *testing.T) {
 				GroupId: "group0",
 				UserId:  "acc0",
 				Data: interest.Data{
-					Description: "description0",
-					Created:     time.Date(2024, 4, 9, 6, 53, 10, 0, time.UTC),
-					Updated:     time.Date(2024, 4, 9, 6, 53, 20, 0, time.UTC),
-					Public:      true,
+					Description:  "description0",
+					Enabled:      false,
+					EnabledSince: time.Date(2025, 2, 1, 6, 53, 10, 0, time.UTC),
+					Expires:      time.Date(2025, 2, 2, 6, 53, 10, 0, time.UTC),
+					Created:      time.Date(2024, 4, 9, 6, 53, 10, 0, time.UTC),
+					Updated:      time.Date(2024, 4, 9, 6, 53, 20, 0, time.UTC),
+					Public:       true,
 					Condition: condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 						"pattern0", false,

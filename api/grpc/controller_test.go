@@ -212,14 +212,15 @@ func TestServiceController_Read(t *testing.T) {
 		"ok": {
 			auth: true,
 			sub: &ReadResponse{
-				Description: "description",
-				Expires:     timestamppb.New(time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC)),
-				Created:     timestamppb.New(time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC)),
-				Updated:     timestamppb.New(time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC)),
-				Result:      timestamppb.New(time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC)),
-				Enabled:     true,
-				Public:      true,
-				Followers:   42,
+				Description:  "description",
+				EnabledSince: timestamppb.New(time.Date(2025, 2, 1, 7, 20, 45, 0, time.UTC)),
+				Expires:      timestamppb.New(time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC)),
+				Created:      timestamppb.New(time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC)),
+				Updated:      timestamppb.New(time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC)),
+				Result:       timestamppb.New(time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC)),
+				Enabled:      true,
+				Public:       true,
+				Followers:    42,
 				Cond: &Condition{
 					Not: false,
 					Cond: &Condition_Gc{
@@ -277,14 +278,15 @@ func TestServiceController_Read(t *testing.T) {
 			auth:     false,
 			internal: true,
 			sub: &ReadResponse{
-				Description: "description",
-				Expires:     timestamppb.New(time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC)),
-				Created:     timestamppb.New(time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC)),
-				Updated:     timestamppb.New(time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC)),
-				Result:      timestamppb.New(time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC)),
-				Enabled:     true,
-				Public:      true,
-				Followers:   42,
+				Description:  "description",
+				Expires:      timestamppb.New(time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC)),
+				Created:      timestamppb.New(time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC)),
+				Updated:      timestamppb.New(time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC)),
+				Result:       timestamppb.New(time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC)),
+				Enabled:      true,
+				EnabledSince: timestamppb.New(time.Date(2025, 2, 1, 7, 20, 45, 0, time.UTC)),
+				Public:       true,
+				Followers:    42,
 				Cond: &Condition{
 					Not: false,
 					Cond: &Condition_Gc{
@@ -342,6 +344,7 @@ func TestServiceController_Read(t *testing.T) {
 				require.Nil(t, err)
 				assert.Equal(t, c.sub.Description, sub.Description)
 				assert.Equal(t, c.sub.Enabled, sub.Enabled)
+				assert.Equal(t, c.sub.EnabledSince, sub.EnabledSince)
 				assert.Equal(t, c.sub.Expires, sub.Expires)
 				assert.Equal(t, c.sub.Created, sub.Created)
 				assert.Equal(t, c.sub.Updated, sub.Updated)
@@ -761,16 +764,20 @@ func TestServiceController_SetEnabledBatch(t *testing.T) {
 	client := NewServiceClient(conn)
 	//
 	cases := map[string]struct {
-		ids []string
-		n   int64
-		err error
+		ids          []string
+		enabled      bool
+		enabledSince *timestamppb.Timestamp
+		n            int64
+		err          error
 	}{
 		"ok": {
 			ids: []string{
 				"interest0",
 				"interest1",
 			},
-			n: 2,
+			enabled:      true,
+			enabledSince: timestamppb.New(time.Now()),
+			n:            2,
 		},
 		"fail": {
 			ids: []string{
@@ -788,7 +795,7 @@ func TestServiceController_SetEnabledBatch(t *testing.T) {
 			var resp *SetEnabledBatchResponse
 			resp, err = client.SetEnabledBatch(ctx, &SetEnabledBatchRequest{
 				Ids:     c.ids,
-				Enabled: true,
+				Enabled: c.enabled,
 			})
 			if c.err == nil {
 				assert.Equal(t, c.n, resp.N)

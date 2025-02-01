@@ -829,30 +829,38 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 	err = s.Create(ctx, "interest0", "acc0", "user0", sub0)
 	require.Nil(t, err)
 	// already expired
-	cond1 := condition.NewTextCondition(
-		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key1"),
-		"term1",
-		false,
-	)
 	sub1 := interest.Data{
 		Enabled:   true,
-		Condition: cond1,
+		Condition: cond0,
 		Expires:   time.Date(2022, 2, 22, 22, 22, 22, 0, time.UTC),
 	}
 	err = s.Create(ctx, "interest1", "acc0", "user0", sub1)
 	require.Nil(t, err)
 	// not expired
-	cond2 := condition.NewTextCondition(
-		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key2"),
-		"term2",
-		false,
-	)
 	sub2 := interest.Data{
 		Enabled:   true,
-		Condition: cond2,
+		Condition: cond0,
 		Expires:   time.Now().Add(1 * time.Hour).UTC(),
 	}
 	err = s.Create(ctx, "interest2", "acc0", "user0", sub2)
+	require.Nil(t, err)
+	// temporarily disabled in past but active now
+	sub3 := interest.Data{
+		Enabled:   true,
+		Condition: cond0,
+	}
+	err = s.Create(ctx, "interest3", "acc0", "user0", sub3)
+	require.Nil(t, err)
+	_, err = s.SetEnabledBatch(ctx, []string{"interest3"}, true, time.Date(2022, 2, 22, 22, 22, 22, 0, time.UTC))
+	require.Nil(t, err)
+	// not yet
+	sub4 := interest.Data{
+		Enabled:   true,
+		Condition: cond0,
+	}
+	err = s.Create(ctx, "interest4", "acc0", "user0", sub4)
+	require.Nil(t, err)
+	_, err = s.SetEnabledBatch(ctx, []string{"interest4"}, true, time.Now().Add(1*time.Hour).UTC())
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
@@ -873,7 +881,11 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 				},
 				{
 					InterestId: "interest2",
-					Condition:  cond2,
+					Condition:  cond0,
+				},
+				{
+					InterestId: "interest3",
+					Condition:  cond0,
 				},
 			},
 		},
@@ -1216,19 +1228,21 @@ func TestStorageImpl_SetEnabledBatch(t *testing.T) {
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
-		ids     []string
-		enabled bool
-		n       int64
-		err     error
+		ids          []string
+		enabled      bool
+		enabledSince time.Time
+		n            int64
+		err          error
 	}{
 		"disable": {
 			ids: []string{"interest0", "interest1", "interest2"},
 			n:   2,
 		},
 		"enable": {
-			ids:     []string{"interest3", "interest4", "interest5"},
-			enabled: true,
-			n:       3,
+			ids:          []string{"interest3", "interest4", "interest5"},
+			enabled:      true,
+			enabledSince: time.Now(),
+			n:            3,
 		},
 		"some missing": {
 			ids: []string{"interest6", "interest7"},
@@ -1242,7 +1256,7 @@ func TestStorageImpl_SetEnabledBatch(t *testing.T) {
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
 			var n int64
-			n, err = s.SetEnabledBatch(context.TODO(), c.ids, c.enabled)
+			n, err = s.SetEnabledBatch(context.TODO(), c.ids, c.enabled, c.enabledSince)
 			assert.Equal(t, c.n, n)
 			assert.ErrorIs(t, err, c.err)
 		})

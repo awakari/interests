@@ -29,7 +29,7 @@ type (
 
 		UpdateResultTime(ctx context.Context, id string, last time.Time) (err error)
 
-		SetEnabledBatch(ctx context.Context, ids []string, enabled bool) (n int64, err error)
+		SetEnabledBatch(ctx context.Context, ids []string, enabled bool, enabledSince time.Time) (n int64, err error)
 
 		// Delete removes the interest.Interest specified by its unique id.
 		// Returns the interest.Data if deleted, error otherwise.

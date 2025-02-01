@@ -13,6 +13,9 @@ type Data struct {
 	// Enabled defines whether the interest may be used for the matching
 	Enabled bool
 
+	// EnabledSince defines a time since when the interest is considered as Enabled
+	EnabledSince time.Time
+
 	// Expires defines a deadline when the interest is treated as Enabled
 	Expires time.Time
 

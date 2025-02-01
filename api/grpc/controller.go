@@ -75,6 +75,9 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 			encodeCondition(sd.Condition, resp.Cond)
 			resp.Description = sd.Description
 			resp.Enabled = sd.Enabled
+			if !sd.EnabledSince.IsZero() {
+				resp.EnabledSince = timestamppb.New(sd.EnabledSince)
+			}
 			resp.Public = sd.Public
 			resp.Followers = sd.Followers
 			if !sd.Expires.IsZero() {
@@ -150,7 +153,11 @@ func (sc serviceController) UpdateResultTime(ctx context.Context, req *UpdateRes
 
 func (sc serviceController) SetEnabledBatch(ctx context.Context, req *SetEnabledBatchRequest) (resp *SetEnabledBatchResponse, err error) {
 	resp = &SetEnabledBatchResponse{}
-	resp.N, err = sc.stor.SetEnabledBatch(ctx, req.Ids, req.Enabled)
+	var enabledSince time.Time
+	if req.EnabledSince != nil && req.EnabledSince.IsValid() {
+		enabledSince = req.EnabledSince.AsTime().UTC()
+	}
+	resp.N, err = sc.stor.SetEnabledBatch(ctx, req.Ids, req.Enabled, enabledSince)
 	err = encodeError(err)
 	return
 }
