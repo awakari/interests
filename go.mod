@@ -1,6 +1,6 @@
 module github.com/awakari/interests
 
-go 1.23
+go 1.24
 
 require (
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.mongodb.org/mongo-driver v1.17.2
 	google.golang.org/grpc v1.70.0
-	google.golang.org/protobuf v1.36.4
+	google.golang.org/protobuf v1.36.5
 )
 
 require (

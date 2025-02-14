@@ -87,6 +87,27 @@ var (
 				SetSparse(true).
 				SetUnique(false),
 		},
+		// query public and sort by created date/time
+		{
+			Keys: bson.D{
+				{
+					Key:   attrId,
+					Value: 1,
+				},
+				{
+					Key:   attrPublic,
+					Value: 1,
+				},
+				{
+					Key:   attrCreated,
+					Value: 1,
+				},
+			},
+			Options: options.
+				Index().
+				SetSparse(true).
+				SetUnique(false),
+		},
 	}
 	projId = bson.D{
 		{
@@ -113,6 +134,26 @@ var (
 	projFollowersDesc = bson.D{
 		{
 			Key:   attrFollowers,
+			Value: -1,
+		},
+		{
+			Key:   attrId,
+			Value: -1,
+		},
+	}
+	projCreatedAsc = bson.D{
+		{
+			Key:   attrCreated,
+			Value: 1,
+		},
+		{
+			Key:   attrId,
+			Value: 1,
+		},
+	}
+	projCreatedDesc = bson.D{
+		{
+			Key:   attrCreated,
 			Value: -1,
 		},
 		{
@@ -646,6 +687,141 @@ func (s storageImpl) Search(ctx context.Context, q interest.Query, cursor intere
 				}
 			}
 			opts = opts.SetSort(projFollowersAsc)
+		}
+	case interest.SortCreated:
+		switch q.Order {
+		case interest.OrderDesc:
+			switch cursor.CreatedAt {
+			case timeZero:
+				dbQuery = bson.M{
+					"$and": []bson.M{
+						dbQuery,
+						{
+							attrCreated: bson.M{
+								"$exists": false,
+							},
+						},
+						{
+							attrId: bson.M{
+								"$lt": cursor.Id,
+							},
+						},
+					},
+				}
+			default:
+				dbQuery = bson.M{
+					"$and": []bson.M{
+						dbQuery,
+						{
+							"$or": []bson.M{
+								{
+									"$or": []bson.M{
+										{
+											attrCreated: bson.M{
+												"$lt": cursor.CreatedAt,
+											},
+										},
+										{
+											attrCreated: bson.M{
+												"$exists": false,
+											},
+										},
+									},
+								},
+								{
+									"$and": []bson.M{
+										{
+											attrCreated: cursor.Created,
+										},
+										{
+											attrId: bson.M{
+												"$lt": cursor.Id,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			}
+			opts = opts.SetSort(projCreatedDesc)
+		default:
+			switch cursor.Created {
+			case 0:
+				dbQuery = bson.M{
+					"$and": []bson.M{
+						dbQuery,
+						{
+							"$or": []bson.M{
+								{
+									"$or": []bson.M{
+										{
+											attrCreated: bson.M{
+												"$gt": cursor.Created,
+											},
+										},
+										{
+											attrCreated: bson.M{
+												"$exists": true,
+											},
+										},
+									},
+								},
+								{
+									"$and": []bson.M{
+										{
+											"$or": []bson.M{
+												{
+													attrCreated: cursor.Created,
+												},
+												{
+													attrCreated: bson.M{
+														"$exists": false,
+													},
+												},
+											},
+										},
+										{
+											attrId: bson.M{
+												"$gt": cursor.Id,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			default:
+				dbQuery = bson.M{
+					"$and": []bson.M{
+						dbQuery,
+						{
+							"$or": []bson.M{
+								{
+									attrCreated: bson.M{
+										"$gt": cursor.Created,
+									},
+								},
+								{
+									"$and": []bson.M{
+										{
+											attrCreated: cursor.Created,
+										},
+										{
+											attrId: bson.M{
+												"$gt": cursor.Id,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			}
+			opts = opts.SetSort(projCreatedAsc)
 		}
 	default:
 		switch q.Order {
