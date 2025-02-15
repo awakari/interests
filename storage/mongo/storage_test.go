@@ -504,6 +504,7 @@ func TestStorageImpl_Search(t *testing.T) {
 			Condition:   cond,
 			Public:      i%5 == 4,
 			Followers:   (10 - int64(i)) / 2,
+			Created:     time.Date(2024, 2, i+1, 1, 2, 4, 5, time.UTC),
 		}
 		err = s.Create(ctx, fmt.Sprintf("interest%d", i), fmt.Sprintf("acc%d", i%2), fmt.Sprintf("user%d", i%2), sub)
 		require.Nil(t, err)
@@ -647,6 +648,42 @@ func TestStorageImpl_Search(t *testing.T) {
 				ids[2],
 				ids[6],
 				ids[8],
+			},
+		},
+		"include public and sort by creation time desc": {
+			q: interest.Query{
+				Limit:         3,
+				GroupId:       "acc0",
+				UserId:        "user0",
+				IncludePublic: true,
+				Sort:          interest.SortTimeCreated,
+				Order:         interest.OrderDesc,
+			},
+			cursor: interest.Cursor{
+				CreatedAt: time.Date(2025, 2, 15, 0, 0, 0, 0, time.UTC),
+			},
+			ids: []string{
+				ids[9],
+				ids[8],
+				ids[6],
+			},
+		},
+		"include public and sort by creation time asc": {
+			q: interest.Query{
+				Limit:         10,
+				GroupId:       "acc1",
+				UserId:        "user1",
+				IncludePublic: true,
+				Sort:          interest.SortTimeCreated,
+				Order:         interest.OrderAsc,
+			},
+			ids: []string{
+				ids[1],
+				ids[3],
+				ids[4],
+				ids[5],
+				ids[7],
+				ids[9],
 			},
 		},
 	}

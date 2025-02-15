@@ -547,282 +547,9 @@ func (s storageImpl) Search(ctx context.Context, q interest.Query, cursor intere
 	}
 	switch q.Sort {
 	case interest.SortFollowers:
-		switch q.Order {
-		case interest.OrderDesc:
-			switch cursor.Followers {
-			case 0:
-				dbQuery = bson.M{
-					"$and": []bson.M{
-						dbQuery,
-						{
-							"$or": []bson.M{
-								{
-									attrFollowers: cursor.Followers,
-								},
-								{
-									attrFollowers: bson.M{
-										"$exists": false,
-									},
-								},
-							},
-						},
-						{
-							attrId: bson.M{
-								"$lt": cursor.Id,
-							},
-						},
-					},
-				}
-			default:
-				dbQuery = bson.M{
-					"$and": []bson.M{
-						dbQuery,
-						{
-							"$or": []bson.M{
-								{
-									"$or": []bson.M{
-										{
-											attrFollowers: bson.M{
-												"$lt": cursor.Followers,
-											},
-										},
-										{
-											attrFollowers: bson.M{
-												"$exists": false,
-											},
-										},
-									},
-								},
-								{
-									"$and": []bson.M{
-										{
-											attrFollowers: cursor.Followers,
-										},
-										{
-											attrId: bson.M{
-												"$lt": cursor.Id,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}
-			}
-			opts = opts.SetSort(projFollowersDesc)
-		default:
-			switch cursor.Followers {
-			case 0:
-				dbQuery = bson.M{
-					"$and": []bson.M{
-						dbQuery,
-						{
-							"$or": []bson.M{
-								{
-									"$or": []bson.M{
-										{
-											attrFollowers: bson.M{
-												"$gt": cursor.Followers,
-											},
-										},
-										{
-											attrFollowers: bson.M{
-												"$exists": true,
-											},
-										},
-									},
-								},
-								{
-									"$and": []bson.M{
-										{
-											"$or": []bson.M{
-												{
-													attrFollowers: cursor.Followers,
-												},
-												{
-													attrFollowers: bson.M{
-														"$exists": false,
-													},
-												},
-											},
-										},
-										{
-											attrId: bson.M{
-												"$gt": cursor.Id,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}
-			default:
-				dbQuery = bson.M{
-					"$and": []bson.M{
-						dbQuery,
-						{
-							"$or": []bson.M{
-								{
-									attrFollowers: bson.M{
-										"$gt": cursor.Followers,
-									},
-								},
-								{
-									"$and": []bson.M{
-										{
-											attrFollowers: cursor.Followers,
-										},
-										{
-											attrId: bson.M{
-												"$gt": cursor.Id,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}
-			}
-			opts = opts.SetSort(projFollowersAsc)
-		}
-	case interest.SortCreated:
-		switch q.Order {
-		case interest.OrderDesc:
-			switch cursor.CreatedAt {
-			case timeZero:
-				dbQuery = bson.M{
-					"$and": []bson.M{
-						dbQuery,
-						{
-							attrCreated: bson.M{
-								"$exists": false,
-							},
-						},
-						{
-							attrId: bson.M{
-								"$lt": cursor.Id,
-							},
-						},
-					},
-				}
-			default:
-				dbQuery = bson.M{
-					"$and": []bson.M{
-						dbQuery,
-						{
-							"$or": []bson.M{
-								{
-									"$or": []bson.M{
-										{
-											attrCreated: bson.M{
-												"$lt": cursor.CreatedAt,
-											},
-										},
-										{
-											attrCreated: bson.M{
-												"$exists": false,
-											},
-										},
-									},
-								},
-								{
-									"$and": []bson.M{
-										{
-											attrCreated: cursor.Created,
-										},
-										{
-											attrId: bson.M{
-												"$lt": cursor.Id,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}
-			}
-			opts = opts.SetSort(projCreatedDesc)
-		default:
-			switch cursor.Created {
-			case 0:
-				dbQuery = bson.M{
-					"$and": []bson.M{
-						dbQuery,
-						{
-							"$or": []bson.M{
-								{
-									"$or": []bson.M{
-										{
-											attrCreated: bson.M{
-												"$gt": cursor.Created,
-											},
-										},
-										{
-											attrCreated: bson.M{
-												"$exists": true,
-											},
-										},
-									},
-								},
-								{
-									"$and": []bson.M{
-										{
-											"$or": []bson.M{
-												{
-													attrCreated: cursor.Created,
-												},
-												{
-													attrCreated: bson.M{
-														"$exists": false,
-													},
-												},
-											},
-										},
-										{
-											attrId: bson.M{
-												"$gt": cursor.Id,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}
-			default:
-				dbQuery = bson.M{
-					"$and": []bson.M{
-						dbQuery,
-						{
-							"$or": []bson.M{
-								{
-									attrCreated: bson.M{
-										"$gt": cursor.Created,
-									},
-								},
-								{
-									"$and": []bson.M{
-										{
-											attrCreated: cursor.Created,
-										},
-										{
-											attrId: bson.M{
-												"$gt": cursor.Id,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}
-			}
-			opts = opts.SetSort(projCreatedAsc)
-		}
+		dbQuery, opts = pageQuerySortByFollowers(q, cursor, dbQuery, opts)
+	case interest.SortTimeCreated:
+		dbQuery, opts = pageQuerySortByCreatedTime(q, cursor, dbQuery, opts)
 	default:
 		switch q.Order {
 		case interest.OrderDesc:
@@ -950,4 +677,294 @@ func (s storageImpl) CountUsersUnique(ctx context.Context) (count int64, err err
 		}
 	}
 	return
+}
+
+func pageQuerySortByFollowers(q interest.Query, cursor interest.Cursor, dbQuery bson.M, opts *options.FindOptions) (bson.M, *options.FindOptions) {
+	switch q.Order {
+	case interest.OrderDesc:
+		switch cursor.Followers {
+		case 0:
+			dbQuery = bson.M{
+				"$and": []bson.M{
+					dbQuery,
+					{
+						"$or": []bson.M{
+							{
+								attrFollowers: cursor.Followers,
+							},
+							{
+								attrFollowers: bson.M{
+									"$exists": false,
+								},
+							},
+						},
+					},
+					{
+						attrId: bson.M{
+							"$lt": cursor.Id,
+						},
+					},
+				},
+			}
+		default:
+			dbQuery = bson.M{
+				"$and": []bson.M{
+					dbQuery,
+					{
+						"$or": []bson.M{
+							{
+								"$or": []bson.M{
+									{
+										attrFollowers: bson.M{
+											"$lt": cursor.Followers,
+										},
+									},
+									{
+										attrFollowers: bson.M{
+											"$exists": false,
+										},
+									},
+								},
+							},
+							{
+								"$and": []bson.M{
+									{
+										attrFollowers: cursor.Followers,
+									},
+									{
+										attrId: bson.M{
+											"$lt": cursor.Id,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+		}
+		opts = opts.SetSort(projFollowersDesc)
+	default:
+		switch cursor.Followers {
+		case 0:
+			dbQuery = bson.M{
+				"$and": []bson.M{
+					dbQuery,
+					{
+						"$or": []bson.M{
+							{
+								"$or": []bson.M{
+									{
+										attrFollowers: bson.M{
+											"$gt": cursor.Followers,
+										},
+									},
+									{
+										attrFollowers: bson.M{
+											"$exists": true,
+										},
+									},
+								},
+							},
+							{
+								"$and": []bson.M{
+									{
+										"$or": []bson.M{
+											{
+												attrFollowers: cursor.Followers,
+											},
+											{
+												attrFollowers: bson.M{
+													"$exists": false,
+												},
+											},
+										},
+									},
+									{
+										attrId: bson.M{
+											"$gt": cursor.Id,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+		default:
+			dbQuery = bson.M{
+				"$and": []bson.M{
+					dbQuery,
+					{
+						"$or": []bson.M{
+							{
+								attrFollowers: bson.M{
+									"$gt": cursor.Followers,
+								},
+							},
+							{
+								"$and": []bson.M{
+									{
+										attrFollowers: cursor.Followers,
+									},
+									{
+										attrId: bson.M{
+											"$gt": cursor.Id,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+		}
+		opts = opts.SetSort(projFollowersAsc)
+	}
+	return dbQuery, opts
+}
+
+func pageQuerySortByCreatedTime(q interest.Query, cursor interest.Cursor, dbQuery bson.M, opts *options.FindOptions) (bson.M, *options.FindOptions) {
+	switch q.Order {
+	case interest.OrderDesc:
+		switch {
+		case cursor.CreatedAt.IsZero():
+			dbQuery = bson.M{
+				"$and": []bson.M{
+					dbQuery,
+					{
+						"$or": []bson.M{
+							{
+								attrCreated: cursor.CreatedAt,
+							},
+							{
+								attrCreated: bson.M{
+									"$exists": false,
+								},
+							},
+						},
+					},
+					{
+						attrId: bson.M{
+							"$lt": cursor.Id,
+						},
+					},
+				},
+			}
+		default:
+			dbQuery = bson.M{
+				"$and": []bson.M{
+					dbQuery,
+					{
+						"$or": []bson.M{
+							{
+								"$or": []bson.M{
+									{
+										attrCreated: bson.M{
+											"$lt": cursor.CreatedAt,
+										},
+									},
+									{
+										attrCreated: bson.M{
+											"$exists": false,
+										},
+									},
+								},
+							},
+							{
+								"$and": []bson.M{
+									{
+										attrCreated: cursor.CreatedAt,
+									},
+									{
+										attrId: bson.M{
+											"$lt": cursor.Id,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+		}
+		opts = opts.SetSort(projCreatedDesc)
+	default:
+		switch {
+		case cursor.CreatedAt.IsZero():
+			dbQuery = bson.M{
+				"$and": []bson.M{
+					dbQuery,
+					{
+						"$or": []bson.M{
+							{
+								"$or": []bson.M{
+									{
+										attrCreated: bson.M{
+											"$gt": cursor.CreatedAt,
+										},
+									},
+									{
+										attrCreated: bson.M{
+											"$exists": true,
+										},
+									},
+								},
+							},
+							{
+								"$and": []bson.M{
+									{
+										"$or": []bson.M{
+											{
+												attrCreated: cursor.CreatedAt,
+											},
+											{
+												attrCreated: bson.M{
+													"$exists": false,
+												},
+											},
+										},
+									},
+									{
+										attrId: bson.M{
+											"$gt": cursor.Id,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+		default:
+			dbQuery = bson.M{
+				"$and": []bson.M{
+					dbQuery,
+					{
+						"$or": []bson.M{
+							{
+								attrCreated: bson.M{
+									"$gt": cursor.CreatedAt,
+								},
+							},
+							{
+								"$and": []bson.M{
+									{
+										attrCreated: cursor.CreatedAt,
+									},
+									{
+										attrId: bson.M{
+											"$gt": cursor.Id,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+		}
+		opts = opts.SetSort(projCreatedAsc)
+	}
+	return dbQuery, opts
 }

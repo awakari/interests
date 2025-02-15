@@ -222,6 +222,8 @@ func (sc serviceController) Search(ctx context.Context, req *SearchRequest) (res
 		switch req.Sort {
 		case Sort_FOLLOWERS:
 			q.Sort = interest.SortFollowers
+		case Sort_TIME_CREATED:
+			q.Sort = interest.SortTimeCreated
 		default:
 			q.Sort = interest.SortId
 		}
@@ -231,10 +233,15 @@ func (sc serviceController) Search(ctx context.Context, req *SearchRequest) (res
 		default:
 			q.Order = interest.OrderAsc
 		}
-		resp.Ids, err = sc.stor.Search(ctx, q, interest.Cursor{
-			Id:        req.Cursor.Id,
-			Followers: req.Cursor.Followers,
-		})
+		var cursor interest.Cursor
+		if req.Cursor != nil {
+			cursor.Id = req.Cursor.Id
+			cursor.Followers = req.Cursor.Followers
+			if req.Cursor.TimeCreated != nil {
+				cursor.CreatedAt = req.Cursor.TimeCreated.AsTime().UTC()
+			}
+		}
+		resp.Ids, err = sc.stor.Search(ctx, q, cursor)
 		err = encodeError(err)
 	}
 	return

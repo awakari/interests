@@ -21,14 +21,14 @@ type Sort int
 const (
 	SortId Sort = iota
 	SortFollowers
-	SortCreated
+	SortTimeCreated
 )
 
 func (s Sort) String() string {
 	return [...]string{
 		"Id",
 		"Followers",
-		"Created",
+		"TimeCreated",
 	}[s]
 }
 
