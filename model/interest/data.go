@@ -32,6 +32,9 @@ type Data struct {
 
 	Followers int64
 
+	// LimitPerMinute is a soft results rate limit, 0 means no limit
+	LimitPerMinute int
+
 	// Condition represents the certain criteria to select the Interest for the further routing.
 	// It's immutable once the Interest is created.
 	Condition condition.Condition

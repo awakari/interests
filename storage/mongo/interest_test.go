@@ -18,11 +18,12 @@ func Test_decodeInterest(t *testing.T) {
 	}{
 		"ok": {
 			in: interestRec{
-				Id:          "sub0",
-				GroupId:     "group0",
-				UserId:      "acc0",
-				Description: "description0",
-				Followers:   42,
+				Id:             "sub0",
+				GroupId:        "group0",
+				UserId:         "acc0",
+				Description:    "description0",
+				Followers:      42,
+				LimitPerMinute: 1,
 				RawCondition: bson.M{
 					conditionAttrBase: bson.M{
 						conditionAttrNot: false,
@@ -37,8 +38,9 @@ func Test_decodeInterest(t *testing.T) {
 				GroupId: "group0",
 				UserId:  "acc0",
 				Data: interest.Data{
-					Description: "description0",
-					Followers:   42,
+					Description:    "description0",
+					Followers:      42,
+					LimitPerMinute: 1,
 					Condition: condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 						"pattern0", false,

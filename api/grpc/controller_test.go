@@ -212,15 +212,16 @@ func TestServiceController_Read(t *testing.T) {
 		"ok": {
 			auth: true,
 			sub: &ReadResponse{
-				Description:  "description",
-				EnabledSince: timestamppb.New(time.Date(2025, 2, 1, 7, 20, 45, 0, time.UTC)),
-				Expires:      timestamppb.New(time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC)),
-				Created:      timestamppb.New(time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC)),
-				Updated:      timestamppb.New(time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC)),
-				Result:       timestamppb.New(time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC)),
-				Enabled:      true,
-				Public:       true,
-				Followers:    42,
+				Description:    "description",
+				EnabledSince:   timestamppb.New(time.Date(2025, 2, 1, 7, 20, 45, 0, time.UTC)),
+				Expires:        timestamppb.New(time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC)),
+				Created:        timestamppb.New(time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC)),
+				Updated:        timestamppb.New(time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC)),
+				Result:         timestamppb.New(time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC)),
+				Enabled:        true,
+				Public:         true,
+				Followers:      42,
+				LimitPerMinute: 3,
 				Cond: &Condition{
 					Not: false,
 					Cond: &Condition_Gc{
@@ -278,15 +279,16 @@ func TestServiceController_Read(t *testing.T) {
 			auth:     false,
 			internal: true,
 			sub: &ReadResponse{
-				Description:  "description",
-				Expires:      timestamppb.New(time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC)),
-				Created:      timestamppb.New(time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC)),
-				Updated:      timestamppb.New(time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC)),
-				Result:       timestamppb.New(time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC)),
-				Enabled:      true,
-				EnabledSince: timestamppb.New(time.Date(2025, 2, 1, 7, 20, 45, 0, time.UTC)),
-				Public:       true,
-				Followers:    42,
+				Description:    "description",
+				Expires:        timestamppb.New(time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC)),
+				Created:        timestamppb.New(time.Date(2024, 4, 9, 7, 3, 25, 0, time.UTC)),
+				Updated:        timestamppb.New(time.Date(2024, 4, 9, 7, 3, 35, 0, time.UTC)),
+				Result:         timestamppb.New(time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC)),
+				Enabled:        true,
+				EnabledSince:   timestamppb.New(time.Date(2025, 2, 1, 7, 20, 45, 0, time.UTC)),
+				Public:         true,
+				Followers:      42,
+				LimitPerMinute: 3,
 				Cond: &Condition{
 					Not: false,
 					Cond: &Condition_Gc{
@@ -351,6 +353,7 @@ func TestServiceController_Read(t *testing.T) {
 				assert.Equal(t, c.sub.Result, sub.Result)
 				assert.Equal(t, c.sub.Public, sub.Public)
 				assert.Equal(t, c.sub.Followers, sub.Followers)
+				assert.Equal(t, c.sub.LimitPerMinute, sub.LimitPerMinute)
 				assert.Equal(t, c.sub.Cond.Not, sub.Cond.Not)
 				assert.Equal(t, c.sub.Cond.GetGc().Logic, sub.Cond.GetGc().Logic)
 				assert.Equal(t, len(c.sub.Cond.GetGc().GetGroup()), len(sub.Cond.GetGc().GetGroup()))
