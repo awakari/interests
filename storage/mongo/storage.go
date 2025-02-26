@@ -211,7 +211,7 @@ var (
 			Value: 1,
 		},
 		{
-			Key:   attrLimitPerMinute,
+			Key:   attrRateLimit,
 			Value: 1,
 		},
 	}
@@ -331,19 +331,19 @@ func (s storageImpl) Close() error {
 func (s storageImpl) Create(ctx context.Context, id, groupId, userId string, sd interest.Data) (err error) {
 	recCond, condIds := encodeCondition(sd.Condition)
 	rec := interestWrite{
-		Id:             id,
-		GroupId:        groupId,
-		UserId:         userId,
-		Description:    sd.Description,
-		Enabled:        sd.Enabled,
-		Expires:        sd.Expires.UTC(),
-		Created:        sd.Created.UTC(),
-		Updated:        sd.Updated.UTC(),
-		Public:         sd.Public,
-		Followers:      sd.Followers,
-		Condition:      recCond,
-		CondIds:        condIds,
-		LimitPerMinute: sd.LimitPerMinute,
+		Id:          id,
+		GroupId:     groupId,
+		UserId:      userId,
+		Description: sd.Description,
+		Enabled:     sd.Enabled,
+		Expires:     sd.Expires.UTC(),
+		Created:     sd.Created.UTC(),
+		Updated:     sd.Updated.UTC(),
+		Public:      sd.Public,
+		Followers:   sd.Followers,
+		Condition:   recCond,
+		CondIds:     condIds,
+		RateLimit:   sd.RateLimit,
 	}
 	_, err = s.coll.InsertOne(ctx, rec)
 	switch {
@@ -407,14 +407,14 @@ func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d i
 	cond, condIds := encodeCondition(d.Condition)
 	u := bson.M{
 		"$set": bson.M{
-			attrDescr:          d.Description,
-			attrEnabled:        d.Enabled,
-			attrExpires:        d.Expires.UTC(),
-			attrUpdated:        d.Updated.UTC(),
-			attrPublic:         d.Public,
-			attrCond:           cond,
-			attrCondIds:        condIds,
-			attrLimitPerMinute: d.LimitPerMinute,
+			attrDescr:     d.Description,
+			attrEnabled:   d.Enabled,
+			attrExpires:   d.Expires.UTC(),
+			attrUpdated:   d.Updated.UTC(),
+			attrPublic:    d.Public,
+			attrCond:      cond,
+			attrCondIds:   condIds,
+			attrRateLimit: d.RateLimit,
 		},
 	}
 	var result *mongo.SingleResult

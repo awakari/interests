@@ -35,12 +35,12 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 		cond, err = decodeCondition(req.Cond)
 		if err == nil {
 			sd := interest.Data{
-				Description:    req.Description,
-				Enabled:        req.Enabled,
-				Condition:      cond,
-				Created:        time.Now().UTC(),
-				Public:         req.Public,
-				LimitPerMinute: int(req.LimitPerMinute),
+				Description: req.Description,
+				Enabled:     req.Enabled,
+				Condition:   cond,
+				Created:     time.Now().UTC(),
+				Public:      req.Public,
+				RateLimit:   req.RateLimit,
 			}
 			// check is for the backward compatibility
 			if req.Expires != nil {
@@ -95,7 +95,7 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 			}
 			resp.GroupId = ownerGroupId
 			resp.UserId = ownerUserId
-			resp.LimitPerMinute = int32(sd.LimitPerMinute)
+			resp.RateLimit = sd.RateLimit
 		}
 		err = encodeError(err)
 	}
@@ -113,12 +113,12 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 	}
 	if err == nil {
 		sd := interest.Data{
-			Description:    req.Description,
-			Enabled:        req.Enabled,
-			Condition:      cond,
-			Updated:        time.Now().UTC(),
-			Public:         req.Public,
-			LimitPerMinute: int(req.LimitPerMinute),
+			Description: req.Description,
+			Enabled:     req.Enabled,
+			Condition:   cond,
+			Updated:     time.Now().UTC(),
+			Public:      req.Public,
+			RateLimit:   req.RateLimit,
 		}
 		// check is for the backward compatibility
 		if req.Expires != nil {

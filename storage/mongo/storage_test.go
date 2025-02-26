@@ -75,10 +75,10 @@ func TestStorageImpl_Create(t *testing.T) {
 		"success": {
 			id: "interest1",
 			sd: interest.Data{
-				Description:    "test interest 1",
-				Expires:        time.Now().Add(1 * time.Hour),
-				Public:         true,
-				LimitPerMinute: 10,
+				Description: "test interest 1",
+				Expires:     time.Now().Add(1 * time.Hour),
+				Public:      true,
+				RateLimit:   10,
 				Condition: condition.NewGroupCondition(
 					condition.NewCondition(false),
 					condition.GroupLogicOr,
@@ -192,13 +192,13 @@ func TestStorageImpl_Read(t *testing.T) {
 		},
 	)
 	err = s.Create(ctx, "interest0", "group0", "user0", interest.Data{
-		Description:    "test interest 0",
-		Enabled:        true,
-		Expires:        time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
-		Condition:      cond0,
-		Created:        time.Date(2023, 10, 4, 6, 44, 57, 0, time.UTC),
-		Updated:        time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
-		LimitPerMinute: 3,
+		Description: "test interest 0",
+		Enabled:     true,
+		Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
+		Condition:   cond0,
+		Created:     time.Date(2023, 10, 4, 6, 44, 57, 0, time.UTC),
+		Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
+		RateLimit:   3,
 	})
 	require.Nil(t, err)
 	err = s.Create(ctx, "interest1", "group1", "user1", interest.Data{
@@ -228,13 +228,13 @@ func TestStorageImpl_Read(t *testing.T) {
 			groupId: "group0",
 			userId:  "user0",
 			sd: interest.Data{
-				Description:    "test interest 0",
-				Enabled:        true,
-				Expires:        time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
-				Condition:      cond0,
-				Created:        time.Date(2023, 10, 4, 6, 44, 57, 0, time.UTC),
-				Updated:        time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
-				LimitPerMinute: 3,
+				Description: "test interest 0",
+				Enabled:     true,
+				Expires:     time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
+				Condition:   cond0,
+				Created:     time.Date(2023, 10, 4, 6, 44, 57, 0, time.UTC),
+				Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
+				RateLimit:   3,
 			},
 			ownerGroupId: "group0",
 			ownerUserId:  "user0",
@@ -355,8 +355,8 @@ func TestStorageImpl_Update(t *testing.T) {
 					condition.NewKeyCondition(condition.NewCondition(false), "cond1", "key1"),
 					"pattern1", true,
 				),
-				Public:         true,
-				LimitPerMinute: 1,
+				Public:    true,
+				RateLimit: 1,
 			},
 			prev: sd0,
 		},

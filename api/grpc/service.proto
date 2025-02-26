@@ -39,7 +39,7 @@ message CreateRequest {
   google.protobuf.Timestamp expires = 4;
   bool public = 5;
   string id = 6;
-  int32 limitPerMinute = 7;
+  int64 rateLimit = 7;
 }
 
 message Condition {
@@ -104,7 +104,7 @@ message ReadResponse {
   string groupId = 11;
   string userId = 12;
   google.protobuf.Timestamp enabledSince = 13;
-  int32 limitPerMinute = 14;
+  int64 rateLimit = 14;
 }
 
 // Update
@@ -116,7 +116,7 @@ message UpdateRequest {
   google.protobuf.Timestamp expires = 4;
   Condition cond = 5;
   bool public = 6;
-  int32 limitPerMinute = 7;
+  int64 rateLimit = 7;
 }
 
 message UpdateResponse {
