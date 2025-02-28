@@ -23,7 +23,6 @@ func Test_decodeInterest(t *testing.T) {
 				UserId:      "acc0",
 				Description: "description0",
 				Followers:   42,
-				RateLimit:   1,
 				RawCondition: bson.M{
 					conditionAttrBase: bson.M{
 						conditionAttrNot: false,
@@ -40,7 +39,6 @@ func Test_decodeInterest(t *testing.T) {
 				Data: interest.Data{
 					Description: "description0",
 					Followers:   42,
-					RateLimit:   1,
 					Condition: condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
 						"pattern0", false,

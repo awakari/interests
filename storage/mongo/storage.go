@@ -210,10 +210,6 @@ var (
 			Key:   attrUserId,
 			Value: 1,
 		},
-		{
-			Key:   attrRateLimit,
-			Value: 1,
-		},
 	}
 	projSearchByCondId = bson.D{
 		{
@@ -343,7 +339,6 @@ func (s storageImpl) Create(ctx context.Context, id, groupId, userId string, sd 
 		Followers:   sd.Followers,
 		Condition:   recCond,
 		CondIds:     condIds,
-		RateLimit:   sd.RateLimit,
 	}
 	_, err = s.coll.InsertOne(ctx, rec)
 	switch {
@@ -407,14 +402,13 @@ func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d i
 	cond, condIds := encodeCondition(d.Condition)
 	u := bson.M{
 		"$set": bson.M{
-			attrDescr:     d.Description,
-			attrEnabled:   d.Enabled,
-			attrExpires:   d.Expires.UTC(),
-			attrUpdated:   d.Updated.UTC(),
-			attrPublic:    d.Public,
-			attrCond:      cond,
-			attrCondIds:   condIds,
-			attrRateLimit: d.RateLimit,
+			attrDescr:   d.Description,
+			attrEnabled: d.Enabled,
+			attrExpires: d.Expires.UTC(),
+			attrUpdated: d.Updated.UTC(),
+			attrPublic:  d.Public,
+			attrCond:    cond,
+			attrCondIds: condIds,
 		},
 	}
 	var result *mongo.SingleResult

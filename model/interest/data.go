@@ -32,9 +32,6 @@ type Data struct {
 
 	Followers int64
 
-	// RateLimit is a soft results rate limit, 0 means no limit
-	RateLimit int64
-
 	// Condition represents the certain criteria to select the Interest for the further routing.
 	// It's immutable once the Interest is created.
 	Condition condition.Condition

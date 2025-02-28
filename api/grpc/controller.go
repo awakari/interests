@@ -40,7 +40,6 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 				Condition:   cond,
 				Created:     time.Now().UTC(),
 				Public:      req.Public,
-				RateLimit:   req.RateLimit,
 			}
 			// check is for the backward compatibility
 			if req.Expires != nil {
@@ -95,7 +94,6 @@ func (sc serviceController) Read(ctx context.Context, req *ReadRequest) (resp *R
 			}
 			resp.GroupId = ownerGroupId
 			resp.UserId = ownerUserId
-			resp.RateLimit = sd.RateLimit
 		}
 		err = encodeError(err)
 	}
@@ -118,7 +116,6 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 			Condition:   cond,
 			Updated:     time.Now().UTC(),
 			Public:      req.Public,
-			RateLimit:   req.RateLimit,
 		}
 		// check is for the backward compatibility
 		if req.Expires != nil {

@@ -78,7 +78,6 @@ func TestStorageImpl_Create(t *testing.T) {
 				Description: "test interest 1",
 				Expires:     time.Now().Add(1 * time.Hour),
 				Public:      true,
-				RateLimit:   10,
 				Condition: condition.NewGroupCondition(
 					condition.NewCondition(false),
 					condition.GroupLogicOr,
@@ -198,7 +197,6 @@ func TestStorageImpl_Read(t *testing.T) {
 		Condition:   cond0,
 		Created:     time.Date(2023, 10, 4, 6, 44, 57, 0, time.UTC),
 		Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
-		RateLimit:   3,
 	})
 	require.Nil(t, err)
 	err = s.Create(ctx, "interest1", "group1", "user1", interest.Data{
@@ -234,7 +232,6 @@ func TestStorageImpl_Read(t *testing.T) {
 				Condition:   cond0,
 				Created:     time.Date(2023, 10, 4, 6, 44, 57, 0, time.UTC),
 				Updated:     time.Date(2023, 10, 4, 6, 44, 58, 0, time.UTC),
-				RateLimit:   3,
 			},
 			ownerGroupId: "group0",
 			ownerUserId:  "user0",
@@ -355,8 +352,7 @@ func TestStorageImpl_Update(t *testing.T) {
 					condition.NewKeyCondition(condition.NewCondition(false), "cond1", "key1"),
 					"pattern1", true,
 				),
-				Public:    true,
-				RateLimit: 1,
+				Public: true,
 			},
 			prev: sd0,
 		},

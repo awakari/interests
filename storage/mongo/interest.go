@@ -32,8 +32,6 @@ type interestWrite struct {
 	// CondIds contains a flat list of all condition ids.
 	// The CondIds field is necessary to support the interests search by a condition id.
 	CondIds []string `bson:"condIds"`
-
-	RateLimit int64 `bson:"rateLimit,omitempty"`
 }
 
 // intermediate read result that contains the condition not decoded yet
@@ -67,8 +65,6 @@ type interestRec struct {
 	// CondIds contains a flat list of all condition ids.
 	// The CondIds field is necessary to support the interests search by a condition id.
 	CondIds []string `bson:"condIds"`
-
-	RateLimit int64 `bson:"rateLimit,omitempty"`
 }
 
 const attrId = "id"
@@ -85,7 +81,6 @@ const attrPublic = "public"
 const attrFollowers = "followers"
 const attrCondIds = "condIds"
 const attrCond = "cond"
-const attrRateLimit = "rateLimit"
 
 func (rec interestRec) decodeInterest(sub *interest.Interest) (err error) {
 	sub.Id = rec.Id
@@ -105,7 +100,6 @@ func (rec interestRec) decodeInterestData(sd *interest.Data) (err error) {
 	sd.Result = rec.Result
 	sd.Public = rec.Public
 	sd.Followers = rec.Followers
-	sd.RateLimit = rec.RateLimit
 	var condRec Condition
 	condRec, err = decodeRawCondition(rec.RawCondition)
 	if err == nil {

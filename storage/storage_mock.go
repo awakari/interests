@@ -45,7 +45,6 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string, inter
 			Result:       time.Date(2024, 4, 9, 7, 3, 45, 0, time.UTC),
 			Public:       true,
 			Followers:    42,
-			RateLimit:    3,
 			Condition: condition.NewGroupCondition(
 				condition.NewCondition(false),
 				condition.GroupLogicAnd,
