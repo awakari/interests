@@ -191,6 +191,7 @@ message SearchByConditionRequest {
 
 message SearchByConditionResponse {
   repeated SearchByConditionResult page = 1;
+  google.protobuf.Timestamp expires = 2;
 }
 
 message SearchByConditionResult {

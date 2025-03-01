@@ -705,8 +705,9 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 	//
 	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
-		Uri:  dbUri,
-		Name: "interests",
+		Uri:       dbUri,
+		Name:      "interests",
+		ResultTtl: 1 * time.Minute,
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Table.Shard = false
@@ -756,10 +757,11 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 	}
 	//
 	cases := map[string]struct {
-		q      interest.QueryByCondition
-		cursor string
-		out    []interest.ConditionMatch
-		err    error
+		q       interest.QueryByCondition
+		cursor  string
+		out     []interest.ConditionMatch
+		expires time.Time
+		err     error
 	}{
 		"limit=1": {
 			q: interest.QueryByCondition{
@@ -772,6 +774,7 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 					Condition:  rootConditions[matchingSubIds[0]],
 				},
 			},
+			expires: time.Now().Add(1 * time.Minute),
 		},
 		"limit=10": {
 			q: interest.QueryByCondition{
@@ -800,6 +803,7 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 					Condition:  rootConditions[matchingSubIds[4]],
 				},
 			},
+			expires: time.Now().Add(1 * time.Minute),
 		},
 		"with cursor": {
 			q: interest.QueryByCondition{
@@ -817,6 +821,7 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 					Condition:  rootConditions[matchingSubIds[4]],
 				},
 			},
+			expires: time.Now().Add(1 * time.Minute),
 		},
 	}
 	//
@@ -825,10 +830,11 @@ func TestStorageImpl_SearchByCondition(t *testing.T) {
 			page, err := s.SearchByCondition(ctx, c.q, c.cursor)
 			if c.err == nil {
 				require.Nil(t, err)
-				require.Equal(t, len(c.out), len(page))
+				require.Equal(t, len(c.out), len(page.ConditionMatches))
+				assert.InDelta(t, c.expires.Unix(), page.Expires.Unix(), 1)
 				for i, cm := range c.out {
-					assert.Equal(t, cm.InterestId, page[i].InterestId)
-					assert.True(t, cm.Condition.Equal(page[i].Condition))
+					assert.Equal(t, cm.InterestId, page.ConditionMatches[i].InterestId)
+					assert.True(t, cm.Condition.Equal(page.ConditionMatches[i].Condition))
 				}
 			} else {
 				assert.ErrorIs(t, err, c.err)
@@ -841,8 +847,9 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 	//
 	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
 	dbCfg := config.DbConfig{
-		Uri:  dbUri,
-		Name: "interests",
+		Uri:       dbUri,
+		Name:      "interests",
+		ResultTtl: 24 * time.Hour,
 	}
 	dbCfg.Table.Name = collName
 	dbCfg.Table.Shard = false
@@ -874,10 +881,11 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 	err = s.Create(ctx, "interest1", "acc0", "user0", sub1)
 	require.Nil(t, err)
 	// not expired
+	t2 := time.Now().Add(1 * time.Hour).UTC()
 	sub2 := interest.Data{
 		Enabled:   true,
 		Condition: cond0,
-		Expires:   time.Now().Add(1 * time.Hour).UTC(),
+		Expires:   t2,
 	}
 	err = s.Create(ctx, "interest2", "acc0", "user0", sub2)
 	require.Nil(t, err)
@@ -901,10 +909,11 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 	require.Nil(t, err)
 	//
 	cases := map[string]struct {
-		q      interest.QueryByCondition
-		cursor string
-		out    []interest.ConditionMatch
-		err    error
+		q       interest.QueryByCondition
+		cursor  string
+		out     []interest.ConditionMatch
+		expires time.Time
+		err     error
 	}{
 		"2": {
 			q: interest.QueryByCondition{
@@ -925,6 +934,7 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 					Condition:  cond0,
 				},
 			},
+			expires: t2.Truncate(time.Millisecond),
 		},
 	}
 	//
@@ -933,10 +943,11 @@ func TestStorageImpl_SearchByCondition_WithExpiration(t *testing.T) {
 			page, err := s.SearchByCondition(ctx, c.q, c.cursor)
 			if c.err == nil {
 				require.Nil(t, err)
-				require.Equal(t, len(c.out), len(page))
+				require.Equal(t, len(c.out), len(page.ConditionMatches))
+				assert.Equal(t, c.expires, page.Expires)
 				var found bool
 				for _, cm := range c.out {
-					for _, actual := range page {
+					for _, actual := range page.ConditionMatches {
 						if cm.InterestId == actual.InterestId && cm.Condition.Equal(actual.Condition) {
 							found = true
 							break

@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/kelseyhightower/envconfig"
+	"time"
 )
 
 type Config struct {
@@ -28,6 +29,7 @@ type DbConfig struct {
 		Enabled  bool `envconfig:"DB_TLS_ENABLED" default:"false" required:"true"`
 		Insecure bool `envconfig:"DB_TLS_INSECURE" default:"false" required:"true"`
 	}
+	ResultTtl time.Duration `envconfig:"DB_RESULT_TTL" default:"24h" required:"true"`
 }
 
 type HttpConfig struct {

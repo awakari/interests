@@ -3,6 +3,7 @@ module github.com/awakari/interests
 go 1.24
 
 require (
+	github.com/golang/protobuf v1.5.4
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/prometheus/client_golang v1.21.0
 	github.com/segmentio/ksuid v1.0.4

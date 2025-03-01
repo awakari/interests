@@ -76,9 +76,9 @@ func (lm loggingMiddleware) Search(ctx context.Context, q interest.Query, cursor
 	return lm.stor.Search(ctx, q, cursor)
 }
 
-func (lm loggingMiddleware) SearchByCondition(ctx context.Context, q interest.QueryByCondition, cursor string) (page []interest.ConditionMatch, err error) {
+func (lm loggingMiddleware) SearchByCondition(ctx context.Context, q interest.QueryByCondition, cursor string) (page interest.ConditionMatchPage, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("SearchByCondition(q=%+v, cursor=%s): %d, %s", q, cursor, len(page), err))
+		lm.log.Debug(fmt.Sprintf("SearchByCondition(q=%+v, cursor=%s): %d, %s, %s", q, cursor, len(page.ConditionMatches), page.Expires, err))
 	}()
 	return lm.stor.SearchByCondition(ctx, q, cursor)
 }

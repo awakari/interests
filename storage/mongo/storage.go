@@ -15,9 +15,10 @@ import (
 )
 
 type storageImpl struct {
-	conn *mongo.Client
-	db   *mongo.Database
-	coll *mongo.Collection
+	conn             *mongo.Client
+	db               *mongo.Database
+	coll             *mongo.Collection
+	resultTtlDefault time.Duration
 }
 
 const countUsersUnique = "countUsersUnique"
@@ -224,6 +225,15 @@ var (
 			Key:   attrCondIds,
 			Value: 1,
 		},
+		// time fields below are needed to calculate the result expiration time
+		{
+			Key:   attrExpires,
+			Value: 1,
+		},
+		{
+			Key:   attrEnabledSince,
+			Value: 1,
+		},
 	}
 	optsSrvApi = options.
 			ServerAPI(options.ServerAPIVersion1)
@@ -281,6 +291,7 @@ func NewStorage(ctx context.Context, cfgDb config.DbConfig) (s storage.Storage, 
 		stor.conn = conn
 		stor.db = db
 		stor.coll = coll
+		stor.resultTtlDefault = cfgDb.ResultTtl
 		_, err = stor.ensureIndices(ctx)
 	}
 	if err == nil && cfgDb.Table.Shard {
@@ -586,7 +597,7 @@ func (s storageImpl) Search(ctx context.Context, q interest.Query, cursor intere
 	return
 }
 
-func (s storageImpl) SearchByCondition(ctx context.Context, q interest.QueryByCondition, cursor string) (page []interest.ConditionMatch, err error) {
+func (s storageImpl) SearchByCondition(ctx context.Context, q interest.QueryByCondition, cursor string) (page interest.ConditionMatchPage, err error) {
 	now := time.Now().UTC()
 	dbQuery := bson.M{
 		attrId: bson.M{
@@ -640,6 +651,8 @@ func (s storageImpl) SearchByCondition(ctx context.Context, q interest.QueryByCo
 		if err != nil {
 			err = fmt.Errorf("%w: failed to decode interest record @ cursor %v: %s", storage.ErrInternal, cur.Current, err)
 		} else {
+			tNow := time.Now()
+			page.Expires = tNow.Add(s.resultTtlDefault).UTC()
 			for _, rec := range recs {
 				var cm interest.ConditionMatch
 				err = rec.decodeInterestConditionMatch(&cm)
@@ -647,7 +660,13 @@ func (s storageImpl) SearchByCondition(ctx context.Context, q interest.QueryByCo
 					err = fmt.Errorf("%w: failed to decode interest record %v: %s", storage.ErrInternal, rec, err)
 					break
 				}
-				page = append(page, cm)
+				page.ConditionMatches = append(page.ConditionMatches, cm)
+				if !rec.Expires.IsZero() && rec.Expires.After(tNow) && page.Expires.After(rec.Expires) {
+					page.Expires = rec.Expires.UTC()
+				}
+				if !rec.EnabledSince.IsZero() && rec.EnabledSince.After(tNow) && page.Expires.After(rec.EnabledSince) {
+					page.Expires = rec.EnabledSince.UTC()
+				}
 			}
 		}
 	}

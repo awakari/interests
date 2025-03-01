@@ -40,7 +40,7 @@ type (
 
 		// SearchByCondition finds all interests those match the specified condition id and feeds these to the
 		// specified consumer func.
-		SearchByCondition(ctx context.Context, q interest.QueryByCondition, cursor string) (page []interest.ConditionMatch, err error)
+		SearchByCondition(ctx context.Context, q interest.QueryByCondition, cursor string) (page interest.ConditionMatchPage, err error)
 
 		Count(ctx context.Context) (count int64, err error)
 		CountUsersUnique(ctx context.Context) (count int64, err error)

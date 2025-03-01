@@ -252,11 +252,13 @@ func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchBy
 		CondId: req.CondId,
 		Limit:  req.Limit,
 	}
-	var page []interest.ConditionMatch
+	var page interest.ConditionMatchPage
 	page, err = sc.stor.SearchByCondition(ctx, q, req.Cursor)
 	if err == nil {
-		resp = &SearchByConditionResponse{}
-		for _, cm := range page {
+		resp = &SearchByConditionResponse{
+			Expires: timestamppb.New(page.Expires),
+		}
+		for _, cm := range page.ConditionMatches {
 			result := SearchByConditionResult{}
 			encodeConditionMatch(cm, &result)
 			resp.Page = append(resp.Page, &result)

@@ -183,7 +183,7 @@ func (s storageMock) Search(ctx context.Context, q interest.Query, cursor intere
 	return
 }
 
-func (s storageMock) SearchByCondition(ctx context.Context, q interest.QueryByCondition, cursor string) (page []interest.ConditionMatch, err error) {
+func (s storageMock) SearchByCondition(ctx context.Context, q interest.QueryByCondition, cursor string) (page interest.ConditionMatchPage, err error) {
 	for i := 0; i < int(q.Limit); i++ {
 		cm := interest.ConditionMatch{
 			InterestId: fmt.Sprintf("sub%d", i),
@@ -192,8 +192,9 @@ func (s storageMock) SearchByCondition(ctx context.Context, q interest.QueryByCo
 				"pattern0", false,
 			),
 		}
-		page = append(page, cm)
+		page.ConditionMatches = append(page.ConditionMatches, cm)
 	}
+	page.Expires = time.Date(2025, 3, 1, 13, 4, 55, 0, time.UTC)
 	return
 }
 

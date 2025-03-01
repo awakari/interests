@@ -6,6 +6,7 @@ import (
 	"github.com/awakari/interests/api/grpc/common"
 	"github.com/awakari/interests/model/interest"
 	"github.com/awakari/interests/storage"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -734,11 +735,13 @@ func TestServiceController_SearchByCondition(t *testing.T) {
 	}
 	//
 	cases := map[string]struct {
-		count int
-		err   error
+		count   int
+		expires *timestamp.Timestamp
+		err     error
 	}{
 		"10 seconds is more than enough to read 10_000 items": {
-			count: 100,
+			count:   100,
+			expires: timestamppb.New(time.Date(2025, 3, 1, 13, 4, 55, 0, time.UTC)),
 		},
 	}
 	for k, c := range cases {
@@ -752,6 +755,7 @@ func TestServiceController_SearchByCondition(t *testing.T) {
 			assert.ErrorIs(t, err, c.err)
 			count := len(resp.Page)
 			assert.Equal(t, c.count, count)
+			assert.Equal(t, c.expires, resp.Expires)
 		})
 	}
 }
