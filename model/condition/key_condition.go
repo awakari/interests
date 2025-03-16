@@ -2,8 +2,7 @@ package condition
 
 type (
 	KeyCondition interface {
-		Condition
-		GetId() string
+		LeafCondition
 		GetKey() string
 	}
 

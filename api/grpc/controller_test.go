@@ -88,10 +88,9 @@ func TestServiceController_Create(t *testing.T) {
 								},
 							},
 							{
-								Cond: &Condition_Tc{
-									Tc: &TextCondition{
-										Key:  "key1",
-										Term: "pattern1",
+								Cond: &Condition_Sc{
+									Sc: &SemanticCondition{
+										Query: "lorem ipsum...",
 									},
 								},
 							},
@@ -239,10 +238,9 @@ func TestServiceController_Read(t *testing.T) {
 								},
 								{
 									Not: true,
-									Cond: &Condition_Tc{
-										Tc: &TextCondition{
-											Key:  "key1",
-											Term: "pattern1",
+									Cond: &Condition_Sc{
+										Sc: &SemanticCondition{
+											Query: "lorem ipsum...",
 										},
 									},
 								},
@@ -305,10 +303,9 @@ func TestServiceController_Read(t *testing.T) {
 								},
 								{
 									Not: true,
-									Cond: &Condition_Tc{
-										Tc: &TextCondition{
-											Key:  "key1",
-											Term: "pattern1",
+									Cond: &Condition_Sc{
+										Sc: &SemanticCondition{
+											Query: "lorem ipsum...",
 										},
 									},
 								},
@@ -359,8 +356,7 @@ func TestServiceController_Read(t *testing.T) {
 				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[0].GetTc().Key, sub.Cond.GetGc().GetGroup()[0].GetTc().Key)
 				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[0].GetTc().Term, sub.Cond.GetGc().GetGroup()[0].GetTc().Term)
 				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].Not, sub.Cond.GetGc().GetGroup()[1].Not)
-				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].GetTc().Key, sub.Cond.GetGc().GetGroup()[1].GetTc().Key)
-				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].GetTc().Term, sub.Cond.GetGc().GetGroup()[1].GetTc().Term)
+				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].GetSc().Query, sub.Cond.GetGc().GetGroup()[1].GetSc().Query)
 				assert.Equal(t, c.sub.Own, sub.Own)
 			} else {
 				assert.ErrorIs(t, err, c.err)
@@ -456,7 +452,7 @@ func TestServiceController_Update(t *testing.T) {
 				assert.Nil(t, err)
 				assert.NotNil(t, resp.Cond.GetGc())
 				assert.Equal(t, common.GroupLogic_And, resp.Cond.GetGc().Logic)
-				assert.Equal(t, "txt_0", resp.Cond.GetGc().GetGroup()[0].GetTc().Id)
+				assert.Equal(t, "sem_0", resp.Cond.GetGc().GetGroup()[0].GetSc().Id)
 				assert.Equal(t, "txt_1", resp.Cond.GetGc().GetGroup()[1].GetTc().Id)
 			} else {
 				assert.ErrorIs(t, err, c.err)

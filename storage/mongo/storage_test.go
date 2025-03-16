@@ -94,6 +94,9 @@ func TestStorageImpl_Create(t *testing.T) {
 							),
 							condition.NumOpEq, 42,
 						),
+						condition.NewSemanticCondition(
+							condition.NewCondition(false), "cond1", "lorem ipsum...",
+						),
 					},
 				),
 			},
@@ -120,6 +123,9 @@ func TestStorageImpl_Create(t *testing.T) {
 							),
 							condition.NumOpEq, 42,
 						),
+						condition.NewSemanticCondition(
+							condition.NewCondition(false), "cond1", "lorem ipsum...",
+						),
 					},
 				),
 			},
@@ -141,6 +147,9 @@ func TestStorageImpl_Create(t *testing.T) {
 						condition.NewTextCondition(
 							condition.NewKeyCondition(condition.NewCondition(false), "cond1", "key0"),
 							"pattern0", false,
+						),
+						condition.NewSemanticCondition(
+							condition.NewCondition(false), "cond1", "lorem ipsum...",
 						),
 					},
 				),
@@ -187,6 +196,9 @@ func TestStorageImpl_Read(t *testing.T) {
 			condition.NewNumberCondition(
 				condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
 				condition.NumOpLt, -1.2e-3,
+			),
+			condition.NewSemanticCondition(
+				condition.NewCondition(false), "cond1", "lorem ipsum...",
 			),
 		},
 	)

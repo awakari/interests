@@ -53,9 +53,8 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string, inter
 						condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
 						"pattern0", false,
 					),
-					condition.NewTextCondition(
-						condition.NewKeyCondition(condition.NewCondition(true), "", "key1"),
-						"pattern1", false,
+					condition.NewSemanticCondition(
+						condition.NewCondition(true), "", "lorem ipsum...",
 					),
 					condition.NewNumberCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "", "key2"),
@@ -83,9 +82,8 @@ func (s storageMock) Update(ctx context.Context, id, groupId, userId string, sd 
 				condition.NewCondition(false),
 				condition.GroupLogicAnd,
 				[]condition.Condition{
-					condition.NewTextCondition(
-						condition.NewKeyCondition(condition.NewCondition(false), "txt_0", "key0"),
-						"pattern0", false,
+					condition.NewSemanticCondition(
+						condition.NewCondition(false), "sem_0", "lorem ipsum...",
 					),
 					condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(true), "txt_1", "key1"),

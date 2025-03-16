@@ -269,7 +269,7 @@ func (sc serviceController) SearchByCondition(ctx context.Context, req *SearchBy
 }
 
 func decodeCondition(src *Condition) (dst condition.Condition, err error) {
-	gc, tc, nc := src.GetGc(), src.GetTc(), src.GetNc()
+	gc, tc, nc, sc := src.GetGc(), src.GetTc(), src.GetNc(), src.GetSc()
 	switch {
 	case gc != nil:
 		var group []condition.Condition
@@ -300,6 +300,8 @@ func decodeCondition(src *Condition) (dst condition.Condition, err error) {
 			decodeNumOp(nc.Op),
 			nc.Val,
 		)
+	case sc != nil:
+		dst = condition.NewSemanticCondition(condition.NewCondition(src.Not), sc.Id, sc.Query)
 	default:
 		err = status.Error(codes.InvalidArgument, "unsupported condition type")
 	}
@@ -356,6 +358,13 @@ func encodeCondition(src condition.Condition, dst *Condition) {
 				Key: c.GetKey(),
 				Op:  encodeNumOp(c.GetOperation()),
 				Val: c.GetValue(),
+			},
+		}
+	case condition.SemanticCondition:
+		dst.Cond = &Condition_Sc{
+			Sc: &SemanticCondition{
+				Id:    c.GetId(),
+				Query: c.Query(),
 			},
 		}
 	}
