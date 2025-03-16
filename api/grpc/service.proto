@@ -85,7 +85,6 @@ enum Operation {
 }
 
 message CreateResponse {
-  string id = 1;
 }
 
 // Read

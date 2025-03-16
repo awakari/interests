@@ -7,7 +7,6 @@ import (
 	"github.com/awakari/interests/model/interest"
 	"github.com/awakari/interests/storage"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -51,10 +50,10 @@ func TestServiceController_Create(t *testing.T) {
 		expires *timestamppb.Timestamp
 		cond    *Condition
 		public  bool
-		idReq   string
+		id      string
 		err     error
 	}{
-		"generated id": {
+		"empty id": {
 			md: []string{
 				"x-awakari-group-id", "group0",
 				"X-Awakari-User-ID", "user0",
@@ -66,6 +65,7 @@ func TestServiceController_Create(t *testing.T) {
 					Tc: &TextCondition{},
 				},
 			},
+			err: status.Error(codes.InvalidArgument, "empty interest id"),
 		},
 		"ok2": {
 			md: []string{
@@ -107,7 +107,7 @@ func TestServiceController_Create(t *testing.T) {
 					},
 				},
 			},
-			idReq: "interest2",
+			id: "interest2",
 		},
 		"fail": {
 			md: []string{
@@ -119,8 +119,8 @@ func TestServiceController_Create(t *testing.T) {
 					Tc: &TextCondition{},
 				},
 			},
-			idReq: "fail",
-			err:   status.Error(codes.Internal, "internal interest storage failure"),
+			id:  "fail",
+			err: status.Error(codes.Internal, "internal interest storage failure"),
 		},
 		"conflict": {
 			md: []string{
@@ -132,8 +132,8 @@ func TestServiceController_Create(t *testing.T) {
 					Tc: &TextCondition{},
 				},
 			},
-			idReq: "conflict",
-			err:   status.Error(codes.AlreadyExists, "interest id is already in use"),
+			id:  "conflict",
+			err: status.Error(codes.AlreadyExists, "interest id is already in use"),
 		},
 		"empty group": {
 			md: []string{
@@ -172,26 +172,14 @@ func TestServiceController_Create(t *testing.T) {
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
 			ctx := metadata.AppendToOutgoingContext(context.TODO(), c.md...)
-			var resp *CreateResponse
-			resp, err = client.Create(ctx, &CreateRequest{
-				Id:          c.idReq,
+			_, err = client.Create(ctx, &CreateRequest{
+				Id:          c.id,
 				Description: k,
 				Expires:     c.expires,
 				Cond:        c.cond,
 				Public:      c.public,
 			})
-			if c.err == nil {
-				assert.Nil(t, err)
-				switch c.idReq {
-				case "":
-					_, err = ksuid.Parse(resp.Id)
-					assert.Nil(t, err)
-				default:
-					assert.Equal(t, c.idReq, resp.Id)
-				}
-			} else {
-				assert.ErrorIs(t, err, c.err)
-			}
+			assert.ErrorIs(t, err, c.err)
 		})
 	}
 }

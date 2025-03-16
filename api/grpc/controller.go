@@ -8,7 +8,6 @@ import (
 	"github.com/awakari/interests/model/condition"
 	"github.com/awakari/interests/model/interest"
 	"github.com/awakari/interests/storage"
-	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -31,6 +30,11 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 	var userId string
 	groupId, userId, err = getAuthInfo(ctx)
 	if err == nil {
+		if req.Id == "" {
+			err = status.Error(codes.InvalidArgument, "empty interest id")
+		}
+	}
+	if err == nil {
 		var cond condition.Condition
 		cond, err = decodeCondition(req.Cond)
 		if err == nil {
@@ -45,13 +49,7 @@ func (sc serviceController) Create(ctx context.Context, req *CreateRequest) (res
 			if req.Expires != nil {
 				sd.Expires = req.Expires.AsTime()
 			}
-			switch req.Id {
-			case "":
-				resp.Id = ksuid.New().String()
-			default:
-				resp.Id = req.Id
-			}
-			err = sc.stor.Create(ctx, resp.Id, groupId, userId, sd)
+			err = sc.stor.Create(ctx, req.Id, groupId, userId, sd)
 		}
 		err = encodeError(err)
 	}

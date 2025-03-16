@@ -6,7 +6,6 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/prometheus/client_golang v1.21.1
-	github.com/segmentio/ksuid v1.0.4
 	github.com/stretchr/testify v1.10.0
 	go.mongodb.org/mongo-driver v1.17.3
 	google.golang.org/grpc v1.71.0
