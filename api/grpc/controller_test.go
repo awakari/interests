@@ -648,6 +648,7 @@ func TestServiceController_Search(t *testing.T) {
 		cursor Cursor
 		sort   Sort
 		order  Order
+		all    bool
 		err    error
 		ids    []string
 	}{
@@ -689,6 +690,14 @@ func TestServiceController_Search(t *testing.T) {
 			},
 			err: status.Error(codes.Unauthenticated, "missing value for x-awakari-group-id in request metadata"),
 		},
+		"all": {
+			auth: false,
+			all:  true,
+			ids: []string{
+				"sub0",
+				"sub1",
+			},
+		},
 	}
 	//
 	for k, c := range cases {
@@ -697,7 +706,13 @@ func TestServiceController_Search(t *testing.T) {
 			if c.auth {
 				ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
 			}
-			resp, err := client.Search(ctx, &SearchRequest{Cursor: &c.cursor, Limit: 0, Sort: c.sort, Order: c.order})
+			resp, err := client.Search(ctx, &SearchRequest{
+				Cursor: &c.cursor,
+				Limit:  0,
+				Sort:   c.sort,
+				Order:  c.order,
+				All:    c.all,
+			})
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.ids, resp.Ids)

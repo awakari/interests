@@ -529,6 +529,7 @@ func (s storageImpl) Search(ctx context.Context, q interest.Query, cursor intere
 		SetShowRecordID(false)
 	dbQuery := bson.M{}
 	switch {
+	case q.All:
 	case q.PrivateOnly:
 		dbQuery[attrGroupId] = q.GroupId
 		dbQuery[attrUserId] = q.UserId
@@ -575,8 +576,10 @@ func (s storageImpl) Search(ctx context.Context, q interest.Query, cursor intere
 			opts = opts.SetSort(projId)
 		}
 	}
-	dbQuery[attrDescr] = bson.M{
-		"$regex": q.Pattern,
+	if q.Pattern != "" {
+		dbQuery[attrDescr] = bson.M{
+			"$regex": q.Pattern,
+		}
 	}
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, dbQuery, opts)

@@ -212,6 +212,7 @@ message SearchRequest {
   Order order = 3;
   string Pattern = 4;
   Sort sort = 5;
+  bool all = 6;
 }
 
 message Cursor {

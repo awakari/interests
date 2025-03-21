@@ -208,13 +208,16 @@ func (sc serviceController) Search(ctx context.Context, req *SearchRequest) (res
 	resp = &SearchResponse{}
 	var groupId string
 	var userId string
-	groupId, userId, err = getAuthInfo(ctx)
+	if !req.All {
+		groupId, userId, err = getAuthInfo(ctx)
+	}
 	if err == nil {
 		q := interest.Query{
 			GroupId:       groupId,
 			UserId:        userId,
 			Limit:         req.Limit,
 			Pattern:       req.Pattern,
+			All:           req.All,
 			IncludePublic: true,
 		}
 		switch req.Sort {

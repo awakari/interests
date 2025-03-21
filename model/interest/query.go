@@ -7,6 +7,7 @@ type Query struct {
 	Sort          Sort
 	Order         Order
 	Pattern       string
+	All           bool // all, including non-own private, for internal use
 	IncludePublic bool // include public non-own?
 	PrivateOnly   bool // private own only?
 }

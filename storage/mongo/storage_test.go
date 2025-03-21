@@ -698,6 +698,24 @@ func TestStorageImpl_Search(t *testing.T) {
 				ids[9],
 			},
 		},
+		"all": {
+			q: interest.Query{
+				Limit: 10,
+				All:   true,
+			},
+			ids: []string{
+				ids[0],
+				ids[1],
+				ids[2],
+				ids[3],
+				ids[4],
+				ids[5],
+				ids[6],
+				ids[7],
+				ids[8],
+				ids[9],
+			},
+		},
 	}
 	//
 	for k, c := range cases {
