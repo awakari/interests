@@ -404,11 +404,13 @@ func decodeSingleResult(id string, result *mongo.SingleResult) (sd interest.Data
 	return
 }
 
-func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, d interest.Data) (prev interest.Data, err error) {
+func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, internal bool, d interest.Data) (prev interest.Data, err error) {
 	q := bson.M{
-		attrId:      id,
-		attrGroupId: groupId,
-		attrUserId:  userId,
+		attrId: id,
+	}
+	if !internal {
+		q[attrGroupId] = groupId
+		q[attrUserId] = userId
 	}
 	cond, condIds := encodeCondition(d.Condition)
 	u := bson.M{

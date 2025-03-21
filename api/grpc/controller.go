@@ -102,7 +102,9 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 	resp = &UpdateResponse{}
 	var groupId string
 	var userId string
-	groupId, userId, err = getAuthInfo(ctx)
+	if !req.Internal {
+		groupId, userId, err = getAuthInfo(ctx)
+	}
 	var cond condition.Condition
 	if err == nil {
 		cond, err = decodeCondition(req.Cond)
@@ -120,7 +122,7 @@ func (sc serviceController) Update(ctx context.Context, req *UpdateRequest) (res
 			sd.Expires = req.Expires.AsTime()
 		}
 		var prev interest.Data
-		prev, err = sc.stor.Update(ctx, req.Id, groupId, userId, sd)
+		prev, err = sc.stor.Update(ctx, req.Id, groupId, userId, req.Internal, sd)
 		if err == nil {
 			resp.Cond = &Condition{}
 			encodeCondition(prev.Condition, resp.Cond)

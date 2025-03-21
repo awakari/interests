@@ -344,14 +344,25 @@ func TestStorageImpl_Update(t *testing.T) {
 	}
 	err = s.Create(ctx, "interest0", "group0", "user0", sd0)
 	require.Nil(t, err)
+	cond1 := condition.NewTextCondition(
+		condition.NewKeyCondition(condition.NewCondition(false), "cond1", "key1"),
+		"pattern1", false,
+	)
+	sd1 := interest.Data{
+		Expires:   time.Date(2023, 10, 4, 6, 44, 55, 0, time.UTC),
+		Condition: cond1,
+	}
+	err = s.Create(ctx, "interest1", "group0", "user0", sd1)
+	require.Nil(t, err)
 	//
 	cases := map[string]struct {
-		id      string
-		groupId string
-		userId  string
-		err     error
-		sd      interest.Data
-		prev    interest.Data
+		id       string
+		groupId  string
+		userId   string
+		internal bool
+		err      error
+		sd       interest.Data
+		prev     interest.Data
 	}{
 		"ok": {
 			id:      "interest0",
@@ -368,8 +379,22 @@ func TestStorageImpl_Update(t *testing.T) {
 			},
 			prev: sd0,
 		},
+		"ok internal": {
+			id:       "interest1",
+			internal: true,
+			sd: interest.Data{
+				Description: "new description",
+				Expires:     time.Date(2023, 10, 5, 6, 44, 55, 0, time.UTC),
+				Condition: condition.NewTextCondition(
+					condition.NewKeyCondition(condition.NewCondition(false), "cond2", "key2"),
+					"pattern2", true,
+				),
+				Public: true,
+			},
+			prev: sd1,
+		},
 		"id mismatch": {
-			id:      "interest1",
+			id:      "interest2",
 			groupId: "group0",
 			userId:  "user0",
 			sd: interest.Data{
@@ -391,7 +416,7 @@ func TestStorageImpl_Update(t *testing.T) {
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
 			var prev interest.Data
-			prev, err = s.Update(ctx, c.id, c.groupId, c.userId, c.sd)
+			prev, err = s.Update(ctx, c.id, c.groupId, c.userId, c.internal, c.sd)
 			if c.err == nil {
 				assert.Nil(t, err)
 				assert.Equal(t, c.prev, prev)

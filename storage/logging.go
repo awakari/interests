@@ -34,11 +34,11 @@ func (lm loggingMiddleware) Read(ctx context.Context, id, groupId, userId string
 	return lm.stor.Read(ctx, id, groupId, userId, internal)
 }
 
-func (lm loggingMiddleware) Update(ctx context.Context, id, groupId, userId string, d interest.Data) (prev interest.Data, err error) {
+func (lm loggingMiddleware) Update(ctx context.Context, id, groupId, userId string, internal bool, d interest.Data) (prev interest.Data, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Update(%s, %s, %s, %+v): err=%s", id, groupId, userId, d, err))
+		lm.log.Debug(fmt.Sprintf("Update(%s, %s, %s, %t, %+v): err=%s", id, groupId, userId, internal, d, err))
 	}()
-	return lm.stor.Update(ctx, id, groupId, userId, d)
+	return lm.stor.Update(ctx, id, groupId, userId, internal, d)
 }
 
 func (lm loggingMiddleware) UpdateFollowers(ctx context.Context, id string, count int64) (err error) {

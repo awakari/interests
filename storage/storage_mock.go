@@ -69,7 +69,7 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string, inter
 	return
 }
 
-func (s storageMock) Update(ctx context.Context, id, groupId, userId string, sd interest.Data) (prev interest.Data, err error) {
+func (s storageMock) Update(ctx context.Context, id, groupId, userId string, internal bool, sd interest.Data) (prev interest.Data, err error) {
 	if id == "fail" {
 		err = ErrInternal
 	} else if id == "missing" {

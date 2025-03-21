@@ -119,6 +119,7 @@ message UpdateRequest {
   google.protobuf.Timestamp expires = 4;
   Condition cond = 5;
   bool public = 6;
+  bool internal = 7;
 }
 
 message UpdateResponse {
