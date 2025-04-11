@@ -304,7 +304,7 @@ func decodeCondition(src *Condition) (dst condition.Condition, err error) {
 			nc.Val,
 		)
 	case sc != nil:
-		dst = condition.NewSemanticCondition(condition.NewCondition(src.Not), sc.Id, sc.Query)
+		dst = condition.NewSemanticCondition(condition.NewCondition(src.Not), sc.Id, sc.Query, sc.SimilarityMin)
 	default:
 		err = status.Error(codes.InvalidArgument, "unsupported condition type")
 	}
@@ -366,8 +366,9 @@ func encodeCondition(src condition.Condition, dst *Condition) {
 	case condition.SemanticCondition:
 		dst.Cond = &Condition_Sc{
 			Sc: &SemanticCondition{
-				Id:    c.GetId(),
-				Query: c.Query(),
+				Id:            c.GetId(),
+				Query:         c.Query(),
+				SimilarityMin: c.SimilarityMin(),
 			},
 		}
 	}

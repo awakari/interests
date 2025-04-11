@@ -90,7 +90,8 @@ func TestServiceController_Create(t *testing.T) {
 							{
 								Cond: &Condition_Sc{
 									Sc: &SemanticCondition{
-										Query: "lorem ipsum...",
+										Query:         "lorem ipsum...",
+										SimilarityMin: 0.5,
 									},
 								},
 							},
@@ -228,7 +229,8 @@ func TestServiceController_Read(t *testing.T) {
 									Not: true,
 									Cond: &Condition_Sc{
 										Sc: &SemanticCondition{
-											Query: "lorem ipsum...",
+											Query:         "lorem ipsum...",
+											SimilarityMin: 0.5,
 										},
 									},
 								},
@@ -293,7 +295,8 @@ func TestServiceController_Read(t *testing.T) {
 									Not: true,
 									Cond: &Condition_Sc{
 										Sc: &SemanticCondition{
-											Query: "lorem ipsum...",
+											Query:         "lorem ipsum...",
+											SimilarityMin: 0.5,
 										},
 									},
 								},
@@ -345,6 +348,7 @@ func TestServiceController_Read(t *testing.T) {
 				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[0].GetTc().Term, sub.Cond.GetGc().GetGroup()[0].GetTc().Term)
 				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].Not, sub.Cond.GetGc().GetGroup()[1].Not)
 				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].GetSc().Query, sub.Cond.GetGc().GetGroup()[1].GetSc().Query)
+				assert.Equal(t, c.sub.Cond.GetGc().GetGroup()[1].GetSc().SimilarityMin, sub.Cond.GetGc().GetGroup()[1].GetSc().SimilarityMin)
 				assert.Equal(t, c.sub.Own, sub.Own)
 			} else {
 				assert.ErrorIs(t, err, c.err)
@@ -415,10 +419,10 @@ func TestServiceController_Update(t *testing.T) {
 									},
 								},
 								{
-									Cond: &Condition_Tc{
-										Tc: &TextCondition{
-											Key:  "key1",
-											Term: "pattern1",
+									Cond: &Condition_Sc{
+										Sc: &SemanticCondition{
+											Query:         "query1",
+											SimilarityMin: 0.5,
 										},
 									},
 								},
@@ -568,7 +572,8 @@ func TestServiceController_Delete(t *testing.T) {
 			if c.auth {
 				ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
 			}
-			_, err := client.Delete(ctx, &DeleteRequest{Id: k})
+			resp, err := client.Delete(ctx, &DeleteRequest{Id: k})
+			fmt.Println(resp) // TODO test
 			if c.err == nil {
 				assert.Nil(t, err)
 			} else {

@@ -54,7 +54,7 @@ func (s storageMock) Read(ctx context.Context, id, groupId, userId string, inter
 						"pattern0", false,
 					),
 					condition.NewSemanticCondition(
-						condition.NewCondition(true), "", "lorem ipsum...",
+						condition.NewCondition(true), "", "lorem ipsum...", 0.5,
 					),
 					condition.NewNumberCondition(
 						condition.NewKeyCondition(condition.NewCondition(false), "", "key2"),
@@ -83,7 +83,7 @@ func (s storageMock) Update(ctx context.Context, id, groupId, userId string, int
 				condition.GroupLogicAnd,
 				[]condition.Condition{
 					condition.NewSemanticCondition(
-						condition.NewCondition(false), "sem_0", "lorem ipsum...",
+						condition.NewCondition(false), "sem_0", "lorem ipsum...", 0.75,
 					),
 					condition.NewTextCondition(
 						condition.NewKeyCondition(condition.NewCondition(true), "txt_1", "key1"),
@@ -142,9 +142,8 @@ func (s storageMock) Delete(ctx context.Context, id, groupId, userId string) (sd
 						condition.NewKeyCondition(condition.NewCondition(false), "", "key0"),
 						"pattern0", false,
 					),
-					condition.NewTextCondition(
-						condition.NewKeyCondition(condition.NewCondition(true), "", "key1"),
-						"pattern1", false,
+					condition.NewSemanticCondition(
+						condition.NewCondition(false), "sem_0", "lorem ipsum...", 0.75,
 					),
 				},
 			),

@@ -83,7 +83,7 @@ func decodeCondition(src Condition) (dst condition.Condition) {
 		dst = condition.NewNumberCondition(dstKey, op, c.Val)
 	case semCondition:
 		dstBase := condition.NewCondition(c.Base.Not)
-		dst = condition.NewSemanticCondition(dstBase, c.Id, c.Query)
+		dst = condition.NewSemanticCondition(dstBase, c.Id, c.Query, c.SimilarityMin)
 	}
 	return dst
 }

@@ -73,6 +73,7 @@ message NumberCondition {
 message SemanticCondition {
   string id = 1;
   string query = 2;
+  float similarityMin = 3;
 }
 
 enum Operation {

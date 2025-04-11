@@ -95,7 +95,7 @@ func TestStorageImpl_Create(t *testing.T) {
 							condition.NumOpEq, 42,
 						),
 						condition.NewSemanticCondition(
-							condition.NewCondition(false), "cond1", "lorem ipsum...",
+							condition.NewCondition(false), "cond1", "lorem ipsum...", 0.5,
 						),
 					},
 				),
@@ -124,7 +124,7 @@ func TestStorageImpl_Create(t *testing.T) {
 							condition.NumOpEq, 42,
 						),
 						condition.NewSemanticCondition(
-							condition.NewCondition(false), "cond1", "lorem ipsum...",
+							condition.NewCondition(false), "cond1", "lorem ipsum...", 0.5,
 						),
 					},
 				),
@@ -149,7 +149,7 @@ func TestStorageImpl_Create(t *testing.T) {
 							"pattern0", false,
 						),
 						condition.NewSemanticCondition(
-							condition.NewCondition(false), "cond1", "lorem ipsum...",
+							condition.NewCondition(false), "cond1", "lorem ipsum...", 0.5,
 						),
 					},
 				),
@@ -198,7 +198,7 @@ func TestStorageImpl_Read(t *testing.T) {
 				condition.NumOpLt, -1.2e-3,
 			),
 			condition.NewSemanticCondition(
-				condition.NewCondition(false), "cond1", "lorem ipsum...",
+				condition.NewCondition(false), "cond1", "lorem ipsum...", 0.5,
 			),
 		},
 	)
@@ -458,6 +458,15 @@ func TestStorageImpl_Delete(t *testing.T) {
 		Public:    true,
 	})
 	require.Nil(t, err)
+	cond1 := condition.NewSemanticCondition(
+		condition.NewCondition(false),
+		"cond1", "query1", 0.85,
+	)
+	err = s.Create(ctx, "interest2", "acc0", "user0", interest.Data{
+		Expires:   time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
+		Condition: cond1,
+	})
+	require.Nil(t, err)
 	//
 	cases := map[string]struct {
 		id      string
@@ -492,6 +501,15 @@ func TestStorageImpl_Delete(t *testing.T) {
 			groupId: "acc0",
 			userId:  "user0",
 			err:     storage.ErrNotFound,
+		},
+		"success 2": {
+			id:      "interest2",
+			groupId: "acc0",
+			userId:  "user0",
+			sd: interest.Data{
+				Expires:   time.Date(2023, 10, 4, 10, 20, 45, 0, time.UTC),
+				Condition: cond1,
+			},
 		},
 	}
 	//
