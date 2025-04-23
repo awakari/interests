@@ -1383,3 +1383,71 @@ func TestStorageImpl_SetEnabledBatch(t *testing.T) {
 		})
 	}
 }
+
+func TestStorageImpl_ChangeOwner(t *testing.T) {
+	//
+	collName := fmt.Sprintf("interests-test-%d", time.Now().UnixMicro())
+	dbCfg := config.DbConfig{
+		Uri:  dbUri,
+		Name: "interests",
+	}
+	dbCfg.Table.Name = collName
+	dbCfg.Tls.Enabled = true
+	dbCfg.Tls.Insecure = true
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	s, err := NewStorage(ctx, dbCfg)
+	require.Nil(t, err)
+	defer clear(ctx, t, s.(storageImpl))
+	//
+	cond0 := condition.NewTextCondition(
+		condition.NewKeyCondition(condition.NewCondition(false), "cond0", "key0"),
+		"pattern0", false,
+	)
+	sd0 := interest.Data{
+		Condition: cond0,
+		Enabled:   true,
+	}
+	err = s.Create(ctx, "interest0", "group0", "user0", sd0)
+	require.Nil(t, err)
+	err = s.Create(ctx, "interest1", "group0", "user1", sd0)
+	require.Nil(t, err)
+	err = s.Create(ctx, "interest2", "group0", "user1", sd0)
+	require.Nil(t, err)
+	err = s.Create(ctx, "interest3", "group1", "user0", sd0)
+	//
+	cases := map[string]struct {
+		oldGroupId string
+		oldUserId  string
+		newGroupId string
+		newUserId  string
+		n          int64
+		err        error
+	}{
+		"none": {
+			oldGroupId: "group1",
+			oldUserId:  "user1",
+		},
+		"one": {
+			oldGroupId: "group0",
+			oldUserId:  "user0",
+			n:          1,
+		},
+		"two": {
+			oldGroupId: "group0",
+			oldUserId:  "user1",
+			newGroupId: "group2",
+			newUserId:  "user2",
+			n:          2,
+		},
+	}
+	//
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			var n int64
+			n, err = s.ChangeOwner(context.TODO(), c.oldGroupId, c.oldUserId, c.newGroupId, c.newUserId)
+			assert.Equal(t, c.n, n)
+			assert.ErrorIs(t, err, c.err)
+		})
+	}
+}

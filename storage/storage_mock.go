@@ -204,3 +204,13 @@ func (s storageMock) CountUsersUnique(ctx context.Context) (count int64, err err
 	count = 42
 	return
 }
+
+func (s storageMock) ChangeOwner(ctx context.Context, oldGroupId, oldUserId, newGroupId, newUserId string) (n int64, err error) {
+	switch newUserId {
+	case "fail":
+		err = ErrInternal
+	default:
+		n = 42
+	}
+	return
+}

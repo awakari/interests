@@ -992,3 +992,25 @@ func pageQuerySortByCreatedTime(q interest.Query, cursor interest.Cursor, dbQuer
 	}
 	return dbQuery, opts
 }
+
+func (s storageImpl) ChangeOwner(ctx context.Context, oldGroupId, oldUserId, newGroupId, newUserId string) (n int64, err error) {
+	q := bson.M{
+		attrGroupId: oldGroupId,
+		attrUserId:  oldUserId,
+	}
+	u := bson.M{
+		"$set": bson.M{
+			attrGroupId: newGroupId,
+			attrUserId:  newUserId,
+		},
+	}
+	var result *mongo.UpdateResult
+	result, err = s.coll.UpdateMany(ctx, q, u)
+	switch {
+	case err == nil:
+		n = result.ModifiedCount
+	default:
+		err = fmt.Errorf("%w: failed to change owner: %s", storage.ErrInternal, err)
+	}
+	return
+}

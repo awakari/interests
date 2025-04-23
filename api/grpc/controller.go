@@ -162,6 +162,13 @@ func (sc serviceController) SetEnabledBatch(ctx context.Context, req *SetEnabled
 	return
 }
 
+func (sc serviceController) ChangeOwner(ctx context.Context, req *ChangeOwnerRequest) (resp *ChangeOwnerResponse, err error) {
+	resp = &ChangeOwnerResponse{}
+	resp.N, err = sc.stor.ChangeOwner(ctx, req.OldGroupId, req.OldUserId, req.NewGroupId, req.NewUserId)
+	err = encodeError(err)
+	return
+}
+
 func (sc serviceController) Delete(ctx context.Context, req *DeleteRequest) (resp *DeleteResponse, err error) {
 	resp = &DeleteResponse{}
 	var groupId string

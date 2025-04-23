@@ -95,6 +95,13 @@ func (lm loggingMiddleware) CountUsersUnique(ctx context.Context) (count int64, 
 	return
 }
 
+func (lm loggingMiddleware) ChangeOwner(ctx context.Context, oldGroupId, oldUserId, newGroupId, newUserId string) (n int64, err error) {
+	defer func() {
+		lm.log.Debug(fmt.Sprintf("ChangeOwner(%s/%s -> %s/%s): %d, %s", oldGroupId, oldUserId, newGroupId, newUserId, n, err))
+	}()
+	return lm.stor.ChangeOwner(ctx, oldGroupId, oldUserId, newGroupId, newUserId)
+}
+
 func (lm loggingMiddleware) Close() (err error) {
 	defer func() {
 		lm.log.Debug(fmt.Sprintf("Close(): %s", err))

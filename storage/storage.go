@@ -31,6 +31,8 @@ type (
 
 		SetEnabledBatch(ctx context.Context, ids []string, enabled bool, enabledSince time.Time) (n int64, err error)
 
+		ChangeOwner(ctx context.Context, oldGroupId, oldUserId, newGroupId, newUserId string) (n int64, err error)
+
 		// Delete removes the interest.Interest specified by its unique id.
 		// Returns the interest.Data if deleted, error otherwise.
 		Delete(ctx context.Context, id, groupId, userId string) (sd interest.Data, err error)

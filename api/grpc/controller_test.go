@@ -812,3 +812,40 @@ func TestServiceController_SetEnabledBatch(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceController_ChangeOwner(t *testing.T) {
+	//
+	addr := fmt.Sprintf("localhost:%d", port)
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.Nil(t, err)
+	client := NewServiceClient(conn)
+	//
+	cases := map[string]struct {
+		newUserId string
+		n         int64
+		err       error
+	}{
+		"ok": {
+			n: 42,
+		},
+		"fail": {
+			newUserId: "fail",
+			err:       status.Error(codes.Internal, "internal interest storage failure"),
+		},
+	}
+	//
+	for k, c := range cases {
+		t.Run(k, func(t *testing.T) {
+			ctx := context.TODO()
+			ctx = metadata.AppendToOutgoingContext(ctx, "x-awakari-group-id", "group0", "x-awakari-user-id", "user0")
+			var resp *ChangeOwnerResponse
+			resp, err = client.ChangeOwner(ctx, &ChangeOwnerRequest{
+				NewUserId: c.newUserId,
+			})
+			if c.err == nil {
+				assert.Equal(t, c.n, resp.N)
+			}
+			assert.ErrorIs(t, err, c.err)
+		})
+	}
+}

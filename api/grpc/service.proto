@@ -21,6 +21,8 @@ service Service {
 
   rpc SetEnabledBatch(SetEnabledBatchRequest) returns (SetEnabledBatchResponse);
 
+  rpc ChangeOwner(ChangeOwnerRequest) returns (ChangeOwnerResponse);
+
   rpc Delete(DeleteRequest) returns (DeleteResponse);
 
   rpc SearchOwn(SearchOwnRequest) returns (SearchOwnResponse);
@@ -156,6 +158,19 @@ message SetEnabledBatchRequest {
 }
 
 message SetEnabledBatchResponse {
+  int64 n = 1;
+}
+
+// ChangeOwner
+
+message ChangeOwnerRequest {
+  string oldGroupId = 1;
+  string oldUserId = 2;
+  string newGroupId = 3;
+  string newUserId = 4;
+}
+
+message ChangeOwnerResponse {
   int64 n = 1;
 }
 
