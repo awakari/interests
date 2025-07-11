@@ -3,8 +3,8 @@ WORKDIR /go/src/interests
 COPY . .
 RUN \
     apk add protoc protobuf-dev make git && \
-    make build
+    make build-arm64
 
-FROM scratch
+FROM --platform=linux/arm64 scratch
 COPY --from=builder /go/src/interests/interests /bin/interests
 ENTRYPOINT ["/bin/interests"]

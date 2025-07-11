@@ -1,0 +1,8 @@
+autoscaling:
+  enabled: false
+
+image:
+  repository: ghcr.io/awakari/interests-arm64
+
+priority:
+  class: ""

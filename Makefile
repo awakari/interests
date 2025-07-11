@@ -27,8 +27,15 @@ build: proto
 	CGO_ENABLED=0 GOOS=linux GOARCH= GOARM= go build -ldflags="-s -w" -o ${BINARY_FILE_NAME} main.go
 	chmod ugo+x ${BINARY_FILE_NAME}
 
+build-arm64: proto
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ${BINARY_FILE_NAME} main.go
+	chmod ugo+x ${BINARY_FILE_NAME}
+
 docker:
 	docker build -t awakari/interests .
+
+docker-arm:
+	docker build -t awakari/interests . -f arm.Dockerfile
 
 run: docker
 	docker run \
@@ -40,6 +47,9 @@ run: docker
 
 staging: docker
 	./scripts/staging.sh
+
+staging-arm: docker-arm
+	./scripts/staging-arm.sh
 
 release: docker
 	./scripts/release.sh
