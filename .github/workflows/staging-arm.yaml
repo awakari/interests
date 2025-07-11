@@ -56,9 +56,9 @@ jobs:
       - name: Helm Upgrade
         run: |
           helm upgrade --install ${COMPONENT} helm/package/${COMPONENT}-0.0.0.tgz \
+            --values helm/${COMPONENT}/values-arm.yaml \
             --set podAnnotations.commit=$(git rev-parse --short HEAD),\
-                  db.password.secret.enabled=false,\
-                  db.tls.enabled=true,\
-                  db.tls.insecure=true,\
-                  db.table.shard=false \
-            --values helm/${COMPONENT}/values-arm.yaml
+          db.password.secret.enabled=false,\
+          db.tls.enabled=true,\
+          db.tls.insecure=true,\
+          db.table.shard=false
