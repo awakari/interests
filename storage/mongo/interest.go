@@ -81,6 +81,7 @@ const attrPublic = "public"
 const attrFollowers = "followers"
 const attrCondIds = "condIds"
 const attrCond = "cond"
+const attrDeletedAt = "deletedAt"
 
 func (rec interestRec) decodeInterest(sub *interest.Interest) (err error) {
 	sub.Id = rec.Id

@@ -19,6 +19,7 @@ type storageImpl struct {
 	db               *mongo.Database
 	coll             *mongo.Collection
 	resultTtlDefault time.Duration
+	retentionPeriod  time.Duration
 }
 
 const countUsersUnique = "countUsersUnique"
@@ -244,9 +245,6 @@ var (
 			FindOneAndUpdate().
 			SetProjection(projData).
 			SetReturnDocument(options.Before)
-	optsDelete = options.
-			FindOneAndDelete().
-			SetProjection(projData)
 	optsSearchByCond = options.
 				Find().
 				SetProjection(projSearchByCondId).
@@ -292,6 +290,7 @@ func NewStorage(ctx context.Context, cfgDb config.DbConfig) (s storage.Storage, 
 		stor.db = db
 		stor.coll = coll
 		stor.resultTtlDefault = cfgDb.ResultTtl
+		stor.retentionPeriod = cfgDb.Table.Retention
 		_, err = stor.ensureIndices(ctx)
 	}
 	if err == nil && cfgDb.Table.Shard {
@@ -307,6 +306,20 @@ func NewStorage(ctx context.Context, cfgDb config.DbConfig) (s storage.Storage, 
 }
 
 func (s storageImpl) ensureIndices(ctx context.Context) ([]string, error) {
+	retentionSeconds := int32(s.retentionPeriod.Seconds())
+	if retentionSeconds > 0 {
+		indices = append(indices, mongo.IndexModel{
+			Keys: bson.D{
+				{
+					Key:   attrDeletedAt,
+					Value: 1,
+				},
+			},
+			Options: options.
+				Index().
+				SetExpireAfterSeconds(retentionSeconds),
+		})
+	}
 	return s.coll.Indexes().CreateMany(ctx, indices)
 }
 
@@ -364,6 +377,9 @@ func (s storageImpl) Create(ctx context.Context, id, groupId, userId string, sd 
 func (s storageImpl) Read(ctx context.Context, id, groupId, userId string, internal bool) (sd interest.Data, ownerGroupId, ownerUserId string, err error) {
 	q := bson.M{
 		attrId: id,
+		attrDeletedAt: bson.M{
+			"$exists": false,
+		},
 	}
 	if !internal {
 		q["$or"] = []bson.M{
@@ -407,6 +423,9 @@ func decodeSingleResult(id string, result *mongo.SingleResult) (sd interest.Data
 func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, internal bool, d interest.Data) (prev interest.Data, err error) {
 	q := bson.M{
 		attrId: id,
+		attrDeletedAt: bson.M{
+			"$exists": false,
+		},
 	}
 	if !internal {
 		q[attrGroupId] = groupId
@@ -441,6 +460,9 @@ func (s storageImpl) Update(ctx context.Context, id, groupId, userId string, int
 func (s storageImpl) UpdateFollowers(ctx context.Context, id string, count int64) (err error) {
 	q := bson.M{
 		attrId: id,
+		attrDeletedAt: bson.M{
+			"$exists": false,
+		},
 	}
 	u := bson.M{
 		"$set": bson.M{
@@ -461,6 +483,9 @@ func (s storageImpl) UpdateFollowers(ctx context.Context, id string, count int64
 func (s storageImpl) UpdateResultTime(ctx context.Context, id string, last time.Time) (err error) {
 	q := bson.M{
 		attrId: id,
+		attrDeletedAt: bson.M{
+			"$exists": false,
+		},
 	}
 	u := bson.M{
 		"$set": bson.M{
@@ -482,6 +507,9 @@ func (s storageImpl) SetEnabledBatch(ctx context.Context, ids []string, enabled 
 	q := bson.M{
 		attrId: bson.M{
 			"$in": ids,
+		},
+		attrDeletedAt: bson.M{
+			"$exists": false,
 		},
 	}
 	var u bson.M
@@ -516,9 +544,17 @@ func (s storageImpl) Delete(ctx context.Context, id, groupId, userId string) (sd
 		attrId:      id,
 		attrGroupId: groupId,
 		attrUserId:  userId,
+		attrDeletedAt: bson.M{
+			"$exists": false,
+		},
+	}
+	u := bson.M{
+		"$set": bson.M{
+			attrDeletedAt: time.Now().UTC(),
+		},
 	}
 	var result *mongo.SingleResult
-	result = s.coll.FindOneAndDelete(ctx, q, optsDelete)
+	result = s.coll.FindOneAndUpdate(ctx, q, u, optsUpdate)
 	sd, _, _, err = decodeSingleResult(id, result)
 	return
 }
@@ -583,6 +619,9 @@ func (s storageImpl) Search(ctx context.Context, q interest.Query, cursor intere
 			"$regex": q.Pattern,
 		}
 	}
+	dbQuery[attrDeletedAt] = bson.M{
+		"$exists": false,
+	}
 	var cur *mongo.Cursor
 	cur, err = s.coll.Find(ctx, dbQuery, opts)
 	if err != nil {
@@ -609,10 +648,11 @@ func (s storageImpl) SearchByCondition(ctx context.Context, q interest.QueryByCo
 			"$gt": cursor,
 		},
 		attrCondIds: q.CondId,
+		attrDeletedAt: bson.M{
+			"$exists": false,
+		},
+		attrEnabled: true,
 		"$and": []bson.M{
-			{
-				attrEnabled: true,
-			},
 			{
 				"$or": []bson.M{
 					{
@@ -627,19 +667,21 @@ func (s storageImpl) SearchByCondition(ctx context.Context, q interest.QueryByCo
 					},
 				},
 			},
-		},
-		"$or": []bson.M{
 			{
-				attrExpires: bson.M{
-					"$gt": now,
-				},
-			},
-			{
-				attrExpires: timeZero,
-			},
-			{
-				attrExpires: bson.M{
-					"$exists": false,
+				"$or": []bson.M{
+					{
+						attrExpires: bson.M{
+							"$gt": now,
+						},
+					},
+					{
+						attrExpires: timeZero,
+					},
+					{
+						attrExpires: bson.M{
+							"$exists": false,
+						},
+					},
 				},
 			},
 		},
@@ -997,6 +1039,9 @@ func (s storageImpl) ChangeOwner(ctx context.Context, oldGroupId, oldUserId, new
 	q := bson.M{
 		attrGroupId: oldGroupId,
 		attrUserId:  oldUserId,
+		attrDeletedAt: bson.M{
+			"$exists": false,
+		},
 	}
 	u := bson.M{
 		"$set": bson.M{

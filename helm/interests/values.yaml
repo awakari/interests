@@ -93,6 +93,7 @@ db:
   table:
     # Database table name to use.
     name: interests
+    retention: "2160h"
     shard: true
   tls:
     enabled: false
