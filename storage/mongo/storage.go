@@ -365,6 +365,23 @@ func (s storageImpl) Create(ctx context.Context, id, groupId, userId string, sd 
 		CondIds:     condIds,
 	}
 	_, err = s.coll.InsertOne(ctx, rec)
+	if mongo.IsDuplicateKeyError(err) {
+		// attempt to delete the tombstone and retry the creation
+		r, errDel := s.coll.DeleteOne(ctx, bson.M{
+			attrId: id,
+			attrDeletedAt: bson.M{
+				"$exists": true,
+			},
+		})
+		switch errDel {
+		case nil:
+			if r.DeletedCount > 0 {
+				err = s.Create(ctx, id, groupId, userId, sd)
+			}
+		default:
+			err = errDel
+		}
+	}
 	switch {
 	case mongo.IsDuplicateKeyError(err):
 		err = fmt.Errorf("%w: id already in use: %s", storage.ErrConflict, id)
